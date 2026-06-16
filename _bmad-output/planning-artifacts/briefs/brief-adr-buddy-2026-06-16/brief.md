@@ -25,7 +25,7 @@ For this internal team, the cost of the status quo is not a market-sized busines
 
 Build a web-based Planning Poker session tool with two access types:
 
-- **Moderator**: creates or manages the session, sets the current story identifier and short description, selects the estimation configuration, starts the round, reveals results, and records the final estimate.
+- **Moderator**: creates or manages the session, sets the current story identifier and short description, selects the estimation configuration, starts the round, submits their own estimate, reveals results, and records the final estimate.
 - **Participant**: joins the session by room code, sees the current story, selects one estimation card, and waits for the moderator to reveal the results.
 
 Votes remain hidden until reveal. After reveal, the result view should make the group pattern obvious by grouping or ordering selected cards by vote count, so consensus and outliers are easy to spot.
@@ -49,10 +49,12 @@ In scope:
 - Support Fibonacci values. [ASSUMPTION] The initial deck should use a common compact sequence such as 1, 2, 3, 5, 8, 13, 21 unless the team prefers a different variant.
 - Let only the moderator start an estimation round.
 - Let participants select one card per round.
+- Let the moderator also select one card per round.
 - Keep votes hidden before reveal.
 - Reveal results on moderator action.
 - Show revealed cards grouped or ordered by number of votes.
 - Let the moderator record the final estimate for the current story.
+- Preserve a list of estimated stories within the session.
 - Reset or advance the flow for the next story. [ASSUMPTION] This is needed for a complete session, even if story management stays minimal.
 
 Out of scope for version 1:
@@ -75,6 +77,7 @@ Useful signals:
 - Votes are hidden until reveal, preventing early anchoring.
 - The result screen makes consensus and outliers clear without manual counting.
 - The moderator can record the final estimate for each story.
+- The session keeps a usable list of estimated stories for the meeting.
 - The team chooses to use the tool repeatedly during refinement instead of reverting to manual process.
 
 ## Product Principles
@@ -87,10 +90,8 @@ Useful signals:
 
 ## Open Questions
 
-- Should moderators also vote, or should moderator and participant roles be separate in the first version?
 - Should participants enter only a display name, or should names be optional? [ASSUMPTION] Display names are useful for seeing who has voted.
 - Should the final estimate be selected from the deck only, or can the moderator enter a custom value?
-- Should the session preserve a list of estimated stories during the meeting, or only handle the current story?
 - What exact Fibonacci deck should the team use?
 
 ## Vision
