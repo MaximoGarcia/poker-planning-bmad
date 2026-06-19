@@ -141,7 +141,7 @@ NFR6: v1 only needs live Session state; no durable storage is required for Sessi
 - Configure TypeScript path aliases or package/build settings so shared contracts can be imported safely by both client and server code.
 - Existing implementation-readiness assessment found the prior `epics.md` incomplete: Epic 2 and Epic 3 had no detailed story breakdowns, and FR4-FR15 were not traceable to complete stories.
 - Story-level traceability must cover every PRD FR, NFR, and relevant architecture requirement before implementation readiness can pass.
-- Story 1.4 should replace or supplement the phrase "allowed Session state" with explicit Participant snapshot fields from the architecture snapshot contract.
+- Story 2.5 should contain explicit Participant snapshot fields from the architecture snapshot contract for pre-reveal privacy.
 
 ### UX Design Requirements
 
@@ -153,7 +153,7 @@ FR1: Epic 1 - Create Session
 
 FR2: Epic 1 - Join Session
 
-FR3: Epic 1 - Show Participant Presence
+FR3: Epic 1 - Show joined participant presence; Epic 2 - Show voting status after Vote submission exists
 
 FR4: Epic 2 - Set Current Story
 
@@ -191,7 +191,7 @@ Moderators can create a Planning Poker Session, receive a Room Code, and Partici
 
 The Moderator can set the active Story and Deck, start a Round, and the team can submit hidden Votes with Moderator-only control enforcement.
 
-**FRs covered:** FR4, FR5, FR6, FR8, FR9, FR10, FR11
+**FRs covered:** FR3 voting status, FR4, FR5, FR6, FR8, FR9, FR10, FR11
 
 ### Epic 3: Reveal Results And Capture Estimates
 
@@ -231,6 +231,16 @@ So that live session creation and joining can be built on a consistent client, s
 **When** the Node server starts
 **Then** it can serve the Vite build output
 **And** it provides an SPA fallback for React Router.
+
+**Given** shared contracts are used by both client and server code
+**When** TypeScript build, test, and runtime entry points import shared modules
+**Then** the project configuration resolves shared contract imports without duplicate contract definitions
+**And** the chosen path aliases, package settings, or build settings work for both Vite client code and the Node server build.
+
+**Given** the app is prepared for Azure App Service deployment
+**When** production scripts and startup configuration are inspected
+**Then** package scripts build the React client and TypeScript server
+**And** the production start script launches the compiled Node server that serves `dist`, exposes `/health`, hosts Socket.IO, and listens on `process.env.PORT`.
 
 ### Story 1.2: Moderator Creates A Session
 
@@ -305,10 +315,10 @@ So that I can enter the team's estimation room without account setup.
 ### Story 1.4: Moderator Sees Participant Presence
 
 As a Moderator,
-I want to see who has joined the Session and whether they have voted,
-So that I can manage the live estimation round without exposing hidden Vote values.
+I want to see who has joined the Session,
+So that I can confirm the team is present before estimation begins.
 
-**Requirements covered:** FR3, NFR2, NFR5
+**Requirements covered:** FR3 presence foundation, NFR2
 
 **Acceptance Criteria:**
 
@@ -322,20 +332,40 @@ So that I can manage the live estimation round without exposing hidden Vote valu
 **Then** each joined Participant is visible
 **And** no selected Card values are shown.
 
-**Given** a Round is active and Participants submit Votes
-**When** the Moderator receives updated snapshots
-**Then** the presence list shows which Participants have submitted a Vote
-**And** it does not show selected Card values before reveal.
-
 **Given** a Participant joins after the Moderator is already in the Session
 **When** the join command is accepted
 **Then** the Moderator receives a near-real-time snapshot update
 **And** the new Participant appears without the Moderator refreshing the page.
 
-**Given** a Participant snapshot is emitted before reveal
-**When** it includes Session state
-**Then** it may include Room Code, current Story identifier and description, active Deck, Round state, the Participant's own Vote state, and participant display names with `hasVoted` status
-**And** it must not include Moderator-only controls, Estimated Stories, capability tokens, or any selected Card value other than the viewer's own Vote state.
+### Story 1.5: Prepare CI/CD And Operational Readiness
+
+As a Developer,
+I want the application foundation to include CI/CD and operational configuration,
+So that the MVP can be built, deployed, and monitored consistently on Azure App Service.
+
+**Requirements covered:** Architecture operational requirements, NFR2, NFR6
+
+**Acceptance Criteria:**
+
+**Given** the repository is prepared for continuous integration
+**When** the GitHub Actions workflow runs
+**Then** it installs dependencies, type-checks or builds the TypeScript client and server, runs configured tests, and produces the deployable Node app output
+**And** deployment credentials are not checked into the repository.
+
+**Given** the app is configured for Azure App Service
+**When** deployment documentation or configuration is reviewed
+**Then** it identifies required App Service settings for Node runtime, `process.env.PORT`, Web sockets, HTTPS Only, Always On for non-free production tiers, and single-instance MVP operation
+**And** it notes that session affinity should remain enabled if more than one instance is tested before shared state is introduced.
+
+**Given** runtime configuration is required
+**When** `.env.example` or deployment documentation is reviewed
+**Then** required Azure App Settings and environment variables are documented without secret values
+**And** local development origins and production origin expectations for restrictive CORS are clear.
+
+**Given** the server runs in production
+**When** operational telemetry is configured
+**Then** Application Insights can collect server-side health, error, and request telemetry
+**And** App Service log streaming can be used for troubleshooting without logging capability tokens or hidden Vote values before reveal.
 
 ## Epic 2: Hidden Voting Round
 
@@ -417,7 +447,7 @@ As a Participant,
 I want to select one Card from the active Deck and change it before reveal,
 So that I can submit my estimate privately and recover from misclicks while voting is open.
 
-**Requirements covered:** FR9, FR11, NFR3, NFR4, NFR5
+**Requirements covered:** FR3 voting status, FR9, FR11, NFR3, NFR4, NFR5
 
 **Acceptance Criteria:**
 
@@ -446,6 +476,11 @@ So that I can submit my estimate privately and recover from misclicks while voti
 **Then** other users may see that the Participant has voted
 **And** no other user sees the selected Card value before reveal.
 
+**Given** a Round is active and Participants submit Votes
+**When** the Moderator receives updated snapshots
+**Then** the presence list shows which Participants have submitted a Vote
+**And** it does not show selected Card values before reveal.
+
 **Given** the Card grid is displayed
 **When** the Participant uses keyboard navigation and readable labels
 **Then** each Card can be reached and selected without a mouse
@@ -471,11 +506,6 @@ So that I can contribute an estimate under the same hidden-vote rules as Partici
 **Then** the server replaces their prior Vote with the new Card
 **And** only one Moderator Vote remains for the Round.
 
-**Given** the Moderator has not voted
-**When** the Moderator reveals Results in a later story
-**Then** the system allows the reveal because Moderator voting is optional
-**And** no Moderator Vote is fabricated or required.
-
 **Given** the Moderator has submitted a Vote before reveal
 **When** snapshots are emitted
 **Then** users may see that the Moderator has voted if Moderator voting status is shown
@@ -500,6 +530,11 @@ So that estimation stays fair and unbiased during the voting round.
 **When** the server emits Participant snapshots
 **Then** each Participant snapshot includes only the viewer's own Vote state plus voting status for others
 **And** it does not include any other user's selected Card value.
+
+**Given** a Participant snapshot is emitted before reveal
+**When** it includes Session state
+**Then** it may include Room Code, current Story identifier and description, active Deck, Round state, the viewer's own Vote state, and participant display names with `hasVoted` status
+**And** it must not include Moderator-only controls, Estimated Stories, capability tokens, grouped result counts, or any selected Card value other than the viewer's own Vote state.
 
 **Given** one or more users have voted and Results have not been revealed
 **When** the server emits Moderator snapshots
@@ -677,7 +712,7 @@ So that I can keep the estimation session moving through multiple Stories.
 **Given** the Moderator advances to the next Story
 **When** the new Session state is emitted
 **Then** current Story fields, Votes, Results, and selected Final Estimate controls are cleared or returned to their next-story starting state
-**And** the selected Deck behavior follows the implementation's documented default or retained-deck rule.
+**And** the selected Deck remains unchanged for the next Story unless the Moderator changes it before starting the next Round.
 
 **Given** a Participant attempts to reset or advance the Round
 **When** the command is processed
