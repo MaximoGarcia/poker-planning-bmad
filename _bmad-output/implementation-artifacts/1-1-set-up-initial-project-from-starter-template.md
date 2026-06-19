@@ -1,6 +1,10 @@
+---
+baseline_commit: c86953d158c6c823ec8a4421129817189ef5a1ef
+---
+
 # Story 1.1: Set Up Initial Project From Starter Template
 
-Status: ready-for-dev
+Status: review
 
 Completion Note: Ultimate context engine analysis completed - comprehensive developer guide created.
 
@@ -21,42 +25,42 @@ so that live session creation and joining can be built on a consistent client, s
 
 ## Tasks / Subtasks
 
-- [ ] Initialize the Vite React TypeScript app at the repository root without deleting existing BMad artifacts. (AC: 1)
-  - [ ] Run `npm create vite@latest . -- --template react-ts` or the equivalent non-interactive flow from the Vite docs.
-  - [ ] If the scaffold prompts because the directory is not empty, preserve `_bmad/`, `_bmad-output/`, `.agents/`, and `.git/`; do not choose an option that removes existing files.
-  - [ ] Keep the generated Vite root files aligned with the architecture: `package.json`, `package-lock.json`, `tsconfig.json`, `tsconfig.node.json`, `vite.config.ts`, `index.html`, `public/`, and `src/`.
-- [ ] Add the TypeScript Node server scaffold. (AC: 1, 2, 4, 6)
-  - [ ] Create `server/index.ts`, `server/app.ts`, `server/http/health.ts`, `server/http/static-client.ts`, `server/socket/register-session-handlers.ts`, `server/config/env.ts`, `server/domain/`, and `server/security/`.
-  - [ ] Use Express 5.x for HTTP concerns and Socket.IO 4.x on the same HTTP server.
-  - [ ] Expose `/health` with a successful JSON response suitable for local and App Service health checks.
-  - [ ] Read the listen port from `process.env.PORT`, falling back only for local development.
-  - [ ] Serve the Vite production build from `dist` and provide a React Router SPA fallback for non-API, non-socket routes.
-- [ ] Create shared contracts and schemas that compile for both client and server. (AC: 1, 5)
-  - [ ] Create `src/shared/contracts/ack.ts`, `errors.ts`, `socket-events.ts`, and `snapshots.ts`.
-  - [ ] Create `src/shared/domain/decks.ts` and `session-types.ts`.
-  - [ ] Create `src/shared/schemas/command-schemas.ts` and `session-schemas.ts` with Zod 4 schemas.
-  - [ ] Define a single shared acknowledgement shape: `{ ok: true, data }` or `{ ok: false, error: { code, message, details? } }`.
-  - [ ] Define stable event constants or typed event maps for the architecture events, even if later stories fill in command behavior.
-  - [ ] Configure imports so client and server consume these shared modules from one source of truth.
-- [ ] Configure build, type-check, and runtime scripts for one deployable Node app. (AC: 4, 5, 6)
-  - [ ] Add scripts such as `dev`, `dev:client`, `dev:server`, `build`, `build:client`, `build:server`, `start`, `typecheck`, and `test` using the repo's chosen tooling.
-  - [ ] Compile the server to a Node-runnable output that can import shared contracts after build.
-  - [ ] Set package/runtime metadata so local development satisfies Vite's Node requirement and Azure can use Node 24 LTS where available.
-  - [ ] Add `.env.example` with non-secret local settings such as allowed local origins and an example `PORT`.
-- [ ] Add test tooling and first scaffold tests. (AC: 2, 3, 5)
-  - [ ] Configure Vitest for TypeScript unit tests and jsdom-based component tests.
-  - [ ] Add React Testing Library and a `src/test/render.tsx` helper.
-  - [ ] Add Playwright configuration under `playwright.config.ts` with tests located under `tests/e2e`.
-  - [ ] Add at least one server health test, one shared schema/contract test, and one minimal React render/component smoke test.
-  - [ ] Keep Playwright ready for future Moderator/Participant browser flows; do not implement full live-session e2e behavior in this story unless it is only a harmless smoke check.
-- [ ] Add the initial app shell and route foundation without implementing later session behavior. (AC: 1, 4)
-  - [ ] Create `src/app/App.tsx`, `src/app/routes.tsx`, and `src/app/styles.css`.
-  - [ ] Install and wire React Router in SPA/declarative mode for `/`, `/session/:roomCode/moderator`, and `/session/:roomCode`.
-  - [ ] Keep screens minimal but keyboard-readable and responsive enough to satisfy scaffold smoke tests.
-- [ ] Verify the scaffold end to end. (AC: 1-6)
-  - [ ] Run install, type-check, build, unit/component tests, and any configured Playwright smoke test.
-  - [ ] Start the production server from the compiled output and confirm `/health` returns success.
-  - [ ] Confirm a deep route such as `/session/ABC123` falls back to the React app instead of returning a server 404.
+- [x] Initialize the Vite React TypeScript app at the repository root without deleting existing BMad artifacts. (AC: 1)
+  - [x] Run `npm create vite@latest . -- --template react-ts` or the equivalent non-interactive flow from the Vite docs.
+  - [x] If the scaffold prompts because the directory is not empty, preserve `_bmad/`, `_bmad-output/`, `.agents/`, and `.git/`; do not choose an option that removes existing files.
+  - [x] Keep the generated Vite root files aligned with the architecture: `package.json`, `package-lock.json`, `tsconfig.json`, `tsconfig.node.json`, `vite.config.ts`, `index.html`, `public/`, and `src/`.
+- [x] Add the TypeScript Node server scaffold. (AC: 1, 2, 4, 6)
+  - [x] Create `server/index.ts`, `server/app.ts`, `server/http/health.ts`, `server/http/static-client.ts`, `server/socket/register-session-handlers.ts`, `server/config/env.ts`, `server/domain/`, and `server/security/`.
+  - [x] Use Express 5.x for HTTP concerns and Socket.IO 4.x on the same HTTP server.
+  - [x] Expose `/health` with a successful JSON response suitable for local and App Service health checks.
+  - [x] Read the listen port from `process.env.PORT`, falling back only for local development.
+  - [x] Serve the Vite production build from `dist` and provide a React Router SPA fallback for non-API, non-socket routes.
+- [x] Create shared contracts and schemas that compile for both client and server. (AC: 1, 5)
+  - [x] Create `src/shared/contracts/ack.ts`, `errors.ts`, `socket-events.ts`, and `snapshots.ts`.
+  - [x] Create `src/shared/domain/decks.ts` and `session-types.ts`.
+  - [x] Create `src/shared/schemas/command-schemas.ts` and `session-schemas.ts` with Zod 4 schemas.
+  - [x] Define a single shared acknowledgement shape: `{ ok: true, data }` or `{ ok: false, error: { code, message, details? } }`.
+  - [x] Define stable event constants or typed event maps for the architecture events, even if later stories fill in command behavior.
+  - [x] Configure imports so client and server consume these shared modules from one source of truth.
+- [x] Configure build, type-check, and runtime scripts for one deployable Node app. (AC: 4, 5, 6)
+  - [x] Add scripts such as `dev`, `dev:client`, `dev:server`, `build`, `build:client`, `build:server`, `start`, `typecheck`, and `test` using the repo's chosen tooling.
+  - [x] Compile the server to a Node-runnable output that can import shared contracts after build.
+  - [x] Set package/runtime metadata so local development satisfies Vite's Node requirement and Azure can use Node 24 LTS where available.
+  - [x] Add `.env.example` with non-secret local settings such as allowed local origins and an example `PORT`.
+- [x] Add test tooling and first scaffold tests. (AC: 2, 3, 5)
+  - [x] Configure Vitest for TypeScript unit tests and jsdom-based component tests.
+  - [x] Add React Testing Library and a `src/test/render.tsx` helper.
+  - [x] Add Playwright configuration under `playwright.config.ts` with tests located under `tests/e2e`.
+  - [x] Add at least one server health test, one shared schema/contract test, and one minimal React render/component smoke test.
+  - [x] Keep Playwright ready for future Moderator/Participant browser flows; do not implement full live-session e2e behavior in this story unless it is only a harmless smoke check.
+- [x] Add the initial app shell and route foundation without implementing later session behavior. (AC: 1, 4)
+  - [x] Create `src/app/App.tsx`, `src/app/routes.tsx`, and `src/app/styles.css`.
+  - [x] Install and wire React Router in SPA/declarative mode for `/`, `/session/:roomCode/moderator`, and `/session/:roomCode`.
+  - [x] Keep screens minimal but keyboard-readable and responsive enough to satisfy scaffold smoke tests.
+- [x] Verify the scaffold end to end. (AC: 1-6)
+  - [x] Run install, type-check, build, unit/component tests, and any configured Playwright smoke test.
+  - [x] Start the production server from the compiled output and confirm `/health` returns success.
+  - [x] Confirm a deep route such as `/session/ABC123` falls back to the React app instead of returning a server 404.
 
 ## Dev Notes
 
@@ -184,10 +188,88 @@ Later stories will fill in richer feature modules such as `CreateSessionView`, `
 
 ### Agent Model Used
 
-TBD by dev agent.
+GPT-5 Codex
 
 ### Debug Log References
 
+- `npm create vite@latest . -- --template react-ts` downloaded `create-vite@9.0.7`; root scaffold cancelled at the non-empty directory prompt.
+- `npm create vite@latest .vite-scaffold-temp -- --template react-ts --no-interactive` created the official Vite React TypeScript template in a temporary folder; files were copied into the repo root while preserving `_bmad/`, `_bmad-output/`, `.agents/`, and `.git/`; the temporary folder was removed.
+- `npm view react-router-dom version` returned `7.18.0`; package was pinned to the latest published stable version after npm reported `8.0.1` was not available.
+- `npm install` completed successfully and generated `package-lock.json`.
+- `npm run typecheck` passed.
+- `npm run test` passed: 3 test files, 5 tests.
+- `npm run build` passed: Vite client build and TypeScript server build completed.
+- `npm run lint` passed.
+- Compiled server smoke passed on local `PORT=3401`: `/health` returned `ok: true` with `healthy`, and `/session/ABC123` returned HTTP 200 with the React root HTML.
+
+### Implementation Plan
+
+- Use the Vite React TypeScript starter as the client baseline, then replace the generated demo with the ADR Buddy app shell and route placeholders required by the story.
+- Build a single deployable Node process: Express 5 for HTTP middleware, Socket.IO 4 on the same HTTP server, `/health`, static Vite asset serving, and SPA fallback.
+- Keep session behavior skeletal only; define typed contracts, schemas, event names, and module boundaries for later stories without implementing real live-session workflows.
+- Compile server and shared TypeScript into `server-dist` with NodeNext ESM so production `npm run start` can import the shared contracts from one source of truth.
+- Add scaffold tests at the minimum required layers: server health, shared contracts/schemas, and React render smoke.
+
 ### Completion Notes List
 
+- Created a Vite 8 React 19 TypeScript app foundation at the repository root without deleting BMad artifacts.
+- Added Express 5, Socket.IO 4, Helmet, CORS, and environment-driven server config with `process.env.PORT` support.
+- Added shared acknowledgement, error, socket event, snapshot, deck, session, and Zod schema modules under `src/shared`.
+- Added React Router declarative routes for `/`, `/session/:roomCode/moderator`, and `/session/:roomCode` with a minimal keyboard-readable app shell.
+- Added Vitest, React Testing Library, Playwright configuration, TypeScript project references, production build scripts, and production start script.
+- Verified typecheck, tests, build, lint, `/health`, and deep-route SPA fallback.
+- Note: the story's technical note referenced React Router `8.0.1`, but npm registry reported no matching `react-router-dom` version; the implementation uses the latest published `react-router-dom@7.18.0` while keeping the required declarative BrowserRouter setup.
+
 ### File List
+
+- `.env.example`
+- `.gitignore`
+- `README.md`
+- `eslint.config.js`
+- `index.html`
+- `package-lock.json`
+- `package.json`
+- `playwright.config.ts`
+- `public/favicon.svg`
+- `public/icons.svg`
+- `server/app.ts`
+- `server/config/env.ts`
+- `server/domain/index.ts`
+- `server/http/health.test.ts`
+- `server/http/health.ts`
+- `server/http/static-client.ts`
+- `server/index.ts`
+- `server/security/index.ts`
+- `server/socket/register-session-handlers.ts`
+- `src/app/App.test.tsx`
+- `src/app/App.tsx`
+- `src/app/routes.tsx`
+- `src/app/styles.css`
+- `src/assets/hero.png`
+- `src/assets/react.svg`
+- `src/assets/vite.svg`
+- `src/features/session/index.ts`
+- `src/main.tsx`
+- `src/shared/contracts/ack.ts`
+- `src/shared/contracts/errors.ts`
+- `src/shared/contracts/snapshots.ts`
+- `src/shared/contracts/socket-events.ts`
+- `src/shared/domain/decks.ts`
+- `src/shared/domain/session-types.ts`
+- `src/shared/schemas/command-schemas.test.ts`
+- `src/shared/schemas/command-schemas.ts`
+- `src/shared/schemas/session-schemas.ts`
+- `src/test/render.tsx`
+- `src/test/setup.ts`
+- `tests/e2e/.gitkeep`
+- `tsconfig.app.json`
+- `tsconfig.json`
+- `tsconfig.node.json`
+- `tsconfig.server.json`
+- `vite.config.ts`
+- `_bmad-output/implementation-artifacts/1-1-set-up-initial-project-from-starter-template.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+
+## Change Log
+
+- 2026-06-19: Implemented Story 1.1 initial Vite React TypeScript, Express/Socket.IO, shared contracts, tests, build scripts, and production smoke validation.
