@@ -25,22 +25,28 @@ documentsIncluded:
 
 ### PRD Files Found
 
-**Whole Documents:**
-- prd.md (17,984 bytes, modified 2026-06-16 19:12:54)
+**Whole Documents:** None
 
-**Sharded Documents:** None
+**Sharded Documents:**
+- Folder: `prds/prd-adr-buddy-2026-06-16/`
+  - `.decision-log.md` (1,762 bytes, modified 2026-06-16 19:12:55)
+  - `addendum.md` (1,123 bytes, modified 2026-06-16 18:57:19)
+  - `prd.md` (17,984 bytes, modified 2026-06-16 19:12:54)
+  - `reconcile-brief.md` (1,869 bytes, modified 2026-06-16 19:11:50)
+  - `review-rubric.md` (3,590 bytes, modified 2026-06-16 19:12:54)
+  - `source-extract-brief.md` (2,633 bytes, modified 2026-06-16 18:52:47)
 
 ### Architecture Files Found
 
 **Whole Documents:**
-- architecture.md (39,972 bytes, modified 2026-06-17 18:09:01)
+- `architecture.md` (39,972 bytes, modified 2026-06-17 18:09:01)
 
 **Sharded Documents:** None
 
 ### Epics & Stories Files Found
 
 **Whole Documents:**
-- epics.md (18,962 bytes, modified 2026-06-19 11:10:10)
+- `epics.md` (39,224 bytes, modified 2026-06-19 14:17:41)
 
 **Sharded Documents:** None
 
@@ -55,71 +61,76 @@ documentsIncluded:
 No duplicate whole/sharded document formats found.
 
 Warnings:
-- UX design document not found
+- UX design document not found.
+- PRD is organized in a folder without an `index.md`; assessment will use `prds/prd-adr-buddy-2026-06-16/prd.md` as the source PRD.
 
 ## Step 2: PRD Analysis
 
 ### Functional Requirements
 
-FR1: A Moderator can create a new Session and receive a Room Code. A new Session has no active Story until the Moderator adds one, exposes a Room Code for Participants, and treats the creator as Moderator.
+FR1: Create Session. A Moderator can create a new Session and receive a Room Code. A new Session has no active Story until the Moderator adds one, exposes a Room Code that Participants can use to join, and treats the creator as the Moderator for that Session.
 
-FR2: A Participant can join an existing Session by entering a valid Room Code and required Display Name. The system rejects missing Display Names and invalid or inactive Room Codes, allows duplicate Display Names with disambiguation such as `Maxi (2)`, and shows the joined Participant the current Story, Deck, Round state, and their own Vote state.
+FR2: Join Session. A Participant can join an existing Session by entering a valid Room Code and required Display Name. The system rejects missing Display Names and invalid or inactive Room Codes. If a Display Name is already present in the Session, the system allows the duplicate and disambiguates it for display, for example `Maxi (2)`. A joined Participant can see the current Story, Deck, Round state, and their own Vote state.
 
-FR3: The Session shows the Moderator which Participants are currently joined. Presence is limited to Display Names and voting status, so the Moderator can see who has joined and who has submitted a Vote during an active Round without seeing selected Cards.
+FR3: Show Participant Presence. The Session shows the Moderator which Participants are currently joined. Presence is limited to Display Names and voting status; v1 does not require full online/offline diagnostics. The Moderator can tell who has joined before starting a Round and who has submitted a Vote during an active Round without seeing the selected Card.
 
-FR4: The Moderator can enter or update the current Story identifier and brief description before or between Rounds. Participants can see the current Story, and the system blocks Story changes during an active Round until the Moderator resets or ends that Round.
+FR4: Set Current Story. The Moderator can enter or update the current Story identifier and brief description before or between Rounds. Participants can see the current Story identifier and description. Updating the current Story before a Round changes what Participants see. The system blocks Story changes during an active Round until the Moderator resets or ends that Round.
 
-FR5: The Moderator can select either the T-shirt Deck or Fibonacci Deck for the current Round. T-shirt Deck options are `XS`, `S`, `M`, `L`, and `XL`; Fibonacci Deck options are `1`, `2`, `3`, `5`, `8`, `13`, `21`, and `Coffee`; all users see the same Deck during a Round.
+FR5: Select Deck. The Moderator can select either the T-shirt Deck or Fibonacci Deck for the current Round. T-shirt Deck options are `XS`, `S`, `M`, `L`, and `XL`. Fibonacci Deck options are `1`, `2`, `3`, `5`, `8`, `13`, `21`, and `Coffee`. Participants and Moderator see the same Deck during a Round.
 
-FR6: Only the Moderator can start a Round for the current Story. Starting a Round clears prior unrecorded Votes for the current Story, allows Participants to submit Votes, and makes active Round state visible to all joined users.
+FR6: Start Round. Only the Moderator can start a Round for the current Story. Starting a Round clears prior unrecorded Votes for the current Story. Participants can submit Votes only after a Round has started. The system makes the active Round state visible to all joined users.
 
-FR7: The Moderator can reset the current Round or advance to the next Story after recording a Final Estimate. Resetting clears Votes and hides Results, advancing prepares the Session for a new Story, and prior Estimated Stories remain visible to the Moderator in the live Session list.
+FR7: Reset Or Advance Round. The Moderator can reset the current Round or advance to the next Story after recording a Final Estimate. Resetting a Round clears Votes and hides Results. Advancing prepares the Session for a new Story. Prior Estimated Stories remain visible to the Moderator in the live Session list.
 
-FR8: Participants cannot start Rounds, reveal Results, reset Rounds, advance Stories, or record Final Estimates. Participant controls are limited to joining, viewing Session state, and submitting or changing their own Vote while voting is open; unauthorized control attempts are rejected.
+FR8: Restrict Round Controls To Moderator. Participants cannot start Rounds, reveal Results, reset Rounds, advance Stories, or record Final Estimates. Participant controls are limited to joining, viewing Session state, and submitting or changing their own Vote while voting is open. Unauthorized control attempts are rejected.
 
-FR9: A Participant can select one Card from the active Deck as their Vote. A Participant can have only one active Vote per Round, can change their Vote before reveal, and their selected Card is not visible to other users before reveal.
+FR9: Submit Vote. A Participant can select one Card from the active Deck as their Vote. A Participant can have only one active Vote per Round, can change their Vote before reveal to recover from accidental misclicks without affecting fairness, and the selected Card is not visible to other users before reveal.
 
-FR10: The Moderator can submit one Vote in the same Round using the same active Deck. The Moderator Vote follows the same hidden-before-reveal rules as Participant Votes, and the Moderator can reveal Results whether or not they have voted.
+FR10: Moderator Vote. The Moderator can submit one Vote in the same Round using the same active Deck. The Moderator Vote follows the same hidden-before-reveal rules as Participant Votes. The Moderator can reveal Results whether or not they have voted.
 
-FR11: The system keeps selected Cards hidden until the Moderator reveals Results. Before reveal, users may see who has voted but not selected Cards, Results cannot be inferred from grouped counts before reveal, and refresh or reconnect behavior does not need to preserve hidden Votes beyond the live-session-only constraint.
+FR11: Preserve Vote Privacy Before Reveal. The system keeps selected Cards hidden until the Moderator reveals Results. Before reveal, users may see who has voted but not what each user selected. Results cannot be inferred from grouped counts before reveal. Refresh or reconnect behavior does not need to preserve a hidden Vote beyond the live-session-only constraint.
 
-FR12: Only the Moderator can reveal Results for the active Round. Revealing Results makes submitted Vote Cards visible to the Session, distinguishes Participants who did not vote by Display Name, and blocks new or changed Votes unless the Moderator resets the Round.
+FR12: Reveal Results. Only the Moderator can reveal Results for the active Round. Revealing Results makes submitted Vote Cards visible to the Session. Participants who did not vote are distinguishable by Display Name from users who submitted a Card. After reveal, new or changed Votes are blocked unless the Moderator resets the Round.
 
-FR13: The Results view groups or orders selected Cards by number of Votes. The most common selected Cards are easiest to identify, outlier selections remain visible, and the view supports both T-shirt and Fibonacci Decks including `Coffee`.
+FR13: Group Results By Vote Count. The Results view groups or orders selected Cards by number of Votes. The most common selected Cards are easiest to identify. Outlier selections remain visible. The view supports both T-shirt and Fibonacci Decks, including `Coffee`.
 
-FR14: The Moderator can select a Final Estimate from the active Deck after Results are revealed. The Moderator cannot enter a custom Final Estimate, the value must be one of the active Deck Cards, and recording it adds or updates the Story in the Estimated Stories list.
+FR14: Record Final Estimate. The Moderator can select a Final Estimate from the active Deck after Results are revealed. The Moderator cannot enter a custom Final Estimate. The Final Estimate must be one of the active Deck Cards. Recording a Final Estimate adds or updates the Story in the Estimated Stories list.
 
-FR15: The Session shows a live list of Estimated Stories during the active meeting. Each Estimated Story includes Story identifier, brief description, Deck, and Final Estimate; the list is Moderator-only and does not need to survive browser refresh or later reopening.
+FR15: Show Estimated Stories List. The Session shows a live list of Estimated Stories during the active meeting. Each Estimated Story includes Story identifier, brief description, Deck, and Final Estimate. The list is visible to the Moderator only. The list does not need to survive browser refresh or later reopening.
 
 Total FRs: 15
 
 ### Non-Functional Requirements
 
-NFR1: Joining and voting must require minimal input: Room Code, Display Name, and Card selection.
+NFR1: Low friction. Joining and voting must require minimal input: Room Code, Display Name, and Card selection.
 
-NFR2: Session state changes must appear promptly across Moderator and Participant views during a live meeting. Near-real-time browser updates are required, but no formal latency SLA is needed for v1.
+NFR2: Real-time coherence. Session state changes must appear promptly across Moderator and Participant views during a live meeting. Near-real-time browser updates are required, but no formal latency SLA is needed for v1.
 
-NFR3: Core controls and Cards must be usable with keyboard navigation and readable text labels.
+NFR3: Accessibility. Core controls and Cards must be usable with keyboard navigation and readable text labels.
 
-NFR4: The app must support common desktop and mobile browser widths because Participants may join from laptops or phones.
+NFR4: Responsive web. The app must support common desktop and mobile browser widths because Participants may join from laptops or phones.
 
-NFR5: Hidden Votes must not be displayed or exposed in normal UI before reveal.
+NFR5: Privacy by behavior. Hidden Votes must not be displayed or exposed in normal UI before reveal.
 
-NFR6: v1 only needs live Session state; no durable storage is required for Session history, user identity, or analytics.
+NFR6: Session-local persistence. v1 only needs live Session state; no durable storage is required for Session history, user identity, or analytics.
 
 Total NFRs: 6
 
 ### Additional Requirements
 
-- v1 is intentionally limited to one internal agile team's lightweight Planning Poker workflow.
-- MVP scope includes live Session creation, Room Code join, Moderator and Participant access, Story setup, two predefined Decks, hidden voting, reveal, Final Estimate capture, live Estimated Stories list, and responsive browser usage.
-- MVP excludes persistent Sessions or durable history after refresh, authentication and user accounts, backlog integrations, custom Deck creation, multi-session dashboards, team administration, analytics, reports, exports, velocity calculations, built-in chat, async discussion, summaries, and AI facilitation.
+- v1 is intentionally limited to a lightweight internal Planning Poker web application for one agile team.
+- The core workflow is Moderator creates or manages a Session, Participants join by Room Code, Moderator sets active Story and starts a Round, everyone votes privately, Moderator reveals Results, the team discusses, Moderator records Final Estimate, and the Session advances to the next Story.
+- MVP scope includes live Session creation, Room Code join, Moderator and Participant access, current Story setup, T-shirt and Fibonacci Decks, Moderator-only round controls, hidden voting, reveal, grouped or ordered results, Final Estimate capture from the active Deck, live Moderator-only Estimated Stories list, and responsive browser usage.
+- MVP explicitly excludes backlog integrations, custom Deck creation, multi-session dashboards, team administration, analytics, reports, exports, velocity calculations, built-in chat, async discussion, meeting summaries, AI facilitation, authentication, account management, durable saved Sessions, and durable history after refresh.
+- Deferred ideas include custom Decks, card themes/images, reusable Sessions, durable Session history, export, backlog integrations, meeting summaries, and multi-team administration.
 - Room Code access without authentication is accepted for v1 under internal trust assumptions.
-- No open questions currently block UX, architecture, or story creation.
+- Duplicate Display Names are allowed and disambiguated with a numeric suffix.
+- Moderator voting is optional; the Moderator can reveal Results without voting.
+- No open PRD questions currently block UX, architecture, story creation, or implementation planning.
 
 ### PRD Completeness Assessment
 
-PRD readiness is strong for functional and non-functional requirement extraction. The PRD contains stable FR and NFR identifiers, clear MVP scope, non-goals, success metrics, risks, and no blocking open questions.
+The PRD is complete enough for downstream validation. It has a clear MVP thesis, stable FR and NFR identifiers, actor boundaries, scope exclusions, success metrics, and a decision log resolving prior assumptions. The support files reinforce the same scope and do not introduce unresolved blocking requirements.
 
 ## Step 3: Epic Coverage Validation
 
@@ -162,20 +173,20 @@ Total FRs in epics: 15
 | FR Number | PRD Requirement | Epic Coverage | Status |
 | --------- | --------------- | ------------- | ------ |
 | FR1 | Create a new Session and receive a Room Code. | Epic 1 - Create Session | Covered |
-| FR2 | Join an existing Session with Room Code and required Display Name. | Epic 1 - Join Session | Covered |
-| FR3 | Show Moderator which Participants are currently joined. | Epic 1 - Show Participant Presence | Covered |
-| FR4 | Enter or update current Story identifier and brief description. | Epic 2 - Set Current Story | Covered |
-| FR5 | Select either T-shirt Deck or Fibonacci Deck. | Epic 2 - Select Deck | Covered |
-| FR6 | Only Moderator can start a Round for the current Story. | Epic 2 - Start Round | Covered |
-| FR7 | Reset current Round or advance to next Story after Final Estimate. | Epic 3 - Reset Or Advance Round | Covered |
+| FR2 | Join an existing Session with valid Room Code and required Display Name. | Epic 1 - Join Session | Covered |
+| FR3 | Show Moderator which Participants are currently joined and voting status. | Epic 1 - Show Participant Presence | Covered |
+| FR4 | Let Moderator enter or update current Story before or between Rounds. | Epic 2 - Set Current Story | Covered |
+| FR5 | Let Moderator select T-shirt or Fibonacci Deck for current Round. | Epic 2 - Select Deck | Covered |
+| FR6 | Let only Moderator start a Round for the current Story. | Epic 2 - Start Round | Covered |
+| FR7 | Let Moderator reset current Round or advance after Final Estimate. | Epic 3 - Reset Or Advance Round | Covered |
 | FR8 | Restrict start, reveal, reset, advance, and estimate controls to Moderator. | Epic 2 - Restrict Round Controls To Moderator | Covered |
-| FR9 | Participant can select one Card from active Deck as their Vote. | Epic 2 - Submit Vote | Covered |
-| FR10 | Moderator can submit one Vote in the same Round. | Epic 2 - Moderator Vote | Covered |
+| FR9 | Let Participant select one Card and change Vote before reveal. | Epic 2 - Submit Vote | Covered |
+| FR10 | Let Moderator optionally submit one Vote using active Deck. | Epic 2 - Moderator Vote | Covered |
 | FR11 | Keep selected Cards hidden until Moderator reveals Results. | Epic 2 - Preserve Vote Privacy Before Reveal | Covered |
-| FR12 | Only Moderator can reveal Results for active Round. | Epic 3 - Reveal Results | Covered |
+| FR12 | Let only Moderator reveal Results for the active Round. | Epic 3 - Reveal Results | Covered |
 | FR13 | Group or order selected Cards by number of Votes. | Epic 3 - Group Results By Vote Count | Covered |
-| FR14 | Select a Final Estimate from the active Deck after Results are revealed. | Epic 3 - Record Final Estimate | Covered |
-| FR15 | Show a live Moderator-only list of Estimated Stories. | Epic 3 - Show Estimated Stories List | Covered |
+| FR14 | Let Moderator record Final Estimate from active Deck after reveal. | Epic 3 - Record Final Estimate | Covered |
+| FR15 | Show Moderator-only live Estimated Stories list. | Epic 3 - Show Estimated Stories List | Covered |
 
 ### Missing Requirements
 
@@ -197,81 +208,94 @@ Not found. No standalone whole UX document or sharded UX folder with `index.md` 
 
 ### Alignment Issues
 
-- The product is explicitly user-facing: the PRD describes Moderator and Participant browser journeys, views, controls, Cards, reveal behavior, and responsive usage.
-- Architecture supports the implied UX through React, React Router routes, Socket.IO snapshot-driven UI state, keyboard-accessible controls, responsive Card and Results UI, readable labels, disabled states, status text, color-independent result grouping, React Testing Library, and Playwright browser flows.
-- Epics include UI-facing acceptance criteria for entry/join views, Moderator and Participant session views, readable errors, token storage, hidden-vote privacy, and Moderator-only data visibility.
-
 No direct PRD-to-architecture UX support gap was found in the available documents.
+
+The product is explicitly user-facing: the PRD describes Moderator and Participant browser journeys, entry and join flows, Session views, Card selection, hidden-vote feedback, reveal behavior, grouped Results, Moderator controls, responsive browser usage, and keyboard-accessible/readable controls.
+
+The architecture supports the implied UX through:
+
+- Vite React TypeScript SPA with React Router routes for `/`, `/session/:roomCode/moderator`, and `/session/:roomCode`.
+- Dedicated frontend feature areas for session views, card controls, and result display.
+- Server-snapshot-driven UI state through `useSessionSocket`, reducing divergence between Moderator and Participant views.
+- CSS Modules and CSS custom properties for v1 styling.
+- Accessibility standards requiring real buttons or radio-style Card controls, readable labels, disabled states, status text, color-independent Results, and keyboard navigation.
+- Testing expectations using React Testing Library and Playwright browser flows across Moderator and Participant contexts.
 
 ### Warnings
 
-- UX is implied and important, but no dedicated UX document exists. Implementation may still be ready if stories and architecture are treated as the UI source of truth, but there is no separate screen-level interaction, layout, or visual design artifact to validate.
+- UX is implied and important, but no dedicated UX design document exists. Implementation can proceed using PRD, architecture, and story acceptance criteria as the UI source of truth, but there is no separate screen-level interaction, layout, visual hierarchy, or design-system artifact to validate.
+- Because no formal UX artifact exists, implementation stories should be treated as the controlling UX specification for controls, responsive behavior, readable states, keyboard navigation, and hidden-vote visibility.
 
 ## Step 5: Epic Quality Review
 
 ### Critical Violations
 
-1. Epic 2 and Epic 3 have no detailed story breakdowns.
+1. Story 1.4 has a forward dependency on Epic 2 voting behavior.
 
-   Evidence: `epics.md` lists Epic 2 and Epic 3 in the Epic List and FR Coverage Map, but detailed story sections only exist for Epic 1: Story 1.1 through Story 1.4. There are no implementable stories or acceptance criteria for FR4-FR15.
+Evidence: Story 1.4 includes an acceptance criterion: "Given a Round is active and Participants submit Votes ... the presence list shows which Participants have submitted a Vote." Active Rounds and Vote submission are introduced later in Epic 2, especially Story 2.2 and Story 2.3.
 
-   Impact: The project is not implementation-ready beyond live session access. Hidden voting, round control, reveal, results grouping, final estimate capture, and estimated story history cannot be handed to implementation with adequate story-level guidance.
+Impact: Epic 1 cannot fully stand alone as delivered user value if Story 1.4 requires later Epic 2 behavior to verify one of its acceptance criteria. This violates the rule that Epic 1 must be independently completable.
 
-   Recommendation: Complete story decomposition for Epic 2 and Epic 3 before Phase 4 implementation starts.
+Recommendation: Split Story 1.4. Keep joined participant display in Epic 1, and move active-round voting-status behavior to Epic 2 where Round start and Vote submission exist. Alternately, limit Story 1.4 to rendering a future-safe `hasVoted: false` field and make real vote-status updates an Epic 2 acceptance criterion.
 
-2. FR coverage is mapped at epic level but not traceable to complete stories for FR4-FR15.
+2. Story 2.4 has a forward dependency on Epic 3 reveal behavior.
 
-   Evidence: FR4-FR15 are assigned to Epic 2 or Epic 3 in the coverage map, but no corresponding Story 2.x or Story 3.x sections exist.
+Evidence: Story 2.4 includes: "Given the Moderator has not voted / When the Moderator reveals Results in a later story / Then the system allows the reveal." Reveal Results is Story 3.1, which belongs to the next epic.
 
-   Impact: Epic-level coverage gives a false sense of readiness. Implementation agents would need to infer feature behavior directly from PRD and architecture instead of executing story-sized work.
+Impact: Story 2.4 cannot be completed and verified independently inside Epic 2 without depending on Epic 3. This also weakens the acceptance boundary for optional Moderator voting.
 
-   Recommendation: Add story-level traceability for each FR, including Given/When/Then acceptance criteria and explicit dependencies.
+Recommendation: Move the "Moderator can reveal without voting" criterion into Story 3.1. Keep Story 2.4 focused on optional Moderator vote submission, replacement before reveal, and hidden-before-reveal privacy.
 
 ### Major Issues
 
-1. The epics document appears incomplete.
+1. Story 3.4 leaves Deck behavior after advance undefined.
 
-   Evidence: The frontmatter shows `stepsCompleted: 1, 2`, and the file ends immediately after Story 1.4. That suggests the epic/story workflow did not finish the full decomposition.
+Evidence: Story 3.4 says the selected Deck behavior follows "the implementation's documented default or retained-deck rule."
 
-   Impact: The document should not be treated as a final implementation backlog.
+Impact: This acceptance criterion is not independently testable because either retaining or clearing the Deck could pass. It delegates a product behavior decision to implementation.
 
-   Recommendation: Resume or rerun epic/story creation and regenerate the missing detailed sections.
+Recommendation: Decide the rule in the story: either retain the selected Deck when advancing to the next Story or reset to a documented default. Update PRD or architecture if the decision has broader product impact.
 
-2. Non-functional and architecture requirements are not fully traced to story acceptance criteria.
+2. Architecture setup requirements are not fully reflected in Story 1.1 acceptance criteria.
 
-   Evidence: The Requirements Inventory includes security, token storage, CORS, rate limiting, sanitized snapshots, accessibility, responsive behavior, testing, Azure deployment, monitoring, CI/CD, and project structure requirements. Some are covered in Story 1.1 and Epic 1 stories, but many lack complete story-level AC because Epic 2 and Epic 3 are missing.
+Evidence: The epics inventory and architecture both say the first implementation story must add Azure App Service startup scripts. Architecture validation also calls out TypeScript path aliases or package/build settings for shared contracts. Story 1.1 includes Vite, Node/Socket.IO scaffold, shared contract folders, tests, `process.env.PORT`, static serving, and SPA fallback, but it does not explicitly require Azure startup scripts or shared import/build configuration.
 
-   Impact: Important cross-cutting work may be missed or deferred accidentally.
+Impact: Implementation agents could satisfy Story 1.1 while missing deployment startup and shared-contract importability, both of which are architecture handoff requirements.
 
-   Recommendation: Add NFR/architecture traceability checks after Epic 2 and Epic 3 stories are completed.
+Recommendation: Add Story 1.1 acceptance criteria for Azure App Service build/start scripts and TypeScript path aliases or package/build settings for client/server shared contract imports.
+
+3. CI/CD and monitoring requirements exist in the inventory but are not traced to a concrete story.
+
+Evidence: The requirements inventory includes GitHub Actions CI/CD, Azure App Settings, Application Insights, and App Service log streaming. No story acceptance criteria directly cover CI/CD workflow creation or production observability setup.
+
+Impact: Operational readiness work may be missed because it is listed as an additional requirement but not attached to implementable story work.
+
+Recommendation: Add a small implementation story, likely late Epic 1 or a dedicated operational-readiness story, covering GitHub Actions build/test workflow, Azure deployment script expectations, App Settings documentation, Application Insights, and log streaming.
 
 ### Minor Concerns
 
-1. Story 1.1 is broad but acceptable for this greenfield project.
+1. Story 2.1 combines Story setup and Deck selection.
 
-   Evidence: Architecture explicitly requires the first implementation story to initialize the Vite React TypeScript app, add Node/Express/Socket.IO, shared contracts, tests, and Azure startup scripts. Story 1.1 covers these areas.
+Evidence: Story 2.1 covers current Story identifier/description, T-shirt Deck, Fibonacci Deck, locked updates during active Round, and unauthorized Participant attempts.
 
-   Recommendation: Keep Story 1.1 as the foundation story, but preserve its acceptance criteria during implementation to avoid dropping setup pieces.
+Impact: The story is still implementable, but it is one of the denser stories in the backlog.
 
-2. Story 1.4 contains one broad phrase: "allowed Session state."
-
-   Impact: Without field-level precision, Participant snapshots may accidentally expose Moderator-only or hidden-vote data.
-
-   Recommendation: Replace or supplement that phrase with explicit allowed fields from the architecture snapshot contract.
+Recommendation: Keep as-is if implementation capacity is comfortable, or split into "Set Current Story" and "Select Deck" if the team wants smaller reviewable increments.
 
 ### Best Practices Compliance Checklist
 
 | Area | Assessment |
 | ---- | ---------- |
-| Epic 1 user value | Pass. Live Session Access lets Moderator create a session and Participants join. |
-| Epic 2 user value | Pass at epic level, but fails implementation readiness because detailed stories are missing. |
-| Epic 3 user value | Pass at epic level, but fails implementation readiness because detailed stories are missing. |
-| Epic independence | Pass at epic summary level: Epic 2 builds on Epic 1; Epic 3 builds on Epic 1 and 2. |
-| Story sizing | Partial. Epic 1 stories are mostly appropriately sized; Epic 2 and 3 cannot be assessed. |
-| No forward dependencies | No explicit forward dependencies found in Epic 1; Epic 2 and 3 cannot be assessed. |
-| Acceptance criteria quality | Partial. Epic 1 ACs are mostly testable Given/When/Then criteria; Epic 2 and 3 ACs are absent. |
-| Starter template requirement | Pass. Story 1.1 aligns with the architecture-selected Vite React TypeScript plus custom Node/Socket.IO foundation. |
+| Epic 1 user value | Pass, with one independence defect in Story 1.4. Live Session Access is user-facing, but voting-status AC depends on Epic 2. |
+| Epic 2 user value | Pass, with one independence defect in Story 2.4. Hidden Voting Round is user-facing, but optional reveal behavior depends on Epic 3. |
+| Epic 3 user value | Pass. Reveal Results and Capture Estimates delivers clear user value. |
+| Epic independence | Partial. Epic 1 and Epic 2 contain forward-dependent acceptance criteria. |
+| Story sizing | Mostly pass. Story 2.1 is dense but still implementable. |
+| No forward dependencies | Fail. Story 1.4 and Story 2.4 have forward dependencies. |
+| Acceptance criteria quality | Mostly pass. Criteria are generally Given/When/Then and testable, except Story 3.4's undefined Deck behavior. |
+| Starter template requirement | Partial. Story 1.1 exists and covers the starter foundation, but misses explicit Azure startup scripts and shared import/build configuration. |
 | Database/entity timing | Not applicable. MVP uses in-memory Session state and no durable database. |
+| Operational readiness traceability | Partial. CI/CD and monitoring are in the inventory but not story-level acceptance criteria. |
 
 ## Summary and Recommendations
 
@@ -279,50 +303,54 @@ No direct PRD-to-architecture UX support gap was found in the available document
 
 NOT READY
 
-The project should not proceed to full Phase 4 implementation yet. The PRD and architecture are strong enough to support implementation planning, and epic-level FR coverage is complete, but the implementation backlog is incomplete because Epic 2 and Epic 3 do not have story-level breakdowns or acceptance criteria.
+The project should not proceed to full Phase 4 implementation yet. The planning foundation is close: PRD extraction is complete, architecture is strong, and all 15 PRD functional requirements are now mapped into epics and stories. However, the backlog still contains critical forward dependencies and several story-level acceptance criteria gaps that can cause implementation agents to either block, infer behavior, or implement architectural requirements inconsistently.
 
 ### Critical Issues Requiring Immediate Action
 
-1. Complete detailed story decomposition for Epic 2: Hidden Voting Round.
+1. Fix Story 1.4's forward dependency on Epic 2 voting.
 
-   Required coverage: FR4, FR5, FR6, FR8, FR9, FR10, and FR11.
+Move active-round vote-status behavior out of Epic 1 and into Epic 2, or limit Story 1.4 to participant presence that can be verified before voting exists.
 
-2. Complete detailed story decomposition for Epic 3: Reveal Results And Capture Estimates.
+2. Fix Story 2.4's forward dependency on Epic 3 reveal.
 
-   Required coverage: FR7, FR12, FR13, FR14, and FR15.
+Move the "Moderator can reveal without voting" acceptance criterion into Story 3.1, where reveal behavior is actually implemented.
 
-3. Add story-level traceability from every PRD FR, NFR, and architecture requirement to acceptance criteria.
+3. Make Story 3.4's Deck behavior after advance explicit.
 
-   Epic-level mapping is not enough for implementation readiness.
+Choose whether the Deck is retained or reset when advancing to the next Story. Do not leave the behavior to implementation discretion.
 
-4. Decide whether a lightweight UX artifact is needed.
+4. Add missing architecture handoff acceptance criteria to Story 1.1.
 
-   The documents contain enough UI constraints to proceed once stories are complete, but there is no dedicated UX design source for screen-level interaction or layout validation.
+Explicitly require Azure App Service build/start scripts and shared contract import/build configuration.
+
+5. Add story-level coverage for operational requirements.
+
+Create or update a story to cover GitHub Actions CI/CD, Azure App Settings, Application Insights, and App Service log streaming.
 
 ### Recommended Next Steps
 
-1. Resume or rerun the epics-and-stories workflow to finish Epic 2 and Epic 3.
+1. Revise `epics.md` to remove the two forward-dependent acceptance criteria.
 
-2. Add Story 2.x and Story 3.x sections with user-story format, Given/When/Then acceptance criteria, dependency notes, and FR/NFR traceability.
+2. Add or update acceptance criteria for Azure startup scripts, shared contract importability, CI/CD, monitoring, and the advance-to-next-story Deck rule.
 
-3. Add explicit acceptance criteria for hidden-vote privacy, sanitized snapshots, Moderator-only data, token authorization, disabled/invalid controls, accessibility, responsive behavior, and result grouping.
+3. Re-run implementation readiness after those story edits are complete.
 
-4. Tighten Story 1.4 by replacing "allowed Session state" with explicit Participant snapshot fields from the architecture.
+4. Treat PRD, architecture, and story acceptance criteria as the UX source of truth unless a lightweight UX artifact is created.
 
-5. Rerun implementation readiness after the epics document is complete.
+5. Keep Story 2.1 as-is if the team accepts its size, or split it into separate Story setup and Deck selection stories for a cleaner implementation sequence.
 
 ### Issue Count
 
 This assessment identified 7 issues across 4 categories:
 
-- 2 critical epic/story completeness defects
-- 2 major traceability and artifact-completion issues
-- 2 minor story-quality concerns
+- 2 critical forward-dependency defects
+- 3 major story or traceability defects
+- 1 minor story-sizing concern
 - 1 UX documentation warning
 
 ### Final Note
 
-The planning foundation is close, but the handoff would currently force implementation agents to infer most of the product from PRD and architecture instead of executing complete stories. Address the missing Epic 2 and Epic 3 story breakdowns before starting implementation.
+The updated `epics.md` is much closer than the prior readiness baseline: Epic 2 and Epic 3 now have detailed stories, and FR coverage is complete. The remaining problems are surgical but important. Address the forward dependencies and missing acceptance criteria before implementation so downstream agents can execute stories without guessing.
 
 **Assessor:** Codex using `bmad-check-implementation-readiness`
 **Assessment Date:** 2026-06-19
