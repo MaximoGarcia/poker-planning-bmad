@@ -4,7 +4,7 @@ baseline_commit: c86953d158c6c823ec8a4421129817189ef5a1ef
 
 # Story 1.1: Set Up Initial Project From Starter Template
 
-Status: review
+Status: done
 
 Completion Note: Ultimate context engine analysis completed - comprehensive developer guide created.
 
@@ -61,6 +61,14 @@ so that live session creation and joining can be built on a consistent client, s
   - [x] Run install, type-check, build, unit/component tests, and any configured Playwright smoke test.
   - [x] Start the production server from the compiled output and confirm `/health` returns success.
   - [x] Confirm a deep route such as `/session/ABC123` falls back to the React app instead of returning a server 404.
+
+### Review Findings
+
+- [x] [Review][Patch] Production CORS falls back to localhost origins [server/config/env.ts:29]
+- [x] [Review][Patch] Helmet CSP protection is disabled [server/app.ts:12]
+- [x] [Review][Patch] SPA fallback returns app HTML for missing asset requests with broad Accept headers [server/http/static-client.ts:14]
+- [x] [Review][Patch] Playwright web server assumes prebuilt `dist` and `server-dist` artifacts [playwright.config.ts:18]
+- [x] [Review][Patch] Node engine metadata blocks supported Vite runtime alternatives [package.json:6]
 
 ## Dev Notes
 

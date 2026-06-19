@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+import { dirname, extname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import express, { Router } from 'express'
 import { createFailureAck } from '../../src/shared/contracts/ack.js'
@@ -12,6 +12,11 @@ export function createStaticClientMiddleware(distPath = resolveClientDistPath())
   router.use(express.static(distPath, { index: false }))
 
   router.get(/^\/(?!api(?:\/|$)|socket\.io(?:\/|$)).*/, (request, response, next) => {
+    if (extname(request.path)) {
+      next()
+      return
+    }
+
     if (!request.accepts('html')) {
       next()
       return

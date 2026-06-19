@@ -9,7 +9,7 @@ export function createApp(config: ServerConfig = loadEnv()) {
   const app = express()
 
   app.disable('x-powered-by')
-  app.use(helmet({ contentSecurityPolicy: false }))
+  app.use(helmet())
   app.use(
     cors({
       origin: createCorsOrigin(config.allowedOrigins),

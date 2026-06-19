@@ -7,10 +7,12 @@ export interface ServerConfig {
 const LOCAL_ORIGINS = ['http://localhost:5173', 'http://127.0.0.1:5173']
 
 export function loadEnv(env: NodeJS.ProcessEnv = process.env): ServerConfig {
+  const nodeEnv = env.NODE_ENV ?? 'development'
+
   return {
     port: parsePort(env.PORT),
-    allowedOrigins: parseAllowedOrigins(env.ALLOWED_ORIGINS),
-    nodeEnv: env.NODE_ENV ?? 'development',
+    allowedOrigins: parseAllowedOrigins(env.ALLOWED_ORIGINS, nodeEnv),
+    nodeEnv,
   }
 }
 
@@ -27,12 +29,20 @@ function parsePort(value: string | undefined): number {
   return port
 }
 
-function parseAllowedOrigins(value: string | undefined): string[] {
+function parseAllowedOrigins(value: string | undefined, nodeEnv: string): string[] {
   const configuredOrigins =
     value
       ?.split(',')
       .map((origin) => origin.trim())
       .filter(Boolean) ?? []
 
-  return configuredOrigins.length > 0 ? configuredOrigins : LOCAL_ORIGINS
+  if (configuredOrigins.length > 0) {
+    return configuredOrigins
+  }
+
+  if (nodeEnv === 'production') {
+    throw new Error('ALLOWED_ORIGINS must be set in production')
+  }
+
+  return LOCAL_ORIGINS
 }
