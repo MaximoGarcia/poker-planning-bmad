@@ -1,4 +1,6 @@
 export const ERROR_CODES = {
+  validationFailed: 'VALIDATION_FAILED',
+  rateLimited: 'RATE_LIMITED',
   invalidRoomCode: 'INVALID_ROOM_CODE',
   unauthorized: 'UNAUTHORIZED',
   roundNotActive: 'ROUND_NOT_ACTIVE',

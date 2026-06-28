@@ -7,10 +7,7 @@ describe('App', () => {
     render(<App />)
 
     expect(screen.getByRole('heading', { name: 'ADR Buddy' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Moderator room' })).toHaveAttribute(
-      'href',
-      '/session/ABC123/moderator',
-    )
-    expect(screen.getByText('Fibonacci')).toBeInTheDocument()
+    expect(screen.getByLabelText('Moderator name')).toHaveValue('Moderator')
+    expect(screen.getByRole('button', { name: 'Create session' })).toBeInTheDocument()
   })
 })

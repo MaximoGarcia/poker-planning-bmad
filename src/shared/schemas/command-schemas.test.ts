@@ -16,6 +16,11 @@ describe('shared contracts and schemas', () => {
     })
   })
 
+  it('exports stable create-session error codes', () => {
+    expect(ERROR_CODES.validationFailed).toBe('VALIDATION_FAILED')
+    expect(ERROR_CODES.rateLimited).toBe('RATE_LIMITED')
+  })
+
   it('exports stable session event names', () => {
     expect(CLIENT_EVENTS.sessionCreate).toBe('session:create')
     expect(CLIENT_EVENTS.voteSubmit).toBe('vote:submit')

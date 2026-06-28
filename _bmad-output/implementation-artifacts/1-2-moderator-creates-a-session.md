@@ -4,7 +4,7 @@ baseline_commit: 4eea0eaac156f50ea45042df3fbc80c931cc0197
 
 # Story 1.2: Moderator Creates A Session
 
-Status: ready-for-dev
+Status: review
 
 Completion Note: Ultimate context engine analysis completed - comprehensive developer guide created.
 
@@ -24,52 +24,52 @@ so that I can invite the team into a shared estimation room quickly.
 
 ## Tasks / Subtasks
 
-- [ ] Add real session creation domain logic behind the existing scaffold. (AC: 1, 2, 3, 5)
-  - [ ] Create `server/domain/session-store.ts` with an in-memory `SessionStore` abstraction keyed by Room Code.
-  - [ ] Create `server/domain/room-code.ts` to generate unique Room Codes that satisfy `RoomCodeSchema` (`^[A-Z0-9]{4,12}$`).
-  - [ ] Create `server/domain/session-commands.ts` or equivalent pure command module for `createSession`.
-  - [ ] Model a new Session with default deck, `story: null`, inactive/unrevealed Round state, one Moderator participant, no Votes, no Estimated Stories, and an ISO `updatedAt`.
-  - [ ] Ensure token values are internal to server state or returned only in the create acknowledgement; they must not appear in `SessionSnapshot`.
-- [ ] Add capability-token and rate-limit support for create Session. (AC: 2, 4, 5)
-  - [ ] Create `server/security/capability-tokens.ts` using Node crypto APIs for unguessable Moderator tokens.
-  - [ ] Create `server/security/rate-limit.ts` or equivalent lightweight per-socket limiter for `session:create` bursts.
-  - [ ] Add stable error codes such as `VALIDATION_FAILED` and `RATE_LIMITED` to `src/shared/contracts/errors.ts`.
-  - [ ] Do not log capability tokens, command payloads containing tokens, or future hidden Vote values.
-- [ ] Update shared contracts and schemas for event-specific acknowledgements. (AC: 1, 2, 4, 5)
-  - [ ] Update `src/shared/contracts/socket-events.ts` so `session:create` acknowledges a create result, not only a `SessionSnapshot`.
-  - [ ] Define a shared `CreateSessionResult` contract containing at least `roomCode`, `moderatorToken`, and `snapshot`.
-  - [ ] Keep `session:snapshot` payloads token-free and usable by the Moderator view.
-  - [ ] Keep Zod validation in `src/shared/schemas/command-schemas.ts`; reconcile the existing `moderatorName` field with low-friction create flow by either providing a clear required field or a deliberate default.
-- [ ] Implement the Socket.IO `session:create` command handler. (AC: 1, 2, 4, 5)
-  - [ ] Update `server/socket/register-session-handlers.ts` to validate with `CreateSessionCommandSchema.safeParse`.
-  - [ ] On validation or rate-limit failure, call the acknowledgement callback with `{ ok: false, error }` and do not create local client Session state.
-  - [ ] On success, call the domain command, `socket.join(roomCode)`, attach non-sensitive identity metadata to `socket.data`, acknowledge with the Room Code, Moderator token, and snapshot, then emit `session:snapshot` to the Moderator socket.
-  - [ ] Keep the handler thin: validation, rate limit, domain call, room join, acknowledgement, snapshot emission.
-- [ ] Replace the scaffold entry route with a usable create-session workflow. (AC: 1, 2, 3, 4)
-  - [ ] Add `socket.io-client` as a dependency and use the existing shared event types; do not add `@types/socket.io-client`.
-  - [ ] Create `src/features/session/CreateSessionView.tsx` and replace the sample route links on `/`.
-  - [ ] Create a small `useSessionSocket` hook or session client module that owns connection state, emits `session:create`, handles acknowledgement results, and receives `session:snapshot`.
-  - [ ] Store the returned Moderator token with `sessionStorage` using a scoped key such as `adr-buddy:moderator-token:<roomCode>`.
-  - [ ] Never write the Moderator token to `localStorage`, route params, query strings, visible text, logs, or snapshots.
-  - [ ] Navigate to `/session/:roomCode/moderator` only after a successful acknowledgement.
-- [ ] Build the Moderator session landing state. (AC: 2, 3, 5)
-  - [ ] Add `src/features/session/ModeratorSessionView.tsx` and route `/session/:roomCode/moderator` to it.
-  - [ ] Show the Room Code in readable text with a copy-friendly affordance if practical.
-  - [ ] Show an empty state that no active Story exists yet; do not add Story editing, Deck selection, voting, reveal, results, or join behavior in this story.
-  - [ ] Render from the returned or latest server snapshot where available; do not invent durable refresh/reconnect recovery.
-  - [ ] If a Moderator route is opened without a stored token or snapshot, show a clear waiting/missing-session state instead of fabricating a Session.
-- [ ] Add focused automated coverage. (AC: 1-5)
-  - [ ] Add unit tests for Room Code format/uniqueness behavior, token generation shape, and the `createSession` domain command.
-  - [ ] Add contract/schema tests proving create acknowledgement includes the token while snapshots do not.
-  - [ ] Add socket integration coverage for `session:create` success, validation failure, rate-limit failure if deterministic, acknowledgement shape, and `session:snapshot` emission.
-  - [ ] Add React Testing Library tests for create-session success, error display, sessionStorage token write, and no `localStorage` write.
-  - [ ] Add or update Playwright smoke/e2e coverage for the single-browser Moderator create flow if the existing dev-server setup can support it cleanly.
-- [ ] Verify the story end to end. (AC: 1-5)
-  - [ ] Run `npm install` after adding `socket.io-client`.
-  - [ ] Run `npm run typecheck`.
-  - [ ] Run `npm run test`.
-  - [ ] Run `npm run build`.
-  - [ ] If Playwright coverage is added, run the relevant Playwright command and document it in the Dev Agent Record.
+- [x] Add real session creation domain logic behind the existing scaffold. (AC: 1, 2, 3, 5)
+  - [x] Create `server/domain/session-store.ts` with an in-memory `SessionStore` abstraction keyed by Room Code.
+  - [x] Create `server/domain/room-code.ts` to generate unique Room Codes that satisfy `RoomCodeSchema` (`^[A-Z0-9]{4,12}$`).
+  - [x] Create `server/domain/session-commands.ts` or equivalent pure command module for `createSession`.
+  - [x] Model a new Session with default deck, `story: null`, inactive/unrevealed Round state, one Moderator participant, no Votes, no Estimated Stories, and an ISO `updatedAt`.
+  - [x] Ensure token values are internal to server state or returned only in the create acknowledgement; they must not appear in `SessionSnapshot`.
+- [x] Add capability-token and rate-limit support for create Session. (AC: 2, 4, 5)
+  - [x] Create `server/security/capability-tokens.ts` using Node crypto APIs for unguessable Moderator tokens.
+  - [x] Create `server/security/rate-limit.ts` or equivalent lightweight per-socket limiter for `session:create` bursts.
+  - [x] Add stable error codes such as `VALIDATION_FAILED` and `RATE_LIMITED` to `src/shared/contracts/errors.ts`.
+  - [x] Do not log capability tokens, command payloads containing tokens, or future hidden Vote values.
+- [x] Update shared contracts and schemas for event-specific acknowledgements. (AC: 1, 2, 4, 5)
+  - [x] Update `src/shared/contracts/socket-events.ts` so `session:create` acknowledges a create result, not only a `SessionSnapshot`.
+  - [x] Define a shared `CreateSessionResult` contract containing at least `roomCode`, `moderatorToken`, and `snapshot`.
+  - [x] Keep `session:snapshot` payloads token-free and usable by the Moderator view.
+  - [x] Keep Zod validation in `src/shared/schemas/command-schemas.ts`; reconcile the existing `moderatorName` field with low-friction create flow by either providing a clear required field or a deliberate default.
+- [x] Implement the Socket.IO `session:create` command handler. (AC: 1, 2, 4, 5)
+  - [x] Update `server/socket/register-session-handlers.ts` to validate with `CreateSessionCommandSchema.safeParse`.
+  - [x] On validation or rate-limit failure, call the acknowledgement callback with `{ ok: false, error }` and do not create local client Session state.
+  - [x] On success, call the domain command, `socket.join(roomCode)`, attach non-sensitive identity metadata to `socket.data`, acknowledge with the Room Code, Moderator token, and snapshot, then emit `session:snapshot` to the Moderator socket.
+  - [x] Keep the handler thin: validation, rate limit, domain call, room join, acknowledgement, snapshot emission.
+- [x] Replace the scaffold entry route with a usable create-session workflow. (AC: 1, 2, 3, 4)
+  - [x] Add `socket.io-client` as a dependency and use the existing shared event types; do not add `@types/socket.io-client`.
+  - [x] Create `src/features/session/CreateSessionView.tsx` and replace the sample route links on `/`.
+  - [x] Create a small `useSessionSocket` hook or session client module that owns connection state, emits `session:create`, handles acknowledgement results, and receives `session:snapshot`.
+  - [x] Store the returned Moderator token with `sessionStorage` using a scoped key such as `adr-buddy:moderator-token:<roomCode>`.
+  - [x] Never write the Moderator token to `localStorage`, route params, query strings, visible text, logs, or snapshots.
+  - [x] Navigate to `/session/:roomCode/moderator` only after a successful acknowledgement.
+- [x] Build the Moderator session landing state. (AC: 2, 3, 5)
+  - [x] Add `src/features/session/ModeratorSessionView.tsx` and route `/session/:roomCode/moderator` to it.
+  - [x] Show the Room Code in readable text with a copy-friendly affordance if practical.
+  - [x] Show an empty state that no active Story exists yet; do not add Story editing, Deck selection, voting, reveal, results, or join behavior in this story.
+  - [x] Render from the returned or latest server snapshot where available; do not invent durable refresh/reconnect recovery.
+  - [x] If a Moderator route is opened without a stored token or snapshot, show a clear waiting/missing-session state instead of fabricating a Session.
+- [x] Add focused automated coverage. (AC: 1-5)
+  - [x] Add unit tests for Room Code format/uniqueness behavior, token generation shape, and the `createSession` domain command.
+  - [x] Add contract/schema tests proving create acknowledgement includes the token while snapshots do not.
+  - [x] Add socket integration coverage for `session:create` success, validation failure, rate-limit failure if deterministic, acknowledgement shape, and `session:snapshot` emission.
+  - [x] Add React Testing Library tests for create-session success, error display, sessionStorage token write, and no `localStorage` write.
+  - [x] Add or update Playwright smoke/e2e coverage for the single-browser Moderator create flow if the existing dev-server setup can support it cleanly.
+- [x] Verify the story end to end. (AC: 1-5)
+  - [x] Run `npm install` after adding `socket.io-client`.
+  - [x] Run `npm run typecheck`.
+  - [x] Run `npm run test`.
+  - [x] Run `npm run build`.
+  - [x] If Playwright coverage is added, run the relevant Playwright command and document it in the Dev Agent Record.
 
 ## Dev Notes
 
@@ -241,16 +241,73 @@ src/features/session/
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+GPT-5 Codex
 
 ### Debug Log References
 
 ### Implementation Plan
 
+- Implement story tasks in order with red-green-refactor: domain creation, security/rate limiting, shared contracts, socket handler, client workflow, moderator landing state, focused coverage, and final verification.
+
 ### Completion Notes List
 
+- Completed domain session creation slice: added in-memory `SessionStore`, valid unique room code generation, pure `createSession` command, default moderator snapshot state, and token-free snapshot behavior.
+- Validation after domain slice: `npm run test` and `npm run typecheck` passed.
+- Completed create-session security slice: added crypto-backed Moderator tokens, deterministic per-socket burst limiter, stable `VALIDATION_FAILED` and `RATE_LIMITED` codes, and avoided token/command logging.
+- Validation after security slice: `npm run test` and `npm run typecheck` passed.
+- Completed shared contract slice: added token-bearing `CreateSessionResult`, event-specific `session:create` acknowledgement typing, and strict `CreateSessionResultSchema` while keeping `SessionSnapshot` token-free.
+- Validation after shared contract slice: `npm run test` and `npm run typecheck` passed.
+- Completed Socket.IO handler slice: `session:create` now validates commands, enforces create burst limits, creates sessions through the domain command, joins the Room Code, stores token-free socket identity metadata, acknowledges with the create result, and emits a sanitized `session:snapshot`.
+- Validation after Socket.IO handler slice: `npm run test` and `npm run typecheck` passed.
+- Completed create-session UI workflow slice: installed `socket.io-client`, replaced sample home links with a real create form, added the typed socket hook, stored Moderator tokens only in `sessionStorage`, mapped stable error codes to readable UI messages, and navigated only after successful acknowledgement.
+- Validation after create-session UI slice: `npm run test` and `npm run typecheck` passed.
+- Completed Moderator landing slice: added `/session/:roomCode/moderator` view, rendered Room Code plus copy affordance from returned/latest snapshot, showed no-active-story empty state, and added missing-session handling when token/snapshot context is absent.
+- Validation after Moderator landing slice: `npm run test` and `npm run typecheck` passed.
+- Completed focused coverage slice: added real Socket.IO client/server integration tests, Playwright single-browser Moderator create smoke, and updated local development CORS origins so the built app can connect to its same-origin server during e2e.
+- Validation after focused coverage slice: `npm run test`, `npm run typecheck`, and `npm run test:e2e` passed.
+- Completed end-to-end verification: `npm install socket.io-client`, `npm run typecheck`, `npm run test`, `npm run build`, `npm run lint`, and `npm run test:e2e` all passed. Playwright browser binaries were installed with `npx playwright install chromium` before the successful e2e run.
+- Final completion gate passed: no unchecked tasks remained, `npm run test`, `npm run typecheck`, `npm run build`, `npm run lint`, and `npm run test:e2e` all passed before setting status to review.
+
 ### File List
+
+- `server/domain/index.ts`
+- `server/domain/room-code.ts`
+- `server/domain/room-code.test.ts`
+- `server/domain/session-commands.ts`
+- `server/domain/session-commands.test.ts`
+- `server/domain/session-store.ts`
+- `server/config/env.test.ts`
+- `server/config/env.ts`
+- `server/security/capability-tokens.ts`
+- `server/security/capability-tokens.test.ts`
+- `server/security/index.ts`
+- `server/security/rate-limit.ts`
+- `server/security/rate-limit.test.ts`
+- `server/socket/register-session-handlers.ts`
+- `server/socket/register-session-handlers.test.ts`
+- `server/socket/session-create.integration.test.ts`
+- `package-lock.json`
+- `package.json`
+- `src/app/App.test.tsx`
+- `src/app/routes.tsx`
+- `src/app/styles.css`
+- `src/features/session/CreateSessionView.test.tsx`
+- `src/features/session/CreateSessionView.tsx`
+- `src/features/session/ModeratorSessionView.test.tsx`
+- `src/features/session/ModeratorSessionView.tsx`
+- `src/features/session/index.ts`
+- `src/features/session/session-storage.ts`
+- `src/features/session/useSessionSocket.ts`
+- `src/shared/contracts/errors.ts`
+- `src/shared/contracts/socket-events.ts`
+- `src/shared/schemas/command-schemas.test.ts`
+- `src/shared/schemas/session-schemas.ts`
+- `src/shared/schemas/session-schemas.test.ts`
+- `tests/e2e/create-session.spec.ts`
+- `_bmad-output/implementation-artifacts/1-2-moderator-creates-a-session.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
 
 ## Change Log
 
 - 2026-06-19: Created Story 1.2 developer context for Moderator Session creation.
+- 2026-06-28: Implemented Moderator Session creation and moved story to review.

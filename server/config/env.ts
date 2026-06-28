@@ -4,7 +4,12 @@ export interface ServerConfig {
   nodeEnv: string
 }
 
-const LOCAL_ORIGINS = ['http://localhost:5173', 'http://127.0.0.1:5173']
+const LOCAL_ORIGINS = [
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+]
 
 export function loadEnv(env: NodeJS.ProcessEnv = process.env): ServerConfig {
   const nodeEnv = env.NODE_ENV ?? 'development'

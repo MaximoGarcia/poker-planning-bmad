@@ -1,11 +1,11 @@
 import { Link, Navigate, Route, Routes, useParams } from 'react-router-dom'
-import { PLANNING_DECKS } from '@shared/domain/decks'
+import { CreateSessionView, ModeratorSessionView } from '@/features/session'
 
 export function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<HomeRoute />} />
-      <Route path="/session/:roomCode/moderator" element={<SessionRoute role="moderator" />} />
+      <Route path="/session/:roomCode/moderator" element={<ModeratorSessionView />} />
       <Route path="/session/:roomCode" element={<SessionRoute role="participant" />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
@@ -13,29 +13,7 @@ export function AppRoutes() {
 }
 
 function HomeRoute() {
-  return (
-    <main className="app-shell" aria-labelledby="app-title">
-      <section className="workspace">
-        <p className="eyebrow">Planning Poker</p>
-        <h1 id="app-title">ADR Buddy</h1>
-        <p className="lead">
-          A focused room shell for moderator and participant workflows.
-        </p>
-        <nav className="route-actions" aria-label="Sample session routes">
-          <Link to="/session/ABC123/moderator">Moderator room</Link>
-          <Link to="/session/ABC123">Participant room</Link>
-        </nav>
-      </section>
-      <section className="deck-strip" aria-label="Available estimate decks">
-        {Object.values(PLANNING_DECKS).map((deck) => (
-          <div className="deck-summary" key={deck.id}>
-            <span>{deck.label}</span>
-            <strong>{deck.values.join(' ')}</strong>
-          </div>
-        ))}
-      </section>
-    </main>
-  )
+  return <CreateSessionView />
 }
 
 function SessionRoute({ role }: { role: 'moderator' | 'participant' }) {

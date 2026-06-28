@@ -43,5 +43,14 @@ export const SessionSnapshotSchema = z
   })
   .strict()
 
+export const CreateSessionResultSchema = z
+  .object({
+    roomCode: RoomCodeSchema,
+    moderatorToken: z.string().min(32).regex(/^[A-Za-z0-9_-]+$/),
+    snapshot: SessionSnapshotSchema,
+  })
+  .strict()
+
 export type ParticipantSnapshotData = z.infer<typeof ParticipantSnapshotSchema>
 export type SessionSnapshotData = z.infer<typeof SessionSnapshotSchema>
+export type CreateSessionResultData = z.infer<typeof CreateSessionResultSchema>

@@ -25,6 +25,12 @@ export const SERVER_EVENTS = {
 export type ClientEventName = (typeof CLIENT_EVENTS)[keyof typeof CLIENT_EVENTS]
 export type ServerEventName = (typeof SERVER_EVENTS)[keyof typeof SERVER_EVENTS]
 
+export interface CreateSessionResult {
+  roomCode: string
+  moderatorToken: string
+  snapshot: SessionSnapshot
+}
+
 export interface ClientToServerEventPayloads {
   'session:create': CreateSessionCommand
   'session:join': JoinSessionCommand
@@ -45,10 +51,24 @@ export interface ServerToClientEventPayloads {
   'session:closed': { reason: string }
 }
 
+export interface ClientToServerEventAcknowledgements {
+  'session:create': CreateSessionResult
+  'session:join': SessionSnapshot
+  'story:update': SessionSnapshot
+  'deck:select': SessionSnapshot
+  'round:start': SessionSnapshot
+  'vote:submit': SessionSnapshot
+  'round:reveal': SessionSnapshot
+  'round:reset': SessionSnapshot
+  'estimate:record': SessionSnapshot
+  'story:advance': SessionSnapshot
+  'session:leave': SessionSnapshot
+}
+
 export type ClientToServerEvents = {
   [EventName in keyof ClientToServerEventPayloads]: (
     payload: ClientToServerEventPayloads[EventName],
-    ack?: AckCallback<SessionSnapshot>,
+    ack?: AckCallback<ClientToServerEventAcknowledgements[EventName]>,
   ) => void
 }
 
