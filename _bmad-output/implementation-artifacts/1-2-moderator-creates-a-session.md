@@ -4,7 +4,7 @@ baseline_commit: 4eea0eaac156f50ea45042df3fbc80c931cc0197
 
 # Story 1.2: Moderator Creates A Session
 
-Status: review
+Status: in-progress
 
 Completion Note: Ultimate context engine analysis completed - comprehensive developer guide created.
 
@@ -70,6 +70,17 @@ so that I can invite the team into a shared estimation room quickly.
   - [x] Run `npm run test`.
   - [x] Run `npm run build`.
   - [x] If Playwright coverage is added, run the relevant Playwright command and document it in the Dev Agent Record.
+
+### Review Findings
+
+- [ ] [Review][Patch] Client create flow can hang when Socket.IO is disconnected or no acknowledgement arrives [src/features/session/useSessionSocket.ts:60]
+- [ ] [Review][Patch] Server creation failures are not converted into stable failure acknowledgements [server/socket/register-session-handlers.ts:79]
+- [ ] [Review][Patch] Rate limiter retains stale socket entries after disconnect/window expiry [server/security/rate-limit.ts:28]
+- [ ] [Review][Patch] Invalid create payloads bypass the create rate limiter [server/socket/register-session-handlers.ts:53]
+- [ ] [Review][Patch] Session create accepts commands without an acknowledgement callback [server/socket/register-session-handlers.ts:53]
+- [ ] [Review][Patch] Session storage errors can crash create or moderator flows [src/features/session/session-storage.ts:8]
+- [ ] [Review][Patch] Clipboard write failures are unhandled [src/features/session/ModeratorSessionView.tsx:41]
+- [ ] [Review][Patch] Maximum-length room codes can overflow on narrow screens [src/app/styles.css:165]
 
 ## Dev Notes
 
