@@ -51,22 +51,14 @@ export function registerSessionHandlers(
     socket.data.connectedAt = now().toISOString()
 
     socket.on(CLIENT_EVENTS.sessionCreate, (payload, ack) => {
-      const parsedCommand = CreateSessionCommandSchema.safeParse(payload)
-
-      if (!parsedCommand.success) {
-        ack?.(
-          createFailureAck({
-            code: ERROR_CODES.validationFailed,
-            message: 'Session details could not be validated.',
-          }),
-        )
+      if (typeof ack !== 'function') {
         return
       }
 
       const rateLimitResult = rateLimiter.consume(socket.id)
 
       if (!rateLimitResult.allowed) {
-        ack?.(
+        ack(
           createFailureAck({
             code: ERROR_CODES.rateLimited,
             message: 'Too many session create attempts. Please wait before trying again.',
@@ -76,21 +68,58 @@ export function registerSessionHandlers(
         return
       }
 
-      const result = createSession(parsedCommand.data, {
-        store,
-        ...createSessionDependencies,
-      })
-      const moderator = result.snapshot.participants[0]
+      const parsedCommand = CreateSessionCommandSchema.safeParse(payload)
 
-      socket.join(result.roomCode)
-      socket.data.identity = {
-        roomCode: result.roomCode,
-        participantId: moderator.id,
-        role: 'moderator',
+      if (!parsedCommand.success) {
+        ack(
+          createFailureAck({
+            code: ERROR_CODES.validationFailed,
+            message: 'Session details could not be validated.',
+          }),
+        )
+        return
       }
 
-      ack?.(createSuccessAck(result))
+      let result
+      try {
+        result = createSession(parsedCommand.data, {
+          store,
+          ...createSessionDependencies,
+        })
+      } catch {
+        ack(
+          createFailureAck({
+            code: ERROR_CODES.sessionCreateFailed,
+            message: 'Session could not be created. Please try again.',
+          }),
+        )
+        return
+      }
+      const moderator = result.snapshot.participants[0]
+
+      try {
+        socket.join(result.roomCode)
+        socket.data.identity = {
+          roomCode: result.roomCode,
+          participantId: moderator.id,
+          role: 'moderator',
+        }
+      } catch {
+        ack(
+          createFailureAck({
+            code: ERROR_CODES.sessionCreateFailed,
+            message: 'Session could not be created. Please try again.',
+          }),
+        )
+        return
+      }
+
+      ack(createSuccessAck(result))
       socket.emit(SERVER_EVENTS.sessionSnapshot, result.snapshot)
+    })
+
+    socket.on('disconnect', () => {
+      rateLimiter.reset(socket.id)
     })
   })
 }

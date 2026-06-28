@@ -38,6 +38,19 @@ describe('session schemas', () => {
     })
   })
 
+  it('rejects create results whose snapshot room code differs from the top-level room code', () => {
+    expect(
+      CreateSessionResultSchema.safeParse({
+        roomCode: 'ABCD12',
+        moderatorToken: 'abcdefghijklmnopqrstuvwxyzABCDEF0123456789_-',
+        snapshot: {
+          ...snapshot,
+          roomCode: 'WXYZ99',
+        },
+      }).success,
+    ).toBe(false)
+  })
+
   it('keeps session snapshots token-free and strict', () => {
     expect(SessionSnapshotSchema.parse(snapshot)).toEqual(snapshot)
     expect(

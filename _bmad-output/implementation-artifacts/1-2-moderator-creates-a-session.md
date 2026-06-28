@@ -4,7 +4,7 @@ baseline_commit: 4eea0eaac156f50ea45042df3fbc80c931cc0197
 
 # Story 1.2: Moderator Creates A Session
 
-Status: in-progress
+Status: done
 
 Completion Note: Ultimate context engine analysis completed - comprehensive developer guide created.
 
@@ -73,14 +73,22 @@ so that I can invite the team into a shared estimation room quickly.
 
 ### Review Findings
 
-- [ ] [Review][Patch] Client create flow can hang when Socket.IO is disconnected or no acknowledgement arrives [src/features/session/useSessionSocket.ts:60]
-- [ ] [Review][Patch] Server creation failures are not converted into stable failure acknowledgements [server/socket/register-session-handlers.ts:79]
-- [ ] [Review][Patch] Rate limiter retains stale socket entries after disconnect/window expiry [server/security/rate-limit.ts:28]
-- [ ] [Review][Patch] Invalid create payloads bypass the create rate limiter [server/socket/register-session-handlers.ts:53]
-- [ ] [Review][Patch] Session create accepts commands without an acknowledgement callback [server/socket/register-session-handlers.ts:53]
-- [ ] [Review][Patch] Session storage errors can crash create or moderator flows [src/features/session/session-storage.ts:8]
-- [ ] [Review][Patch] Clipboard write failures are unhandled [src/features/session/ModeratorSessionView.tsx:41]
-- [ ] [Review][Patch] Maximum-length room codes can overflow on narrow screens [src/app/styles.css:165]
+- [x] [Review][Patch] Client create flow can hang when Socket.IO is disconnected or no acknowledgement arrives [src/features/session/useSessionSocket.ts:60]
+- [x] [Review][Patch] Server creation failures are not converted into stable failure acknowledgements [server/socket/register-session-handlers.ts:79]
+- [x] [Review][Patch] Rate limiter retains stale socket entries after disconnect/window expiry [server/security/rate-limit.ts:28]
+- [x] [Review][Patch] Invalid create payloads bypass the create rate limiter [server/socket/register-session-handlers.ts:53]
+- [x] [Review][Patch] Session create accepts commands without an acknowledgement callback [server/socket/register-session-handlers.ts:53]
+- [x] [Review][Patch] Session storage errors can crash create or moderator flows [src/features/session/session-storage.ts:8]
+- [x] [Review][Patch] Clipboard write failures are unhandled [src/features/session/ModeratorSessionView.tsx:41]
+- [x] [Review][Patch] Maximum-length room codes can overflow on narrow screens [src/app/styles.css:165]
+- [x] [Review][Patch] Create form lacks a rejection-safe submit path and in-flight guard [src/features/session/CreateSessionView.tsx:17]
+- [x] [Review][Patch] Session create handler treats any truthy acknowledgement argument as callable [server/socket/register-session-handlers.ts:53]
+- [x] [Review][Patch] Session create handler can fail after creation if room join throws [server/socket/register-session-handlers.ts:100]
+- [x] [Review][Patch] Client socket payloads are trusted without runtime schema validation [src/features/session/useSessionSocket.ts:45]
+- [x] [Review][Patch] Create result schema allows mismatched top-level and snapshot Room Codes [src/shared/schemas/session-schemas.ts:46]
+- [x] [Review][Patch] Create view reports disconnected sockets as still connecting [src/features/session/CreateSessionView.tsx:68]
+- [x] [Review][Patch] Vite dev server does not proxy Socket.IO for the bare client connection [vite.config.ts:6]
+- [x] [Review][Patch] Playwright web server timeout is brittle for build-and-start e2e runs [playwright.config.ts:17]
 
 ## Dev Notes
 
@@ -278,6 +286,10 @@ GPT-5 Codex
 - Validation after focused coverage slice: `npm run test`, `npm run typecheck`, and `npm run test:e2e` passed.
 - Completed end-to-end verification: `npm install socket.io-client`, `npm run typecheck`, `npm run test`, `npm run build`, `npm run lint`, and `npm run test:e2e` all passed. Playwright browser binaries were installed with `npx playwright install chromium` before the successful e2e run.
 - Final completion gate passed: no unchecked tasks remained, `npm run test`, `npm run typecheck`, `npm run build`, `npm run lint`, and `npm run test:e2e` all passed before setting status to review.
+- Resolved code-review follow-ups: added Socket.IO create acknowledgement timeout/disconnect failure handling, stable server failure acknowledgement for create exceptions, rate-limiter reset/pruning plus rate-before-validation/no-ack protections, guarded sessionStorage access, guarded clipboard copy, and room-code wrapping for narrow screens.
+- Validation after review follow-ups: focused review tests, `npm run typecheck`, `npm run test`, `npm run build`, `npm run lint`, and `npm run test:e2e` passed. The first e2e run hit sandbox `spawn EPERM`; rerun with escalation passed.
+- Resolved second code-review follow-ups: added rejection-safe/double-submit-safe create form handling, callable acknowledgement validation, join-failure acknowledgement handling, runtime socket payload validation, create-result room-code consistency validation, distinct disconnected UI copy, Vite Socket.IO dev proxying, and a less brittle Playwright web-server timeout.
+- Validation after second review follow-ups: targeted regression tests, `npm run typecheck`, `npm run test`, `npm run lint`, `npm run build`, and `npm run test:e2e` passed. The first e2e run hit sandbox `spawn EPERM`; rerun with escalation passed.
 
 ### File List
 
@@ -297,8 +309,10 @@ GPT-5 Codex
 - `server/socket/register-session-handlers.ts`
 - `server/socket/register-session-handlers.test.ts`
 - `server/socket/session-create.integration.test.ts`
+- `src/app/styles.test.ts`
 - `package-lock.json`
 - `package.json`
+- `playwright.config.ts`
 - `src/app/App.test.tsx`
 - `src/app/routes.tsx`
 - `src/app/styles.css`
@@ -308,13 +322,16 @@ GPT-5 Codex
 - `src/features/session/ModeratorSessionView.tsx`
 - `src/features/session/index.ts`
 - `src/features/session/session-storage.ts`
+- `src/features/session/session-storage.test.ts`
 - `src/features/session/useSessionSocket.ts`
+- `src/features/session/useSessionSocket.test.tsx`
 - `src/shared/contracts/errors.ts`
 - `src/shared/contracts/socket-events.ts`
 - `src/shared/schemas/command-schemas.test.ts`
 - `src/shared/schemas/session-schemas.ts`
 - `src/shared/schemas/session-schemas.test.ts`
 - `tests/e2e/create-session.spec.ts`
+- `vite.config.ts`
 - `_bmad-output/implementation-artifacts/1-2-moderator-creates-a-session.md`
 - `_bmad-output/implementation-artifacts/sprint-status.yaml`
 
@@ -322,3 +339,5 @@ GPT-5 Codex
 
 - 2026-06-19: Created Story 1.2 developer context for Moderator Session creation.
 - 2026-06-28: Implemented Moderator Session creation and moved story to review.
+- 2026-06-28: Addressed code review findings and moved story back to review.
+- 2026-06-28: Addressed second code review findings and moved story to done.

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { io, type Socket } from 'socket.io-client'
-import type { Ack } from '@shared/contracts/ack'
+import { createSuccessAck, type Ack } from '@shared/contracts/ack'
+import { ERROR_CODES } from '@shared/contracts/errors'
 import {
   CLIENT_EVENTS,
   SERVER_EVENTS,
@@ -10,8 +11,18 @@ import {
 } from '@shared/contracts/socket-events'
 import type { SessionSnapshot } from '@shared/contracts/snapshots'
 import type { CreateSessionCommand } from '@shared/schemas/command-schemas'
+import { CreateSessionResultSchema, SessionSnapshotSchema } from '@shared/schemas/session-schemas'
 
 type SessionClientSocket = Socket<ServerToClientEvents, ClientToServerEvents>
+type TimeoutSessionCreateSocket = {
+  emit: (
+    eventName: typeof CLIENT_EVENTS.sessionCreate,
+    command: CreateSessionCommand,
+    callback: (error: Error | null, ack?: Ack<CreateSessionResult>) => void,
+  ) => void
+}
+
+const ACK_TIMEOUT_MS = 5_000
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected'
 
@@ -31,8 +42,15 @@ export function useSessionSocket(): UseSessionSocketResult {
     socketRef.current = socket
 
     socket.on('connect', () => setConnectionStatus('connected'))
+    socket.on('connect_error', () => setConnectionStatus('disconnected'))
     socket.on('disconnect', () => setConnectionStatus('disconnected'))
-    socket.on(SERVER_EVENTS.sessionSnapshot, (snapshot) => setLatestSnapshot(snapshot))
+    socket.on(SERVER_EVENTS.sessionSnapshot, (snapshot) => {
+      const parsedSnapshot = SessionSnapshotSchema.safeParse(snapshot)
+
+      if (parsedSnapshot.success) {
+        setLatestSnapshot(parsedSnapshot.data)
+      }
+    })
 
     return () => {
       socket.removeAllListeners()
@@ -46,18 +64,37 @@ export function useSessionSocket(): UseSessionSocketResult {
       new Promise<Ack<CreateSessionResult>>((resolve) => {
         const socket = socketRef.current
 
-        if (!socket) {
-          resolve({
-            ok: false,
-            error: {
-              code: 'CONNECTION_UNAVAILABLE',
-              message: 'The live session connection is not available.',
-            },
-          })
+        if (!socket?.connected) {
+          resolve(createConnectionUnavailableAck())
           return
         }
 
-        socket.emit(CLIENT_EVENTS.sessionCreate, command, resolve)
+        const socketWithTimeout = socket.timeout(ACK_TIMEOUT_MS) as unknown as TimeoutSessionCreateSocket
+
+        socketWithTimeout.emit(
+          CLIENT_EVENTS.sessionCreate,
+          command,
+          (error: Error | null, ack?: Ack<CreateSessionResult>) => {
+            if (error || !ack) {
+              resolve(createConnectionUnavailableAck())
+              return
+            }
+
+            if (!ack.ok) {
+              resolve(ack)
+              return
+            }
+
+            const parsedResult = CreateSessionResultSchema.safeParse(ack.data)
+
+            if (!parsedResult.success) {
+              resolve(createConnectionUnavailableAck())
+              return
+            }
+
+            resolve(createSuccessAck(parsedResult.data))
+          },
+        )
       }),
     [],
   )
@@ -66,5 +103,15 @@ export function useSessionSocket(): UseSessionSocketResult {
     connectionStatus,
     latestSnapshot,
     createSession,
+  }
+}
+
+function createConnectionUnavailableAck(): Ack<CreateSessionResult> {
+  return {
+    ok: false,
+    error: {
+      code: ERROR_CODES.connectionUnavailable,
+      message: 'The live session connection is not available.',
+    },
   }
 }

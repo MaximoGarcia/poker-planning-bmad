@@ -8,11 +8,16 @@ import { DEFAULT_DECK_ID } from '@shared/domain/decks'
 import { CreateSessionView } from './CreateSessionView'
 import { moderatorTokenStorageKey } from './session-storage'
 
-const createSessionMock = vi.fn()
+const sessionSocketMock = vi.hoisted(() => ({
+  connectionStatus: 'connected' as 'connecting' | 'connected' | 'disconnected',
+  createSession: vi.fn(),
+}))
+
+const createSessionMock = sessionSocketMock.createSession
 
 vi.mock('./useSessionSocket', () => ({
   useSessionSocket: () => ({
-    connectionStatus: 'connected',
+    connectionStatus: sessionSocketMock.connectionStatus,
     createSession: createSessionMock,
     latestSnapshot: undefined,
   }),
@@ -53,6 +58,7 @@ function renderCreateSessionView() {
 describe('CreateSessionView', () => {
   beforeEach(() => {
     createSessionMock.mockReset()
+    sessionSocketMock.connectionStatus = 'connected'
     Object.defineProperty(window, 'localStorage', {
       configurable: true,
       value: createMemoryStorage(),
@@ -107,6 +113,43 @@ describe('CreateSessionView', () => {
 
     expect(window.sessionStorage.length).toBe(0)
     expect(window.localStorage.length).toBe(0)
+  })
+
+  it('prevents duplicate in-flight create requests', () => {
+    createSessionMock.mockReturnValue(new Promise(() => undefined))
+
+    renderCreateSessionView()
+    const form = document.querySelector('form')
+
+    if (!form) {
+      throw new Error('Expected create session form to render')
+    }
+
+    fireEvent.submit(form)
+    fireEvent.submit(form)
+
+    expect(createSessionMock).toHaveBeenCalledTimes(1)
+    expect(screen.getByRole('button', { name: 'Creating...' })).toBeDisabled()
+  })
+
+  it('recovers when the create request rejects unexpectedly', async () => {
+    createSessionMock.mockRejectedValue(new Error('socket failed'))
+
+    renderCreateSessionView()
+    fireEvent.click(screen.getByRole('button', { name: 'Create session' }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent('Could not create a session. Please try again.')
+    })
+    expect(screen.getByRole('button', { name: 'Create session' })).toBeEnabled()
+  })
+
+  it('shows disconnected socket state distinctly from connecting', () => {
+    sessionSocketMock.connectionStatus = 'disconnected'
+
+    renderCreateSessionView()
+
+    expect(screen.getByText('Live connection unavailable')).toBeInTheDocument()
   })
 })
 

@@ -18,6 +18,8 @@ export interface SocketRateLimiterOptions {
 
 export interface SocketRateLimiter {
   consume(socketId: string): RateLimitResult
+  reset(socketId: string): void
+  size(): number
 }
 
 export function createSocketRateLimiter({
@@ -30,6 +32,8 @@ export function createSocketRateLimiter({
   return {
     consume(socketId) {
       const currentTime = now()
+      pruneExpiredAttempts(attempts, currentTime, windowMs)
+
       const socketAttempts = attempts.get(socketId)
 
       if (!socketAttempts || currentTime - socketAttempts.windowStartedAt >= windowMs) {
@@ -47,5 +51,23 @@ export function createSocketRateLimiter({
         retryAfterMs: Math.max(windowMs - (currentTime - socketAttempts.windowStartedAt), 0),
       }
     },
+    reset(socketId) {
+      attempts.delete(socketId)
+    },
+    size() {
+      return attempts.size
+    },
+  }
+}
+
+function pruneExpiredAttempts(
+  attempts: Map<string, { count: number; windowStartedAt: number }>,
+  currentTime: number,
+  windowMs: number,
+) {
+  for (const [socketId, socketAttempts] of attempts) {
+    if (currentTime - socketAttempts.windowStartedAt >= windowMs) {
+      attempts.delete(socketId)
+    }
   }
 }

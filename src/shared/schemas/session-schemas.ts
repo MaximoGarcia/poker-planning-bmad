@@ -50,6 +50,10 @@ export const CreateSessionResultSchema = z
     snapshot: SessionSnapshotSchema,
   })
   .strict()
+  .refine((result) => result.snapshot.roomCode === result.roomCode, {
+    message: 'Snapshot room code must match create result room code',
+    path: ['snapshot', 'roomCode'],
+  })
 
 export type ParticipantSnapshotData = z.infer<typeof ParticipantSnapshotSchema>
 export type SessionSnapshotData = z.infer<typeof SessionSnapshotSchema>

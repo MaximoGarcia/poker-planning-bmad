@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render } from '@/test/render'
@@ -77,5 +77,25 @@ describe('ModeratorSessionView', () => {
 
     expect(screen.getByRole('heading', { name: 'Session details unavailable' })).toBeInTheDocument()
     expect(screen.queryByText('No active story yet')).not.toBeInTheDocument()
+  })
+
+  it('keeps the copy control stable when clipboard write fails', async () => {
+    const writeText = vi.fn().mockRejectedValue(new Error('denied'))
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    })
+    window.sessionStorage.setItem(
+      moderatorTokenStorageKey('ABCD12'),
+      'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    )
+
+    renderModeratorRoute({ snapshot })
+    fireEvent.click(screen.getByRole('button', { name: 'Copy room code' }))
+
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith('ABCD12')
+    })
+    expect(screen.getByRole('button', { name: 'Copy room code' })).toBeInTheDocument()
   })
 })

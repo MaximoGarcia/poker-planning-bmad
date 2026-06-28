@@ -164,6 +164,7 @@ h1 {
 
 .room-code {
   min-width: min(100%, 280px);
+  max-width: 100%;
   border: 1px solid #bcccdc;
   border-radius: 6px;
   padding: 14px 18px;
@@ -173,6 +174,7 @@ h1 {
   font-weight: 900;
   line-height: 1;
   letter-spacing: 0;
+  overflow-wrap: anywhere;
 }
 
 .secondary-action {

@@ -38,8 +38,12 @@ export function ModeratorSessionView() {
       return
     }
 
-    await navigator.clipboard.writeText(roomCode)
-    setCopied(true)
+    try {
+      await navigator.clipboard.writeText(roomCode)
+      setCopied(true)
+    } catch {
+      setCopied(false)
+    }
   }
 
   return (

@@ -105,12 +105,18 @@ describe('session:create socket integration', () => {
   })
 })
 
-async function createSocketHarness(rateLimiter?: SocketRateLimiter): Promise<SocketHarness> {
+async function createSocketHarness(rateLimiter?: Partial<SocketRateLimiter>): Promise<SocketHarness> {
   const httpServer = createServer()
   const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer)
   registerSessionHandlers(io, {
     store: createSessionStore(),
-    rateLimiter,
+    rateLimiter: rateLimiter
+      ? {
+          consume: rateLimiter.consume ?? (() => ({ allowed: true })),
+          reset: rateLimiter.reset ?? (() => undefined),
+          size: rateLimiter.size ?? (() => 0),
+        }
+      : undefined,
     createSessionDependencies: {
       generateRoomCode: () => 'ABCD12',
       generateModeratorToken: () => 'moderator-token-abcdefghijklmnopqrstuvwxyz',
