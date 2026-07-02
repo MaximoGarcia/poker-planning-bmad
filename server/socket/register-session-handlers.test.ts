@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createSessionStore } from '../domain/session-store.js'
-import type { CreateSessionDependencies } from '../domain/session-commands.js'
+import type { CreateSessionDependencies, JoinSessionDependencies } from '../domain/session-commands.js'
 import type { SocketRateLimiter } from '../security/rate-limit.js'
 import { ERROR_CODES } from '../../src/shared/contracts/errors.js'
 import { CLIENT_EVENTS, SERVER_EVENTS } from '../../src/shared/contracts/socket-events.js'
@@ -11,14 +11,20 @@ type EventHandler = (...args: unknown[]) => void
 function createHarness(
   rateLimiter?: Partial<SocketRateLimiter>,
   createSessionDependencies?: Partial<Omit<CreateSessionDependencies, 'store'>>,
+  joinSessionDependencies?: Partial<Omit<JoinSessionDependencies, 'store'>>,
 ) {
+  const store = createSessionStore()
   let connectionHandler: EventHandler | undefined
+  const roomEmitter = {
+    emit: vi.fn(),
+  }
   const io = {
     on: vi.fn((eventName: string, handler: EventHandler) => {
       if (eventName === 'connection') {
         connectionHandler = handler
       }
     }),
+    to: vi.fn(() => roomEmitter),
   }
   const socketHandlers = new Map<string, EventHandler>()
   const socket = {
@@ -32,7 +38,7 @@ function createHarness(
   }
 
   registerSessionHandlers(io as never, {
-    store: createSessionStore(),
+    store,
     rateLimiter: {
       consume: rateLimiter?.consume ?? (() => ({ allowed: true })),
       reset: rateLimiter?.reset ?? vi.fn(),
@@ -45,13 +51,23 @@ function createHarness(
       now: () => new Date('2026-06-28T16:00:00.000Z'),
       ...createSessionDependencies,
     },
+    joinSessionDependencies: {
+      generateParticipantId: () => 'participant-2',
+      generateParticipantToken: () => 'participant-token-abcdefghijklmnopqrstuvwxyz',
+      now: () => new Date('2026-07-02T12:00:00.000Z'),
+      ...joinSessionDependencies,
+    },
   })
   connectionHandler?.(socket)
 
   return {
     socket,
+    io,
+    roomEmitter,
+    store,
     disconnectHandler: socketHandlers.get('disconnect'),
     sessionCreateHandler: socketHandlers.get(CLIENT_EVENTS.sessionCreate),
+    sessionJoinHandler: socketHandlers.get(CLIENT_EVENTS.sessionJoin),
   }
 }
 
@@ -223,5 +239,186 @@ describe('registerSessionHandlers', () => {
     disconnectHandler?.()
 
     expect(reset).toHaveBeenCalledWith('socket-1')
+  })
+
+  it('joins a participant, acknowledges with a token, and emits a token-free room snapshot', () => {
+    const { socket, io, roomEmitter, sessionCreateHandler, sessionJoinHandler } = createHarness()
+    sessionCreateHandler?.({ moderatorName: 'Maxi' }, vi.fn())
+    socket.join.mockClear()
+    socket.emit.mockClear()
+    const ack = vi.fn()
+
+    sessionJoinHandler?.({ roomCode: 'ABCD12', displayName: 'Ana' }, ack)
+
+    expect(socket.join).toHaveBeenCalledWith('ABCD12')
+    expect(ack).toHaveBeenCalledWith({
+      ok: true,
+      data: {
+        roomCode: 'ABCD12',
+        participantToken: 'participant-token-abcdefghijklmnopqrstuvwxyz',
+        participantId: 'participant-2',
+        displayName: 'Ana',
+        snapshot: expect.objectContaining({
+          roomCode: 'ABCD12',
+          participants: expect.arrayContaining([
+            {
+              id: 'participant-2',
+              displayName: 'Ana',
+              role: 'participant',
+              connected: true,
+              hasVoted: false,
+            },
+          ]),
+        }),
+      },
+    })
+    expect(socket.data.identity).toEqual({
+      roomCode: 'ABCD12',
+      participantId: 'participant-2',
+      role: 'participant',
+    })
+    expect(io.to).toHaveBeenCalledWith('ABCD12')
+    expect(roomEmitter.emit).toHaveBeenCalledWith(
+      SERVER_EVENTS.sessionSnapshot,
+      expect.not.objectContaining({ participantToken: expect.any(String) }),
+    )
+    expect(JSON.stringify(roomEmitter.emit.mock.calls)).not.toContain('participant-token')
+  })
+
+  it('returns validation failure for malformed join payloads before mutating state', () => {
+    const { socket, sessionJoinHandler } = createHarness()
+    const ack = vi.fn()
+
+    sessionJoinHandler?.({ roomCode: '', displayName: '' }, ack)
+
+    expect(ack).toHaveBeenCalledWith({
+      ok: false,
+      error: {
+        code: ERROR_CODES.validationFailed,
+        message: 'Session join details could not be validated.',
+      },
+    })
+    expect(socket.join).not.toHaveBeenCalled()
+  })
+
+  it('returns invalid room code when joining an inactive room', () => {
+    const { socket, sessionJoinHandler } = createHarness()
+    const ack = vi.fn()
+
+    sessionJoinHandler?.({ roomCode: 'NOPE1', displayName: 'Ana' }, ack)
+
+    expect(ack).toHaveBeenCalledWith({
+      ok: false,
+      error: {
+        code: ERROR_CODES.invalidRoomCode,
+        message: 'Room code is invalid or inactive.',
+      },
+    })
+    expect(socket.join).not.toHaveBeenCalled()
+  })
+
+  it('disambiguates duplicate display names through the join socket command', () => {
+    const { sessionCreateHandler, sessionJoinHandler } = createHarness()
+    sessionCreateHandler?.({ moderatorName: 'Maxi' }, vi.fn())
+    const ack = vi.fn()
+
+    sessionJoinHandler?.({ roomCode: 'ABCD12', displayName: 'Maxi' }, ack)
+
+    expect(ack).toHaveBeenCalledWith({
+      ok: true,
+      data: expect.objectContaining({
+        displayName: 'Maxi (2)',
+        snapshot: expect.objectContaining({
+          participants: expect.arrayContaining([
+            {
+              id: 'participant-2',
+              displayName: 'Maxi (2)',
+              role: 'participant',
+              connected: true,
+              hasVoted: false,
+            },
+          ]),
+        }),
+      }),
+    })
+  })
+
+  it('converts join-session exceptions into stable failure acknowledgements', () => {
+    const { sessionCreateHandler, sessionJoinHandler } = createHarness(undefined, undefined, {
+      generateParticipantToken: () => {
+        throw new Error('token generator failed')
+      },
+    })
+    sessionCreateHandler?.({ moderatorName: 'Maxi' }, vi.fn())
+    const ack = vi.fn()
+
+    sessionJoinHandler?.({ roomCode: 'ABCD12', displayName: 'Ana' }, ack)
+
+    expect(ack).toHaveBeenCalledWith({
+      ok: false,
+      error: {
+        code: ERROR_CODES.sessionJoinFailed,
+        message: 'Session could not be joined. Please try again.',
+      },
+    })
+  })
+
+  it('rolls back participant state when joining the socket room fails', () => {
+    const { socket, store, sessionCreateHandler, sessionJoinHandler } = createHarness()
+    sessionCreateHandler?.({ moderatorName: 'Maxi' }, vi.fn())
+    socket.join.mockClear()
+    socket.join.mockImplementation(() => {
+      throw new Error('join failed')
+    })
+    const ack = vi.fn()
+
+    sessionJoinHandler?.({ roomCode: 'ABCD12', displayName: 'Ana' }, ack)
+
+    expect(ack).toHaveBeenCalledWith({
+      ok: false,
+      error: {
+        code: ERROR_CODES.sessionJoinFailed,
+        message: 'Session could not be joined. Please try again.',
+      },
+    })
+    expect(store.get('ABCD12')?.snapshot.participants).toEqual([
+      {
+        id: 'participant-1',
+        displayName: 'Maxi',
+        role: 'moderator',
+        connected: true,
+        hasVoted: false,
+      },
+    ])
+    expect(store.get('ABCD12')?.participantTokens.size).toBe(0)
+  })
+
+  it('applies rate limiting before join validation', () => {
+    const consume = vi.fn(() => ({ allowed: false as const, retryAfterMs: 750 }))
+    const { socket, sessionJoinHandler } = createHarness({ consume })
+    const ack = vi.fn()
+
+    sessionJoinHandler?.({ roomCode: '', displayName: '' }, ack)
+
+    expect(consume).toHaveBeenCalledWith('socket-1')
+    expect(ack).toHaveBeenCalledWith({
+      ok: false,
+      error: {
+        code: ERROR_CODES.rateLimited,
+        message: 'Too many session join attempts. Please wait before trying again.',
+        details: { retryAfterMs: 750 },
+      },
+    })
+    expect(socket.join).not.toHaveBeenCalled()
+  })
+
+  it('does not mutate join state without a callable acknowledgement', () => {
+    const consume = vi.fn(() => ({ allowed: true as const }))
+    const { socket, sessionJoinHandler } = createHarness({ consume })
+
+    sessionJoinHandler?.({ roomCode: 'ABCD12', displayName: 'Ana' }, 'not-an-ack')
+
+    expect(consume).not.toHaveBeenCalled()
+    expect(socket.join).not.toHaveBeenCalled()
   })
 })

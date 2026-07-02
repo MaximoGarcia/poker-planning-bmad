@@ -55,6 +55,34 @@ export const CreateSessionResultSchema = z
     path: ['snapshot', 'roomCode'],
   })
 
+export const JoinSessionResultSchema = z
+  .object({
+    roomCode: RoomCodeSchema,
+    participantToken: z.string().min(32).regex(/^[A-Za-z0-9_-]+$/),
+    participantId: z.string().min(1),
+    displayName: z.string().min(1),
+    snapshot: SessionSnapshotSchema,
+  })
+  .strict()
+  .refine((result) => result.snapshot.roomCode === result.roomCode, {
+    message: 'Snapshot room code must match join result room code',
+    path: ['snapshot', 'roomCode'],
+  })
+  .refine(
+    (result) =>
+      result.snapshot.participants.some(
+        (participant) =>
+          participant.id === result.participantId &&
+          participant.displayName === result.displayName &&
+          participant.role === 'participant',
+      ),
+    {
+      message: 'Joined participant must be present in snapshot',
+      path: ['participantId'],
+    },
+  )
+
 export type ParticipantSnapshotData = z.infer<typeof ParticipantSnapshotSchema>
 export type SessionSnapshotData = z.infer<typeof SessionSnapshotSchema>
 export type CreateSessionResultData = z.infer<typeof CreateSessionResultSchema>
+export type JoinSessionResultData = z.infer<typeof JoinSessionResultSchema>

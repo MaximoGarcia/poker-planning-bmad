@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
-import { readModeratorToken, saveModeratorToken } from './session-storage'
+import {
+  participantTokenStorageKey,
+  readModeratorToken,
+  saveModeratorToken,
+  saveParticipantToken,
+} from './session-storage'
 
 describe('session-storage helpers', () => {
   it('does not throw when sessionStorage write access is unavailable', () => {
@@ -22,5 +27,12 @@ describe('session-storage helpers', () => {
     expect(readModeratorToken('ABCD12')).toBeNull()
 
     getItem.mockRestore()
+  })
+
+  it('stores participant tokens under a room-and-participant scoped sessionStorage key', () => {
+    expect(saveParticipantToken('ABCD12', 'participant-1', 'participant-token')).toBe(true)
+    expect(window.sessionStorage.getItem(participantTokenStorageKey('ABCD12', 'participant-1'))).toBe(
+      'participant-token',
+    )
   })
 })

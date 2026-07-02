@@ -4,7 +4,7 @@ baseline_commit: 500c4a87cc31eec48f7a0407b1de9a256e6bb786
 
 # Story 1.3: Participant Joins A Session
 
-Status: ready-for-dev
+Status: done
 
 Completion Note: Ultimate context engine analysis completed - comprehensive developer guide created.
 
@@ -24,54 +24,63 @@ so that I can enter the team's estimation room without account setup.
 
 ## Tasks / Subtasks
 
-- [ ] Reconcile Story 1.2 dependency before implementation. (AC: 1-5)
-  - [ ] Check `_bmad-output/implementation-artifacts/1-2-moderator-creates-a-session.md` Review Findings before coding.
-  - [ ] If Story 1.2 findings are still unresolved, either resolve the shared socket/storage/rate-limit findings first or keep the join implementation compatible with the current known limitations.
-  - [ ] Do not duplicate fixes in a second style; extend the existing `useSessionSocket`, storage helper, socket handler, rate limiter, and `SessionStore` patterns.
-- [ ] Extend shared contracts and schemas for Participant join acknowledgements. (AC: 1, 2, 4, 5)
-  - [ ] Add a token-bearing `JoinSessionResult` contract with `roomCode`, `participantToken`, `participantId`, `displayName`, and `snapshot`.
-  - [ ] Update `ClientToServerEventAcknowledgements['session:join']` to use `JoinSessionResult`, not bare `SessionSnapshot`.
-  - [ ] Add `JoinSessionResultSchema` beside `CreateSessionResultSchema`; validate token format and keep snapshots strict and token-free.
-  - [ ] Keep `JoinSessionCommandSchema` strict with trimmed `roomCode` and `displayName`; preserve `RoomCodeSchema` format `^[A-Z0-9]{4,12}$`.
-  - [ ] Ensure stable error codes cover validation and inactive/unknown Room Code paths; prefer existing `VALIDATION_FAILED`, `INVALID_ROOM_CODE`, and `RATE_LIMITED`.
-- [ ] Add domain join-session behavior behind the existing `SessionStore`. (AC: 1, 3, 4, 5)
-  - [ ] Add `joinSession` to `server/domain/session-commands.ts` or a focused companion module, keeping transport-free domain logic in `server/domain`.
-  - [ ] Extend `SessionState` to store Participant capability tokens and Participant identity without exposing those tokens in `SessionSnapshot`.
-  - [ ] Reject missing/inactive Sessions by Room Code using a typed domain result or stable error, not a thrown expected-business exception.
-  - [ ] Generate an unguessable Participant token using the same Node crypto capability-token approach as Moderator tokens.
-  - [ ] Add the Participant to `snapshot.participants` with role `participant`, connected `true`, hasVoted `false`, and an ISO `updatedAt`.
-  - [ ] Allow duplicate Display Names and disambiguate only the display label, for example first `Maxi`, second `Maxi (2)`, third `Maxi (3)`.
-  - [ ] Preserve current `story`, `deck`, and `round` values from the existing Session snapshot; do not invent Story editing, Round start, voting, reveal, results, or reconnect recovery here.
-- [ ] Implement the Socket.IO `session:join` command handler. (AC: 1, 3, 4, 5)
-  - [ ] Update `server/socket/register-session-handlers.ts` to handle `CLIENT_EVENTS.sessionJoin` with `JoinSessionCommandSchema.safeParse`.
-  - [ ] Apply join rate limiting consistently with create-session burst limiting; do not let malformed join payload bursts bypass rate limiting.
-  - [ ] Require an acknowledgement callback for state-changing join commands or return without mutating server state when no ack callback is supplied.
-  - [ ] On validation, inactive Room Code, or rate-limit failure, acknowledge `{ ok: false, error }`, do not `socket.join`, and do not attach identity metadata.
-  - [ ] On success, call the domain join command, `socket.join(roomCode)`, attach token-free `socket.data.identity`, acknowledge with `JoinSessionResult`, and emit a sanitized `session:snapshot` to the room.
-  - [ ] Keep command payloads, Participant tokens, Moderator tokens, and future hidden Vote values out of logs and snapshots.
-- [ ] Build the Participant join and session UI. (AC: 1, 2, 4, 5)
-  - [ ] Replace the placeholder participant route in `src/app/routes.tsx` with a real `ParticipantSessionView`.
-  - [ ] Add a join workflow on `/` or a dedicated join view reachable from `/`; use real form controls for Room Code and Display Name.
-  - [ ] Extend `useSessionSocket` with `joinSession` and use acknowledgement timeouts/failure handling so the UI cannot stay pending forever.
-  - [ ] Store the returned Participant token only in `sessionStorage` with a scoped key such as `adr-buddy:participant-token:<roomCode>:<participantId>`; never use `localStorage`, route params, query strings, visible text, or snapshots.
-  - [ ] Navigate to `/session/:roomCode` only after a successful acknowledgement.
-  - [ ] Show readable stable-code errors for invalid Room Code, missing Display Name, inactive Session, rate limiting, and unavailable connection.
-  - [ ] In the Participant session view, render from returned/latest snapshot: Room Code, current Story if present, active Deck label/options, Round state, and a waiting/no-active-story state when no Story exists.
-  - [ ] Do not expose Moderator-only controls, Moderator token state, Estimated Stories, Story editing, Deck selection, Round start/reveal/reset, or Final Estimate controls in the Participant view.
-  - [ ] Keep layout responsive and keyboard navigable; room code/display-name text must not overflow or overlap at mobile widths.
-- [ ] Add focused automated coverage. (AC: 1-5)
-  - [ ] Add domain unit tests for successful join, invalid Room Code, duplicate Display Name disambiguation, token-free snapshots, and preserved Story/Deck/Round state.
-  - [ ] Add shared contract/schema tests proving join acknowledgement includes the Participant token while snapshots reject token fields.
-  - [ ] Add socket tests for `session:join` success, validation failure, invalid/inactive Room Code failure, duplicate name handling, acknowledgement shape, `socket.join`, room snapshot emission, and no-token snapshot emission.
-  - [ ] Add React Testing Library tests for join success, sessionStorage token write, no localStorage write, readable error display, and Participant view hiding Moderator-only controls.
-  - [ ] Add Playwright coverage for Moderator creates a Session, Participant joins with Room Code and Display Name, Participant lands on `/session/:roomCode`, token is in `sessionStorage`, and `localStorage` is empty.
-- [ ] Verify the story end to end. (AC: 1-5)
-  - [ ] Run `npm run typecheck`.
-  - [ ] Run `npm run test`.
-  - [ ] Run `npm run build`.
-  - [ ] Run `npm run lint`.
-  - [ ] Run `npm run test:e2e` after Playwright coverage is added or updated.
-  - [ ] Confirm no unchecked tasks remain before moving the story to review.
+- [x] Reconcile Story 1.2 dependency before implementation. (AC: 1-5)
+  - [x] Check `_bmad-output/implementation-artifacts/1-2-moderator-creates-a-session.md` Review Findings before coding.
+  - [x] If Story 1.2 findings are still unresolved, either resolve the shared socket/storage/rate-limit findings first or keep the join implementation compatible with the current known limitations.
+  - [x] Do not duplicate fixes in a second style; extend the existing `useSessionSocket`, storage helper, socket handler, rate limiter, and `SessionStore` patterns.
+- [x] Extend shared contracts and schemas for Participant join acknowledgements. (AC: 1, 2, 4, 5)
+  - [x] Add a token-bearing `JoinSessionResult` contract with `roomCode`, `participantToken`, `participantId`, `displayName`, and `snapshot`.
+  - [x] Update `ClientToServerEventAcknowledgements['session:join']` to use `JoinSessionResult`, not bare `SessionSnapshot`.
+  - [x] Add `JoinSessionResultSchema` beside `CreateSessionResultSchema`; validate token format and keep snapshots strict and token-free.
+  - [x] Keep `JoinSessionCommandSchema` strict with trimmed `roomCode` and `displayName`; preserve `RoomCodeSchema` format `^[A-Z0-9]{4,12}$`.
+  - [x] Ensure stable error codes cover validation and inactive/unknown Room Code paths; prefer existing `VALIDATION_FAILED`, `INVALID_ROOM_CODE`, and `RATE_LIMITED`.
+- [x] Add domain join-session behavior behind the existing `SessionStore`. (AC: 1, 3, 4, 5)
+  - [x] Add `joinSession` to `server/domain/session-commands.ts` or a focused companion module, keeping transport-free domain logic in `server/domain`.
+  - [x] Extend `SessionState` to store Participant capability tokens and Participant identity without exposing those tokens in `SessionSnapshot`.
+  - [x] Reject missing/inactive Sessions by Room Code using a typed domain result or stable error, not a thrown expected-business exception.
+  - [x] Generate an unguessable Participant token using the same Node crypto capability-token approach as Moderator tokens.
+  - [x] Add the Participant to `snapshot.participants` with role `participant`, connected `true`, hasVoted `false`, and an ISO `updatedAt`.
+  - [x] Allow duplicate Display Names and disambiguate only the display label, for example first `Maxi`, second `Maxi (2)`, third `Maxi (3)`.
+  - [x] Preserve current `story`, `deck`, and `round` values from the existing Session snapshot; do not invent Story editing, Round start, voting, reveal, results, or reconnect recovery here.
+- [x] Implement the Socket.IO `session:join` command handler. (AC: 1, 3, 4, 5)
+  - [x] Update `server/socket/register-session-handlers.ts` to handle `CLIENT_EVENTS.sessionJoin` with `JoinSessionCommandSchema.safeParse`.
+  - [x] Apply join rate limiting consistently with create-session burst limiting; do not let malformed join payload bursts bypass rate limiting.
+  - [x] Require an acknowledgement callback for state-changing join commands or return without mutating server state when no ack callback is supplied.
+  - [x] On validation, inactive Room Code, or rate-limit failure, acknowledge `{ ok: false, error }`, do not `socket.join`, and do not attach identity metadata.
+  - [x] On success, call the domain join command, `socket.join(roomCode)`, attach token-free `socket.data.identity`, acknowledge with `JoinSessionResult`, and emit a sanitized `session:snapshot` to the room.
+  - [x] Keep command payloads, Participant tokens, Moderator tokens, and future hidden Vote values out of logs and snapshots.
+- [x] Build the Participant join and session UI. (AC: 1, 2, 4, 5)
+  - [x] Replace the placeholder participant route in `src/app/routes.tsx` with a real `ParticipantSessionView`.
+  - [x] Add a join workflow on `/` or a dedicated join view reachable from `/`; use real form controls for Room Code and Display Name.
+  - [x] Extend `useSessionSocket` with `joinSession` and use acknowledgement timeouts/failure handling so the UI cannot stay pending forever.
+  - [x] Store the returned Participant token only in `sessionStorage` with a scoped key such as `adr-buddy:participant-token:<roomCode>:<participantId>`; never use `localStorage`, route params, query strings, visible text, or snapshots.
+  - [x] Navigate to `/session/:roomCode` only after a successful acknowledgement.
+  - [x] Show readable stable-code errors for invalid Room Code, missing Display Name, inactive Session, rate limiting, and unavailable connection.
+  - [x] In the Participant session view, render from returned/latest snapshot: Room Code, current Story if present, active Deck label/options, Round state, and a waiting/no-active-story state when no Story exists.
+  - [x] Do not expose Moderator-only controls, Moderator token state, Estimated Stories, Story editing, Deck selection, Round start/reveal/reset, or Final Estimate controls in the Participant view.
+  - [x] Keep layout responsive and keyboard navigable; room code/display-name text must not overflow or overlap at mobile widths.
+- [x] Add focused automated coverage. (AC: 1-5)
+  - [x] Add domain unit tests for successful join, invalid Room Code, duplicate Display Name disambiguation, token-free snapshots, and preserved Story/Deck/Round state.
+  - [x] Add shared contract/schema tests proving join acknowledgement includes the Participant token while snapshots reject token fields.
+  - [x] Add socket tests for `session:join` success, validation failure, invalid/inactive Room Code failure, duplicate name handling, acknowledgement shape, `socket.join`, room snapshot emission, and no-token snapshot emission.
+  - [x] Add React Testing Library tests for join success, sessionStorage token write, no localStorage write, readable error display, and Participant view hiding Moderator-only controls.
+  - [x] Add Playwright coverage for Moderator creates a Session, Participant joins with Room Code and Display Name, Participant lands on `/session/:roomCode`, token is in `sessionStorage`, and `localStorage` is empty.
+- [x] Verify the story end to end. (AC: 1-5)
+  - [x] Run `npm run typecheck`.
+  - [x] Run `npm run test`.
+  - [x] Run `npm run build`.
+  - [x] Run `npm run lint`.
+  - [x] Run `npm run test:e2e` after Playwright coverage is added or updated.
+  - [x] Confirm no unchecked tasks remain before moving the story to review.
+
+### Review Findings
+
+- [x] [Review][Patch] Participant session route opens a fresh socket that is not joined to the room [src/features/session/ParticipantSessionView.tsx:14]
+- [x] [Review][Patch] Failed participant room joins can leave stale joined Participants in the Session [server/socket/register-session-handlers.ts:163]
+- [x] [Review][Patch] Join command domain exceptions are not converted into stable acknowledgements [server/socket/register-session-handlers.ts:163]
+- [x] [Review][Patch] Participant room renders the Deck label but not the Deck options [src/features/session/ParticipantSessionView.tsx:56]
+- [x] [Review][Patch] Duplicate Display Name suffixing can exceed the validated Display Name length [server/domain/session-commands.ts:156]
+- [x] [Review][Patch] Focused join coverage misses non-default snapshot preservation and socket duplicate-name handling [server/domain/session-commands.test.ts:105]
 
 ## Dev Notes
 
@@ -270,12 +279,57 @@ GPT-5 Codex
 
 ### Debug Log References
 
+- 2026-07-02: Resolver fallback used because `python3` is unavailable in the Windows shell; manually loaded workflow customization files.
+- 2026-07-02: Story 1.2 review findings checked and confirmed resolved before implementation.
+
 ### Implementation Plan
+
+- Extend shared join acknowledgement contracts and schemas first.
+- Add transport-free domain join behavior behind `SessionStore`.
+- Add Socket.IO `session:join` handling using existing ack/rate-limit patterns.
+- Build participant join/session UI and token storage using `sessionStorage`.
+- Add domain, schema, socket, React, and Playwright coverage, then run story validations.
 
 ### Completion Notes List
 
+- Implemented Participant join contracts and schemas with `JoinSessionResult`, strict token-bearing acknowledgement validation, and token-free snapshot validation.
+- Added `joinSession` domain behavior behind `SessionStore`, including Participant token storage, invalid-room typed failures, duplicate display-name suffixing, and preservation of existing story/deck/round snapshot state.
+- Added Socket.IO `session:join` handling with ack requirements, rate limiting before validation, stable failure acknowledgements, token-free socket identity metadata, and sanitized room snapshot emission.
+- Added the home join workflow, `joinSession` client ack timeouts, scoped Participant `sessionStorage` token helpers, and a real Participant session route/view that hides Moderator-only controls.
+- Added domain, schema, socket, storage, React Testing Library, and Playwright coverage for the Participant join flow.
+- Validation passed: `npm run test`, `npm run typecheck`, `npm run build`, `npm run lint`, and `npm run test:e2e`. The first e2e run hit sandbox `spawn EPERM`; rerun with approved escalation passed.
+- Resolved code-review findings: kept the live socket provider across route navigation, rolled back failed participant room joins, converted join exceptions to stable acknowledgements, rendered Participant Deck options, capped suffixed duplicate Display Names at the schema limit, and added the missing focused coverage.
+- Validation after review fixes passed: focused Vitest slice, `npm run typecheck`, `npm run test`, `npm run build`, `npm run lint`, and `npm run test:e2e`.
+
 ### File List
+
+- `_bmad-output/implementation-artifacts/1-3-participant-joins-a-session.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `src/app/App.tsx`
+- `server/domain/session-commands.test.ts`
+- `server/domain/session-commands.ts`
+- `server/domain/session-store.ts`
+- `server/security/capability-tokens.ts`
+- `server/socket/register-session-handlers.test.ts`
+- `server/socket/register-session-handlers.ts`
+- `src/app/routes.tsx`
+- `src/app/styles.css`
+- `src/features/session/CreateSessionView.test.tsx`
+- `src/features/session/CreateSessionView.tsx`
+- `src/features/session/ParticipantSessionView.test.tsx`
+- `src/features/session/ParticipantSessionView.tsx`
+- `src/features/session/index.ts`
+- `src/features/session/session-storage.test.ts`
+- `src/features/session/session-storage.ts`
+- `src/features/session/useSessionSocket.test.tsx`
+- `src/features/session/useSessionSocket.ts`
+- `src/shared/contracts/socket-events.ts`
+- `src/shared/schemas/command-schemas.ts`
+- `src/shared/schemas/session-schemas.test.ts`
+- `src/shared/schemas/session-schemas.ts`
+- `tests/e2e/create-session.spec.ts`
 
 ## Change Log
 
 - 2026-06-28: Created Story 1.3 developer context for Participant Session join.
+- 2026-07-02: Implemented Participant join flow and moved story to review.

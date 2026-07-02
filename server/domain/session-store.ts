@@ -4,6 +4,7 @@ export interface SessionState {
   roomCode: string
   moderatorToken: string
   moderatorParticipantId: string
+  participantTokens: Map<string, string>
   snapshot: SessionSnapshot
   votes: Map<string, string>
   estimatedStories: []

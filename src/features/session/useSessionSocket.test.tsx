@@ -1,11 +1,11 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render } from '@/test/render'
 import type { Ack } from '@shared/contracts/ack'
 import { SERVER_EVENTS } from '@shared/contracts/socket-events'
-import type { CreateSessionResult } from '@shared/contracts/socket-events'
-import { useSessionSocket } from './useSessionSocket'
+import type { CreateSessionResult, JoinSessionResult } from '@shared/contracts/socket-events'
+import { SessionSocketProvider, useSessionSocket } from './useSessionSocket'
 
 const socketMock = {
   connected: true,
@@ -45,6 +45,52 @@ function Harness() {
   )
 }
 
+function JoinHarness() {
+  const { joinSession } = useSessionSocket()
+  const [ack, setAck] = useState<Ack<JoinSessionResult> | null>(null)
+
+  async function handleJoin() {
+    setAck(
+      await joinSession({
+        roomCode: 'ABCD12',
+        displayName: 'Ana',
+      }),
+    )
+  }
+
+  return (
+    <>
+      <button onClick={handleJoin} type="button">
+        Join
+      </button>
+      {ack && <p role="alert">{ack.ok ? ack.data.displayName : ack.error.code}</p>}
+    </>
+  )
+}
+
+function renderWithSocketProvider(ui: ReactNode) {
+  return render(<SessionSocketProvider>{ui}</SessionSocketProvider>)
+}
+
+function ProviderLifetimeHarness() {
+  const [route, setRoute] = useState<'entry' | 'participant'>('entry')
+
+  return (
+    <SessionSocketProvider>
+      <button onClick={() => setRoute('participant')} type="button">
+        Switch route
+      </button>
+      {route === 'entry' ? <SocketConsumer label="entry" /> : <SocketConsumer label="participant" />}
+    </SessionSocketProvider>
+  )
+}
+
+function SocketConsumer({ label }: { label: string }) {
+  useSessionSocket()
+
+  return <p>{label}</p>
+}
+
 describe('useSessionSocket', () => {
   beforeEach(() => {
     socketMock.connected = true
@@ -68,7 +114,7 @@ describe('useSessionSocket', () => {
       return socketMock
     })
 
-    render(<Harness />)
+    renderWithSocketProvider(<Harness />)
 
     expect(screen.getByText('disconnected')).toBeInTheDocument()
   })
@@ -76,7 +122,7 @@ describe('useSessionSocket', () => {
   it('returns a stable failure when create is attempted while disconnected', async () => {
     socketMock.connected = false
 
-    render(<Harness />)
+    renderWithSocketProvider(<Harness />)
     fireEvent.click(screen.getByRole('button', { name: 'Create' }))
 
     await screen.findByRole('alert')
@@ -85,7 +131,7 @@ describe('useSessionSocket', () => {
   })
 
   it('uses an acknowledgement timeout for create-session commands', async () => {
-    render(<Harness />)
+    renderWithSocketProvider(<Harness />)
     fireEvent.click(screen.getByRole('button', { name: 'Create' }))
 
     await waitFor(() => {
@@ -106,7 +152,7 @@ describe('useSessionSocket', () => {
       }),
     })
 
-    render(<Harness />)
+    renderWithSocketProvider(<Harness />)
     fireEvent.click(screen.getByRole('button', { name: 'Create' }))
 
     await screen.findByRole('alert')
@@ -121,8 +167,73 @@ describe('useSessionSocket', () => {
       return socketMock
     })
 
-    render(<Harness />)
+    renderWithSocketProvider(<Harness />)
 
     expect(screen.getByTestId('snapshot-room')).toHaveTextContent('no snapshot')
+  })
+
+  it('uses an acknowledgement timeout for join-session commands', async () => {
+    renderWithSocketProvider(<JoinHarness />)
+    fireEvent.click(screen.getByRole('button', { name: 'Join' }))
+
+    await waitFor(() => {
+      expect(socketMock.timeout).toHaveBeenCalledWith(5000)
+    })
+    expect(screen.getByRole('alert')).toHaveTextContent('CONNECTION_UNAVAILABLE')
+  })
+
+  it('validates join success acknowledgements before returning them', async () => {
+    socketMock.timeout.mockReturnValue({
+      emit: vi.fn((_event, _command, callback) => {
+        callback(null, {
+          ok: true,
+          data: {
+            roomCode: 'ABCD12',
+            participantToken: 'participant-token-abcdefghijklmnopqrstuvwxyz',
+            participantId: 'participant-2',
+            displayName: 'Ana',
+            snapshot: {
+              roomCode: 'ABCD12',
+              deck: {
+                id: 'fibonacci',
+                label: 'Fibonacci',
+                values: ['1', '2', '3'],
+              },
+              story: null,
+              participants: [
+                {
+                  id: 'participant-2',
+                  displayName: 'Ana',
+                  role: 'participant',
+                  connected: true,
+                  hasVoted: false,
+                },
+              ],
+              round: {
+                active: false,
+                revealed: false,
+                voteCount: 0,
+              },
+              updatedAt: '2026-07-02T12:00:00.000Z',
+            },
+          },
+        })
+      }),
+    })
+
+    renderWithSocketProvider(<JoinHarness />)
+    fireEvent.click(screen.getByRole('button', { name: 'Join' }))
+
+    await screen.findByRole('alert')
+    expect(screen.getByRole('alert')).toHaveTextContent('Ana')
+  })
+
+  it('keeps the socket alive when route content changes under the provider', () => {
+    render(<ProviderLifetimeHarness />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Switch route' }))
+
+    expect(screen.getByText('participant')).toBeInTheDocument()
+    expect(socketMock.disconnect).not.toHaveBeenCalled()
   })
 })

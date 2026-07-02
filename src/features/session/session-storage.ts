@@ -1,4 +1,5 @@
 const MODERATOR_TOKEN_KEY_PREFIX = 'adr-buddy:moderator-token:'
+const PARTICIPANT_TOKEN_KEY_PREFIX = 'adr-buddy:participant-token:'
 
 export function moderatorTokenStorageKey(roomCode: string): string {
   return `${MODERATOR_TOKEN_KEY_PREFIX}${roomCode}`
@@ -16,6 +17,31 @@ export function saveModeratorToken(roomCode: string, moderatorToken: string): bo
 export function readModeratorToken(roomCode: string): string | null {
   try {
     return window.sessionStorage.getItem(moderatorTokenStorageKey(roomCode))
+  } catch {
+    return null
+  }
+}
+
+export function participantTokenStorageKey(roomCode: string, participantId: string): string {
+  return `${PARTICIPANT_TOKEN_KEY_PREFIX}${roomCode}:${participantId}`
+}
+
+export function saveParticipantToken(
+  roomCode: string,
+  participantId: string,
+  participantToken: string,
+): boolean {
+  try {
+    window.sessionStorage.setItem(participantTokenStorageKey(roomCode, participantId), participantToken)
+    return true
+  } catch {
+    return false
+  }
+}
+
+export function readParticipantToken(roomCode: string, participantId: string): string | null {
+  try {
+    return window.sessionStorage.getItem(participantTokenStorageKey(roomCode, participantId))
   } catch {
     return null
   }

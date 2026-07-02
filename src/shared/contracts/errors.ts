@@ -3,6 +3,7 @@ export const ERROR_CODES = {
   rateLimited: 'RATE_LIMITED',
   connectionUnavailable: 'CONNECTION_UNAVAILABLE',
   sessionCreateFailed: 'SESSION_CREATE_FAILED',
+  sessionJoinFailed: 'SESSION_JOIN_FAILED',
   invalidRoomCode: 'INVALID_ROOM_CODE',
   unauthorized: 'UNAUTHORIZED',
   roundNotActive: 'ROUND_NOT_ACTIVE',

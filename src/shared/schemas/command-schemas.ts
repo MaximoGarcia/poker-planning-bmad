@@ -1,12 +1,14 @@
 import { z } from 'zod'
 import { DEFAULT_DECK_ID, PLANNING_DECK_ID_VALUES } from '../domain/decks.js'
 
+export const DISPLAY_NAME_MAX_LENGTH = 80
+
 export const RoomCodeSchema = z
   .string()
   .trim()
   .regex(/^[A-Z0-9]{4,12}$/, 'Room code must be 4-12 uppercase letters or digits')
 
-export const DisplayNameSchema = z.string().trim().min(1).max(80)
+export const DisplayNameSchema = z.string().trim().min(1).max(DISPLAY_NAME_MAX_LENGTH)
 
 export const PlanningDeckIdSchema = z.enum(PLANNING_DECK_ID_VALUES)
 

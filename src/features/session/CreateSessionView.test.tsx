@@ -6,19 +6,22 @@ import { ERROR_CODES } from '@shared/contracts/errors'
 import { PLANNING_DECKS } from '@shared/domain/decks'
 import { DEFAULT_DECK_ID } from '@shared/domain/decks'
 import { CreateSessionView } from './CreateSessionView'
-import { moderatorTokenStorageKey } from './session-storage'
+import { moderatorTokenStorageKey, participantTokenStorageKey } from './session-storage'
 
 const sessionSocketMock = vi.hoisted(() => ({
   connectionStatus: 'connected' as 'connecting' | 'connected' | 'disconnected',
   createSession: vi.fn(),
+  joinSession: vi.fn(),
 }))
 
 const createSessionMock = sessionSocketMock.createSession
+const joinSessionMock = sessionSocketMock.joinSession
 
 vi.mock('./useSessionSocket', () => ({
   useSessionSocket: () => ({
     connectionStatus: sessionSocketMock.connectionStatus,
     createSession: createSessionMock,
+    joinSession: joinSessionMock,
     latestSnapshot: undefined,
   }),
 }))
@@ -50,6 +53,7 @@ function renderCreateSessionView() {
       <Routes>
         <Route path="/" element={<CreateSessionView />} />
         <Route path="/session/:roomCode/moderator" element={<h1>Moderator room</h1>} />
+        <Route path="/session/:roomCode" element={<h1>Participant room</h1>} />
       </Routes>
     </MemoryRouter>,
   )
@@ -58,6 +62,7 @@ function renderCreateSessionView() {
 describe('CreateSessionView', () => {
   beforeEach(() => {
     createSessionMock.mockReset()
+    joinSessionMock.mockReset()
     sessionSocketMock.connectionStatus = 'connected'
     Object.defineProperty(window, 'localStorage', {
       configurable: true,
@@ -150,6 +155,70 @@ describe('CreateSessionView', () => {
     renderCreateSessionView()
 
     expect(screen.getByText('Live connection unavailable')).toBeInTheDocument()
+  })
+
+  it('joins a session, stores the participant token in sessionStorage, and navigates', async () => {
+    joinSessionMock.mockResolvedValue({
+      ok: true,
+      data: {
+        roomCode: 'ABCD12',
+        participantToken: 'participant-token-abcdefghijklmnopqrstuvwxyz',
+        participantId: 'participant-2',
+        displayName: 'Ana',
+        snapshot: {
+          ...snapshot,
+          participants: [
+            ...snapshot.participants,
+            {
+              id: 'participant-2',
+              displayName: 'Ana',
+              role: 'participant' as const,
+              connected: true,
+              hasVoted: false,
+            },
+          ],
+        },
+      },
+    })
+
+    renderCreateSessionView()
+    fireEvent.change(screen.getByLabelText('Room code'), { target: { value: 'abcd12' } })
+    fireEvent.change(screen.getByLabelText('Display name'), { target: { value: 'Ana' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Join session' }))
+
+    await screen.findByRole('heading', { name: 'Participant room' })
+
+    expect(joinSessionMock).toHaveBeenCalledWith({
+      roomCode: 'ABCD12',
+      displayName: 'Ana',
+    })
+    expect(window.sessionStorage.getItem(participantTokenStorageKey('ABCD12', 'participant-2'))).toBe(
+      'participant-token-abcdefghijklmnopqrstuvwxyz',
+    )
+    expect(window.localStorage.length).toBe(0)
+  })
+
+  it('shows a readable join error without storing a token', async () => {
+    joinSessionMock.mockResolvedValue({
+      ok: false,
+      error: {
+        code: ERROR_CODES.invalidRoomCode,
+        message: 'raw server message',
+      },
+    })
+
+    renderCreateSessionView()
+    fireEvent.change(screen.getByLabelText('Room code'), { target: { value: 'NOPE1' } })
+    fireEvent.change(screen.getByLabelText('Display name'), { target: { value: 'Ana' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Join session' }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'That room code is not active. Check it and try again.',
+      )
+    })
+    expect(window.sessionStorage.length).toBe(0)
+    expect(window.localStorage.length).toBe(0)
   })
 })
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { PLANNING_DECKS } from '../domain/decks'
-import { CreateSessionResultSchema, SessionSnapshotSchema } from './session-schemas'
+import { CreateSessionResultSchema, JoinSessionResultSchema, SessionSnapshotSchema } from './session-schemas'
 
 const snapshot = {
   roomCode: 'ABCD12',
@@ -57,6 +57,53 @@ describe('session schemas', () => {
       SessionSnapshotSchema.safeParse({
         ...snapshot,
         moderatorToken: 'abcdefghijklmnopqrstuvwxyzABCDEF0123456789_-',
+      }).success,
+    ).toBe(false)
+  })
+
+  it('validates join acknowledgements with participant tokens', () => {
+    const participantSnapshot = {
+      ...snapshot,
+      participants: [
+        ...snapshot.participants,
+        {
+          id: 'participant-2',
+          displayName: 'Ana',
+          role: 'participant',
+          connected: true,
+          hasVoted: false,
+        },
+      ],
+    }
+
+    expect(
+      JoinSessionResultSchema.parse({
+        roomCode: 'ABCD12',
+        participantToken: 'abcdefghijklmnopqrstuvwxyzABCDEF0123456789_-',
+        participantId: 'participant-2',
+        displayName: 'Ana',
+        snapshot: participantSnapshot,
+      }),
+    ).toEqual({
+      roomCode: 'ABCD12',
+      participantToken: 'abcdefghijklmnopqrstuvwxyzABCDEF0123456789_-',
+      participantId: 'participant-2',
+      displayName: 'Ana',
+      snapshot: participantSnapshot,
+    })
+  })
+
+  it('rejects join snapshots with token fields', () => {
+    expect(
+      JoinSessionResultSchema.safeParse({
+        roomCode: 'ABCD12',
+        participantToken: 'abcdefghijklmnopqrstuvwxyzABCDEF0123456789_-',
+        participantId: 'participant-2',
+        displayName: 'Ana',
+        snapshot: {
+          ...snapshot,
+          participantToken: 'abcdefghijklmnopqrstuvwxyzABCDEF0123456789_-',
+        },
       }).success,
     ).toBe(false)
   })

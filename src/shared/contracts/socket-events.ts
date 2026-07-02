@@ -31,6 +31,14 @@ export interface CreateSessionResult {
   snapshot: SessionSnapshot
 }
 
+export interface JoinSessionResult {
+  roomCode: string
+  participantToken: string
+  participantId: string
+  displayName: string
+  snapshot: SessionSnapshot
+}
+
 export interface ClientToServerEventPayloads {
   'session:create': CreateSessionCommand
   'session:join': JoinSessionCommand
@@ -53,7 +61,7 @@ export interface ServerToClientEventPayloads {
 
 export interface ClientToServerEventAcknowledgements {
   'session:create': CreateSessionResult
-  'session:join': SessionSnapshot
+  'session:join': JoinSessionResult
   'story:update': SessionSnapshot
   'deck:select': SessionSnapshot
   'round:start': SessionSnapshot
