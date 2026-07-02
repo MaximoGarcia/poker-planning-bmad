@@ -17,6 +17,8 @@ export function ModeratorSessionView() {
   const routeSnapshot = snapshotFromRouteState(location.state)
   const snapshot = selectSnapshot(roomCode, latestSnapshot, routeSnapshot)
   const moderatorToken = roomCode ? readModeratorToken(roomCode) : null
+  const participants =
+    snapshot?.participants.filter((participant) => participant.role === 'participant') ?? []
 
   if (!roomCode || !moderatorToken || !snapshot) {
     return (
@@ -63,6 +65,31 @@ export function ModeratorSessionView() {
         <section className="empty-state" aria-labelledby="active-story-title">
           <h2 id="active-story-title">No active story yet</h2>
           <p>Ready for the first story.</p>
+        </section>
+        <section className="presence-section" aria-labelledby="presence-title">
+          <div className="section-heading">
+            <p className="eyebrow">Presence</p>
+            <h2 id="presence-title">Participants</h2>
+          </div>
+          {participants.length === 0 ? (
+            <p className="presence-empty">No participants have joined yet.</p>
+          ) : (
+            <ul className="presence-list" aria-label="Joined participants">
+              {participants.map((participant) => (
+                <li className="presence-list-item" key={participant.id}>
+                  <span className="presence-name">{participant.displayName}</span>
+                  <span className="presence-status-group">
+                    <span className="presence-status">
+                      {participant.connected ? 'Joined' : 'Away'}
+                    </span>
+                    <span className="presence-status">
+                      {participant.hasVoted ? 'Voted' : 'Not voted'}
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       </section>
     </main>

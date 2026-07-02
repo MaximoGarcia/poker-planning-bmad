@@ -1,5 +1,5 @@
 # generated: 2026-06-19T17:11:20.0614856-03:00
-# last_updated: 2026-07-02T15:19:46.6825506-03:00
+# last_updated: 2026-07-02T16:29:26.7042644-03:00
 # project: adr-buddy
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-19T17:11:20.0614856-03:00
-last_updated: 2026-07-02T15:19:46.6825506-03:00
+last_updated: 2026-07-02T16:29:26.7042644-03:00
 project: adr-buddy
 project_key: NOKEY
 tracking_system: file-system
@@ -46,7 +46,7 @@ development_status:
   1-1-set-up-initial-project-from-starter-template: done
   1-2-moderator-creates-a-session: done
   1-3-participant-joins-a-session: done
-  1-4-moderator-sees-participant-presence: backlog
+  1-4-moderator-sees-participant-presence: done
   1-5-prepare-ci-cd-and-operational-readiness: backlog
   epic-1-retrospective: optional
   epic-2: backlog

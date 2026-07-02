@@ -44,6 +44,14 @@ test('participant joins a session with a room code and display name', async ({ b
   await participantPage.getByRole('button', { name: 'Join session' }).click()
 
   await expect(participantPage).toHaveURL(new RegExp(`/session/${roomCode}$`))
+  const joinedParticipant = moderatorPage
+    .getByRole('list', { name: 'Joined participants' })
+    .getByRole('listitem')
+    .filter({ hasText: 'Maxi (2)' })
+
+  await expect(joinedParticipant).toBeVisible()
+  await expect(joinedParticipant).toContainText('Not voted')
+  await expect(joinedParticipant).toContainText('Joined')
   await expect(participantPage.getByRole('heading', { name: 'Participant room' })).toBeVisible()
   await expect(participantPage.getByText(roomCode)).toBeVisible()
   await expect(participantPage.getByText('Maxi (2)')).toBeVisible()

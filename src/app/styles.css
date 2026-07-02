@@ -229,6 +229,79 @@ h1 {
   color: #52616b;
 }
 
+.presence-section {
+  display: grid;
+  gap: 14px;
+  max-width: 720px;
+}
+
+.section-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.section-heading .eyebrow {
+  margin: 0;
+}
+
+.section-heading h2 {
+  margin: 0;
+  color: #102a43;
+  font-size: 1.25rem;
+}
+
+.presence-empty {
+  margin: 0;
+  border-left: 4px solid #9fb3c8;
+  padding: 14px 16px;
+  color: #52616b;
+  background: #ffffff;
+}
+
+.presence-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.presence-list-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #d9e2ec;
+  border-radius: 6px;
+  padding: 12px 14px;
+  background: #ffffff;
+}
+
+.presence-name {
+  min-width: 0;
+  color: #102a43;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.presence-status-group {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.presence-status {
+  border: 1px solid #bcccdc;
+  border-radius: 999px;
+  padding: 5px 9px;
+  color: #334e68;
+  background: #f0f4f8;
+  font-size: 0.86rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .session-summary {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
@@ -383,5 +456,14 @@ h1 {
     box-sizing: border-box;
     width: 100%;
     text-align: center;
+  }
+
+  .presence-list-item {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .presence-status-group {
+    justify-content: flex-start;
   }
 }
