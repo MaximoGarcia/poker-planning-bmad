@@ -87,9 +87,9 @@ NFR6: v1 only needs live Session state; no durable storage is required for Sessi
 - Participants can change Votes before reveal, but Votes are locked after reveal unless the Moderator resets the Round.
 - Non-voters remain distinguishable by Display Name after reveal.
 - Refresh and reconnect recovery are not required for v1.
-- Starter template: Architecture specifies Vite React TypeScript plus a custom TypeScript Node/Express/Socket.IO backend. The first implementation story must initialize the Vite React TypeScript app with `npm create vite@latest . -- --template react-ts` and add the Node/Socket.IO server scaffold, shared types, test setup, and Azure App Service startup scripts.
+- Starter template: Architecture specifies Vite React TypeScript plus a custom TypeScript Node/Express/Socket.IO backend. The first implementation story must initialize the Vite React TypeScript app with `npm create vite@latest . -- --template react-ts` and add the Node/Socket.IO server scaffold, shared types, and test setup.
 - Use TypeScript for frontend, backend, and shared contracts.
-- Use React for UI components and Vite for frontend development and production builds.
+- Use React for UI components and Vite for frontend development and local build workflows.
 - Add a custom Node.js backend that can serve the built React app, expose HTTP endpoints, and host Socket.IO.
 - Use Express 5.x for HTTP concerns: static frontend serving, health endpoint, SPA fallback, and minimal metadata endpoints such as `/health` or `/api/version`.
 - Use Socket.IO 4.x for all live Session behavior, room broadcasts, acknowledgements, reconnect behavior, and server-pushed snapshots.
@@ -111,9 +111,8 @@ NFR6: v1 only needs live Session state; no durable storage is required for Sessi
 - Use capability-token authorization without user accounts: Session creation returns a `moderatorToken`; Participant join returns a `participantToken`; Moderator-only commands require the valid `moderatorToken`; Participant Vote updates require that Participant's valid `participantToken`.
 - Store capability tokens in browser `sessionStorage`, not `localStorage`.
 - Do not log capability tokens or hidden Vote values before reveal.
-- Use HTTPS/WSS in Azure production.
 - Use Helmet for Express security headers.
-- Use restrictive CORS: deployed Azure origin in production and configured localhost origins in development.
+- Use restrictive CORS that supports local development without broad origins by default.
 - Use basic rate limiting on create/join endpoints and Socket.IO command bursts.
 - Use React Router in SPA mode with routes for `/`, `/session/:roomCode/moderator`, and `/session/:roomCode`.
 - Use server-snapshot-driven frontend state through a `useSessionSocket` hook that owns connection lifecycle, command sending, acknowledgements, and snapshot updates.
@@ -130,14 +129,8 @@ NFR6: v1 only needs live Session state; no durable storage is required for Sessi
 - Add Vitest for domain state-machine and validation tests.
 - Add React Testing Library for component interaction tests.
 - Add Playwright end-to-end tests covering Moderator/Participant browser flows and hidden-vote privacy across two browser contexts.
-- Deploy as one Node.js app on Azure App Service for Linux, single instance for MVP, because in-memory Session state is authoritative.
-- The Node server must listen on `process.env.PORT`.
-- Enable App Service Web sockets, HTTPS Only, and Always On for non-free production tiers.
-- Keep App Service session affinity enabled if more than one instance is ever tested before introducing shared state.
-- Use GitHub Actions for CI/CD, preferably with OpenID Connect to Azure, and build/test before deployment.
-- Use Azure App Settings for runtime environment variables.
-- Use Application Insights and App Service log streaming for server-side monitoring and operational troubleshooting.
-- Do not introduce Redis, Azure Web PubSub, Azure SQL, Cosmos DB, Azure Storage, authentication, durable storage, analytics, export, or backlog integrations in MVP unless scope changes and architecture is updated first.
+- The Node server must support predictable local runtime configuration for development and verification.
+- Do not introduce Redis, managed real-time brokers, databases, authentication, durable storage, analytics, export, or backlog integrations in MVP unless scope changes and architecture is updated first.
 - Configure TypeScript path aliases or package/build settings so shared contracts can be imported safely by both client and server code.
 - Existing implementation-readiness assessment found the prior `epics.md` incomplete: Epic 2 and Epic 3 had no detailed story breakdowns, and FR4-FR15 were not traceable to complete stories.
 - Story-level traceability must cover every PRD FR, NFR, and relevant architecture requirement before implementation readiness can pass.
@@ -221,26 +214,16 @@ So that live session creation and joining can be built on a consistent client, s
 **Given** the server is running locally
 **When** a request is made to the health endpoint
 **Then** the server returns a successful health response
-**And** the server is configured to listen on `process.env.PORT` for Azure App Service compatibility.
+**And** the server is configured for expected local development runtime settings.
 
 **Given** the project is prepared for future live-session stories
 **When** tests are run
 **Then** Vitest is configured for unit tests, React Testing Library is available for component tests, and Playwright configuration exists for future e2e flows.
 
-**Given** the application is built for production
-**When** the Node server starts
-**Then** it can serve the Vite build output
-**And** it provides an SPA fallback for React Router.
-
 **Given** shared contracts are used by both client and server code
 **When** TypeScript build, test, and runtime entry points import shared modules
 **Then** the project configuration resolves shared contract imports without duplicate contract definitions
 **And** the chosen path aliases, package settings, or build settings work for both Vite client code and the Node server build.
-
-**Given** the app is prepared for Azure App Service deployment
-**When** production scripts and startup configuration are inspected
-**Then** package scripts build the React client and TypeScript server
-**And** the production start script launches the compiled Node server that serves `dist`, exposes `/health`, hosts Socket.IO, and listens on `process.env.PORT`.
 
 ### Story 1.2: Moderator Creates A Session
 
@@ -336,36 +319,6 @@ So that I can confirm the team is present before estimation begins.
 **When** the join command is accepted
 **Then** the Moderator receives a near-real-time snapshot update
 **And** the new Participant appears without the Moderator refreshing the page.
-
-### Story 1.5: Prepare CI/CD And Operational Readiness
-
-As a Developer,
-I want the application foundation to include CI/CD and operational configuration,
-So that the MVP can be built, deployed, and monitored consistently on Azure App Service.
-
-**Requirements covered:** Architecture operational requirements, NFR2, NFR6
-
-**Acceptance Criteria:**
-
-**Given** the repository is prepared for continuous integration
-**When** the GitHub Actions workflow runs
-**Then** it installs dependencies, type-checks or builds the TypeScript client and server, runs configured tests, and produces the deployable Node app output
-**And** deployment credentials are not checked into the repository.
-
-**Given** the app is configured for Azure App Service
-**When** deployment documentation or configuration is reviewed
-**Then** it identifies required App Service settings for Node runtime, `process.env.PORT`, Web sockets, HTTPS Only, Always On for non-free production tiers, and single-instance MVP operation
-**And** it notes that session affinity should remain enabled if more than one instance is tested before shared state is introduced.
-
-**Given** runtime configuration is required
-**When** `.env.example` or deployment documentation is reviewed
-**Then** required Azure App Settings and environment variables are documented without secret values
-**And** local development origins and production origin expectations for restrictive CORS are clear.
-
-**Given** the server runs in production
-**When** operational telemetry is configured
-**Then** Application Insights can collect server-side health, error, and request telemetry
-**And** App Service log streaming can be used for troubleshooting without logging capability tokens or hidden Vote values before reveal.
 
 ## Epic 2: Hidden Voting Round
 

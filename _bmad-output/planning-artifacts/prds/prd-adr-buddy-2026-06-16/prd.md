@@ -41,7 +41,7 @@ The product is intentionally narrow. It is not an agile lifecycle platform, back
 - Other teams that need multi-team administration, reusable org settings, or cross-team reporting.
 - External users, customers, or public communities.
 - Scrum masters or managers looking for velocity analytics or historical estimation trends.
-- Teams that require direct Jira, Azure DevOps, GitHub, or GitLab integration in the first version.
+- Teams that require direct Jira, GitHub, or GitLab integration in the first version.
 
 ### 2.3 Key User Journeys
 
@@ -266,7 +266,7 @@ The Session shows a live list of Estimated Stories during the active meeting. Re
 
 ## 6. Non-Goals
 
-- No Jira, Azure DevOps, GitHub, GitLab, or backlog integration in v1.
+- No Jira, GitHub, GitLab, or backlog integration in v1.
 - No company-wide administration, multi-team management, or shared organization settings.
 - No public signup, monetization, external launch funnel, or customer-facing marketing scope.
 - No custom card art, custom images, custom themes, or decorative Deck builder in v1.

@@ -30,7 +30,7 @@ Source files:
 
 ## Explicit Non-Goals
 
-- Backlog integrations with Jira, Azure DevOps, GitHub, or similar tools.
+- Backlog integrations with Jira, GitHub, GitLab, or similar tools.
 - Company-wide administration or multi-team management.
 - Public signup, monetization, or external launch positioning.
 - Custom card images, visual themes, or decorative decks in v1.

@@ -59,7 +59,7 @@ In scope:
 
 Out of scope for version 1:
 
-- Jira, Azure DevOps, GitHub, or other backlog integrations.
+- Jira, GitHub, GitLab, or other backlog integrations.
 - Company-wide administration or multi-team management.
 - Public signup, monetization, or external launch positioning.
 - Custom card images, visual themes, or decorative decks.

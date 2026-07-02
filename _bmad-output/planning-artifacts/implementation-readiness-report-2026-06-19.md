@@ -246,18 +246,18 @@ The current epics provide:
 - Three user-value epics rather than technical milestone epics.
 - Full PRD FR traceability from FR1 through FR15.
 - A required greenfield setup story aligned to the architecture starter-template requirement.
-- Story-level coverage for Azure App Service startup/build expectations, shared contract importability, CI/CD, App Settings, Application Insights, and log streaming.
+- Story-level coverage for local runtime expectations and shared contract importability.
 - Explicit hidden-vote privacy criteria, including Participant snapshot fields and automated privacy test expectations.
 
 ### Minor Concerns
 
-1. Story 1.5 is operationally broad.
+1. Story 1.5 is no longer applicable.
 
-Evidence: Story 1.5 covers GitHub Actions CI/CD, Azure App Service runtime settings, `.env.example` or deployment documentation, restrictive CORS expectations, Application Insights, App Service log streaming, and log redaction boundaries.
+Evidence: Story 1.5 covered operational concerns that are now out of scope because the team only wants local runtime support.
 
-Impact: This is implementable, but it may produce a larger review surface than the other stories. It combines CI, deployment documentation, runtime configuration, and monitoring concerns.
+Impact: This concern is obsolete after removing deployment, CI/CD, and monitoring work from scope.
 
-Recommendation: Keep Story 1.5 as-is if the team wants one operational readiness checkpoint before feature implementation. Split it into CI/CD and observability/deployment-configuration stories only if the team wants smaller delivery increments.
+Recommendation: Remove Story 1.5 and keep implementation focused on local product behavior only.
 
 2. No dedicated UX design artifact exists.
 
@@ -281,7 +281,7 @@ Recommendation: Treat the stories as the controlling UX source for v1. Create a 
 | Acceptance criteria quality | Pass. Criteria are generally BDD-style, testable, and include error, authorization, disabled/pending, and privacy cases. |
 | Starter template requirement | Pass. Story 1.1 covers Vite React TypeScript, Node/Express/Socket.IO scaffold, shared contracts, tests, build/start scripts, `/health`, SPA fallback, and `process.env.PORT`. |
 | Database/entity timing | Not applicable. MVP uses in-memory Session state and no durable database. |
-| Operational readiness traceability | Pass. Story 1.5 covers CI/CD, Azure runtime settings, App Settings, Application Insights, log streaming, and sensitive log boundaries. |
+| Operational readiness traceability | N/A. Deployment, CI/CD, and monitoring are out of scope for the current local-only plan. |
 
 ## Summary and Recommendations
 
@@ -299,11 +299,11 @@ No critical or major planning defects block implementation.
 
 ### Recommended Next Steps
 
-1. Begin implementation from Story 1.1, keeping the architecture's project structure, shared contract boundaries, Socket.IO event names, and Azure App Service startup expectations intact.
+1. Begin implementation from Story 1.1, keeping the architecture's project structure, shared contract boundaries, and Socket.IO event names intact.
 
 2. Treat story acceptance criteria as the controlling UX specification for v1 because no separate UX design artifact exists.
 
-3. Keep Story 1.5 as the operational readiness checkpoint, or split it into smaller CI/CD and observability/deployment-configuration stories if the team wants tighter review increments.
+3. Do not add operational-readiness work while the plan is local-run only.
 
 4. Preserve the current story sequencing: Epic 1 live access foundation, Epic 2 hidden voting, then Epic 3 reveal and estimate capture.
 
@@ -313,7 +313,7 @@ No critical or major planning defects block implementation.
 
 This assessment identified 2 non-blocking issues across 2 categories:
 
-- 1 minor story-sizing concern: Story 1.5 is operationally broad.
+- Operational readiness findings in this report are obsolete after the local-only scope correction.
 - 1 UX documentation warning: no dedicated UX artifact exists.
 
 ### Final Note
