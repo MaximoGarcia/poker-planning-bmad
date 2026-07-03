@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { ERROR_CODES } from '@shared/contracts/errors'
 import type { SessionSnapshot } from '@shared/contracts/snapshots'
@@ -32,13 +32,10 @@ export function ParticipantSessionView() {
   )
   const participantToken =
     roomCode && participant ? readParticipantToken(roomCode, participant.id) : null
-
-  useEffect(() => {
-    if (participant?.hasVoted === false) {
-      setLastSubmittedValue(null)
-      setVoteStatusMessage(null)
-    }
-  }, [participant?.hasVoted])
+  const isAcceptedSnapshotVisible = snapshot === acceptedSnapshot
+  const visibleLastSubmittedValue = participant?.hasVoted ? lastSubmittedValue : null
+  const visibleVoteStatusMessage =
+    participant?.hasVoted || isAcceptedSnapshotVisible ? voteStatusMessage : null
 
   if (!roomCode || !snapshot || !participant) {
     return (
@@ -104,19 +101,19 @@ export function ParticipantSessionView() {
                     isPending: pendingVoteValue === value,
                     value,
                   })}
-                  aria-pressed={lastSubmittedValue === value}
+                  aria-pressed={visibleLastSubmittedValue === value}
                   className="vote-card-button"
                   disabled={!canSubmitVote(snapshot, participantToken) || pendingVoteValue !== null}
                   onClick={() => void handleVoteSubmit(value)}
                   type="button"
                 >
                   <span>{value}</span>
-                  {lastSubmittedValue === value ? <small>Selected</small> : null}
+                  {visibleLastSubmittedValue === value ? <small>Selected</small> : null}
                 </button>
               </li>
             ))}
           </ul>
-          {voteStatusMessage ? <p className="vote-status">{voteStatusMessage}</p> : null}
+          {visibleVoteStatusMessage ? <p className="vote-status">{visibleVoteStatusMessage}</p> : null}
           {voteError ? (
             <p className="form-error" role="alert">
               {voteError}
@@ -183,7 +180,7 @@ function selectSnapshot(
   routeSnapshot: SessionSnapshot | null,
 ): SessionSnapshot | null {
   if (latestSnapshot?.roomCode === roomCode) {
-    return latestSnapshot
+    return newerSnapshot(latestSnapshot, acceptedSnapshot) ?? latestSnapshot
   }
 
   if (acceptedSnapshot?.roomCode === roomCode) {
@@ -195,6 +192,19 @@ function selectSnapshot(
   }
 
   return null
+}
+
+function newerSnapshot(
+  latestSnapshot: SessionSnapshot,
+  acceptedSnapshot: SessionSnapshot | null,
+): SessionSnapshot | null {
+  if (acceptedSnapshot?.roomCode !== latestSnapshot.roomCode) {
+    return latestSnapshot
+  }
+
+  return Date.parse(latestSnapshot.updatedAt) >= Date.parse(acceptedSnapshot.updatedAt)
+    ? latestSnapshot
+    : acceptedSnapshot
 }
 
 function roundStateLabel(active: boolean, revealed: boolean): string {

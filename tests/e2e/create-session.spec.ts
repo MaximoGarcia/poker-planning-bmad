@@ -116,7 +116,7 @@ test('moderator updates the current story and deck for all participants', async 
   await participantContext.close()
 })
 
-test('moderator starts a voting round and participant votes stay hidden before reveal', async ({
+test('moderator starts a voting round and participant plus moderator votes stay hidden before reveal', async ({
   browser,
 }) => {
   const moderatorContext = await browser.newContext()
@@ -149,6 +149,15 @@ test('moderator starts a voting round and participant votes stay hidden before r
   await expect(moderatorPage.getByText('Story and deck are locked during an active round.')).toBeVisible()
   await expect(participantPage.getByText('Voting')).toBeVisible()
   await expect(participantPage.getByRole('button', { name: 'Start round' })).toHaveCount(0)
+
+  await expect(moderatorPage.getByRole('group', { name: 'Moderator vote cards' })).toBeVisible()
+  await moderatorPage.getByRole('button', { name: 'Submit moderator vote 13' }).click()
+  await expect(moderatorPage.getByText('Vote submitted')).toBeVisible()
+  await moderatorPage.getByRole('button', { name: 'Change moderator vote to 21' }).click()
+  await expect(moderatorPage.getByText('Vote change submitted')).toBeVisible()
+  await expect(participantPage.getByText('Vote submitted')).toHaveCount(0)
+  await expect(participantPage.getByText('Selected')).toHaveCount(0)
+  await expect(participantPage.getByText('Not submitted', { exact: true })).toBeVisible()
 
   await participantPage.getByRole('button', { name: 'Submit vote 8' }).click()
 

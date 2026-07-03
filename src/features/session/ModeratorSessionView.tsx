@@ -16,13 +16,14 @@ export function ModeratorSessionView() {
   const location = useLocation()
   const sessionSocket = useSessionSocket()
   const [copied, setCopied] = useState(false)
+  const [acceptedSnapshot, setAcceptedSnapshot] = useState<SessionSnapshot | null>(null)
   const routeSnapshot = snapshotFromRouteState(location.state)
-  const snapshot = selectSnapshot(roomCode, sessionSocket.latestSnapshot, routeSnapshot)
+  const snapshot = selectSnapshot(roomCode, sessionSocket.latestSnapshot, acceptedSnapshot, routeSnapshot)
   const moderatorToken = roomCode ? readModeratorToken(roomCode) : null
   const participants =
     snapshot?.participants.filter((participant) => participant.role === 'participant') ?? []
 
-  if (!roomCode || !moderatorToken || !snapshot) {
+  if (!roomCode || !snapshot) {
     return (
       <main className="app-shell app-shell--session" aria-labelledby="missing-session-title">
         <section className="workspace">
@@ -67,6 +68,7 @@ export function ModeratorSessionView() {
         <StoryDeckEditor
           key={`${snapshot.story?.id ?? ''}:${snapshot.story?.title ?? ''}:${snapshot.deck.id}:${snapshot.round.active ? 'locked' : 'open'}`}
           moderatorToken={moderatorToken}
+          onAcceptedSnapshot={setAcceptedSnapshot}
           roomCode={roomCode}
           sessionSnapshot={snapshot}
           sessionSocket={sessionSocket}
@@ -103,11 +105,13 @@ export function ModeratorSessionView() {
 
 function StoryDeckEditor({
   moderatorToken,
+  onAcceptedSnapshot,
   roomCode,
   sessionSnapshot,
   sessionSocket,
 }: {
-  moderatorToken: string
+  moderatorToken: string | null
+  onAcceptedSnapshot: (snapshot: SessionSnapshot) => void
   roomCode: string
   sessionSnapshot: SessionSnapshot
   sessionSocket: ReturnType<typeof useSessionSocket>
@@ -117,11 +121,23 @@ function StoryDeckEditor({
   const [pendingStoryUpdate, setPendingStoryUpdate] = useState(false)
   const [pendingDeckId, setPendingDeckId] = useState<PlanningDeckId | null>(null)
   const [pendingRoundStart, setPendingRoundStart] = useState(false)
+  const [pendingVoteValue, setPendingVoteValue] = useState<string | null>(null)
+  const [lastSubmittedValue, setLastSubmittedValue] = useState<string | null>(null)
+  const [voteStatusMessage, setVoteStatusMessage] = useState<string | null>(null)
+  const [voteError, setVoteError] = useState<string | null>(null)
   const [commandError, setCommandError] = useState<string | null>(null)
-  const commandPending = pendingStoryUpdate || Boolean(pendingDeckId) || pendingRoundStart
+  const commandPending =
+    pendingStoryUpdate || Boolean(pendingDeckId) || pendingRoundStart || Boolean(pendingVoteValue)
+  const moderator = sessionSnapshot.participants.find((participant) => participant.role === 'moderator')
+  const visibleLastSubmittedValue = moderator?.hasVoted ? lastSubmittedValue : null
+  const visibleVoteStatusMessage = moderator?.hasVoted ? voteStatusMessage : null
 
   async function handleStorySubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+
+    if (!moderatorToken) {
+      return
+    }
 
     setPendingStoryUpdate(true)
     setCommandError(null)
@@ -141,6 +157,10 @@ function StoryDeckEditor({
   }
 
   async function handleDeckSelect(deckId: PlanningDeckId) {
+    if (!moderatorToken) {
+      return
+    }
+
     setPendingDeckId(deckId)
     setCommandError(null)
 
@@ -158,6 +178,10 @@ function StoryDeckEditor({
   }
 
   async function handleStartRound() {
+    if (!moderatorToken) {
+      return
+    }
+
     setPendingRoundStart(true)
     setCommandError(null)
 
@@ -173,6 +197,34 @@ function StoryDeckEditor({
     }
   }
 
+  async function handleVoteSubmit(value: string) {
+    if (!moderatorToken || !canSubmitModeratorVote(sessionSnapshot, moderatorToken)) {
+      return
+    }
+
+    const wasChangingVote = moderator?.hasVoted ?? false
+    setPendingVoteValue(value)
+    setVoteError(null)
+    setVoteStatusMessage(null)
+
+    const result = await sessionSocket.submitVote({
+      roomCode,
+      moderatorToken,
+      value,
+    })
+
+    setPendingVoteValue(null)
+
+    if (!result.ok) {
+      setVoteError(voteErrorMessageForCode(result.error.code))
+      return
+    }
+
+    onAcceptedSnapshot(result.data)
+    setLastSubmittedValue(value)
+    setVoteStatusMessage(wasChangingVote ? 'Vote change submitted' : 'Vote submitted')
+  }
+
   return (
     <section className="session-summary" aria-labelledby="story-controls-title">
       <div className="section-heading">
@@ -182,9 +234,9 @@ function StoryDeckEditor({
       <form aria-label="Current story form" onSubmit={handleStorySubmit}>
         <label>
           Story identifier
-          <input
-            aria-label="Story identifier"
-            disabled={commandPending || sessionSnapshot.round.active}
+            <input
+              aria-label="Story identifier"
+            disabled={!moderatorToken || commandPending || sessionSnapshot.round.active}
             maxLength={120}
             onChange={(event) => setStoryId(event.target.value)}
             required
@@ -194,9 +246,9 @@ function StoryDeckEditor({
         </label>
         <label>
           Brief description
-          <input
-            aria-label="Brief description"
-            disabled={commandPending || sessionSnapshot.round.active}
+            <input
+              aria-label="Brief description"
+            disabled={!moderatorToken || commandPending || sessionSnapshot.round.active}
             maxLength={240}
             onChange={(event) => setStoryTitle(event.target.value)}
             required
@@ -206,7 +258,7 @@ function StoryDeckEditor({
         </label>
         <button
           className="primary-action"
-          disabled={commandPending || sessionSnapshot.round.active}
+          disabled={!moderatorToken || commandPending || sessionSnapshot.round.active}
           type="submit"
         >
           {pendingStoryUpdate ? 'Saving story...' : 'Save story'}
@@ -222,7 +274,7 @@ function StoryDeckEditor({
             <button
               aria-pressed={isActive}
               className="secondary-action"
-              disabled={commandPending || sessionSnapshot.round.active}
+              disabled={!moderatorToken || commandPending || sessionSnapshot.round.active}
               key={deckId}
               onClick={() => void handleDeckSelect(deckId)}
               type="button"
@@ -234,7 +286,7 @@ function StoryDeckEditor({
       </div>
       <button
         className="primary-action"
-        disabled={commandPending || sessionSnapshot.round.active || !sessionSnapshot.story}
+        disabled={!moderatorToken || commandPending || sessionSnapshot.round.active || !sessionSnapshot.story}
         onClick={() => void handleStartRound()}
         type="button"
       >
@@ -259,12 +311,45 @@ function StoryDeckEditor({
       <p>Deck: {sessionSnapshot.deck.label}</p>
       <section className="deck-options" aria-label="Moderator deck options">
         <h3>{sessionSnapshot.deck.label} options</h3>
-        <ul>
-          {sessionSnapshot.deck.values.map((value) => (
-            <li key={value}>{value}</li>
-          ))}
-        </ul>
+        {sessionSnapshot.round.active && !sessionSnapshot.round.revealed ? (
+          <ul aria-label="Moderator vote cards" className="vote-card-grid" role="group">
+            {sessionSnapshot.deck.values.map((value) => (
+              <li key={value}>
+                <button
+                  aria-label={moderatorVoteButtonLabel({
+                    hasVoted: moderator?.hasVoted ?? false,
+                    isAvailable: canSubmitModeratorVote(sessionSnapshot, moderatorToken),
+                    isPending: pendingVoteValue === value,
+                    value,
+                  })}
+                  aria-pressed={visibleLastSubmittedValue === value}
+                  className="vote-card-button"
+                  disabled={
+                    !canSubmitModeratorVote(sessionSnapshot, moderatorToken) || pendingVoteValue !== null
+                  }
+                  onClick={() => void handleVoteSubmit(value)}
+                  type="button"
+                >
+                  <span>{value}</span>
+                  {visibleLastSubmittedValue === value ? <small>Selected</small> : null}
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <ul>
+            {sessionSnapshot.deck.values.map((value) => (
+              <li key={value}>{value}</li>
+            ))}
+          </ul>
+        )}
       </section>
+      {visibleVoteStatusMessage ? <p className="vote-status">{visibleVoteStatusMessage}</p> : null}
+      {voteError ? (
+        <p className="form-error" role="alert">
+          {voteError}
+        </p>
+      ) : null}
       <p>
         {sessionSnapshot.round.active
           ? 'Story and deck are locked during an active round.'
@@ -272,6 +357,32 @@ function StoryDeckEditor({
       </p>
     </section>
   )
+}
+
+function canSubmitModeratorVote(snapshot: SessionSnapshot, moderatorToken: string | null): boolean {
+  return Boolean(moderatorToken && snapshot.round.active && !snapshot.round.revealed)
+}
+
+function moderatorVoteButtonLabel({
+  hasVoted,
+  isAvailable,
+  isPending,
+  value,
+}: {
+  hasVoted: boolean
+  isAvailable: boolean
+  isPending: boolean
+  value: string
+}): string {
+  if (isPending) {
+    return `Submitting moderator vote ${value}...`
+  }
+
+  if (!isAvailable) {
+    return `Voting unavailable for moderator card ${value}`
+  }
+
+  return hasVoted ? `Change moderator vote to ${value}` : `Submit moderator vote ${value}`
 }
 
 function errorMessageForCode(code: string): string {
@@ -287,6 +398,21 @@ function errorMessageForCode(code: string): string {
   }
 }
 
+function voteErrorMessageForCode(code: string): string {
+  switch (code) {
+    case ERROR_CODES.roundNotActive:
+      return 'Voting is not active right now.'
+    case ERROR_CODES.voteLocked:
+      return 'Votes are locked for this round.'
+    case ERROR_CODES.unauthorized:
+      return 'Only the moderator can vote in this session.'
+    case ERROR_CODES.validationFailed:
+      return 'That card is not available in the active deck.'
+    default:
+      return 'Vote could not be submitted. Please try again.'
+  }
+}
+
 function snapshotFromRouteState(state: unknown): SessionSnapshot | null {
   const candidate = (state as ModeratorRouteState | null)?.snapshot
   const parsed = SessionSnapshotSchema.safeParse(candidate)
@@ -297,10 +423,15 @@ function snapshotFromRouteState(state: unknown): SessionSnapshot | null {
 function selectSnapshot(
   roomCode: string,
   latestSnapshot: SessionSnapshot | null,
+  acceptedSnapshot: SessionSnapshot | null,
   routeSnapshot: SessionSnapshot | null,
 ): SessionSnapshot | null {
   if (latestSnapshot?.roomCode === roomCode) {
-    return latestSnapshot
+    return newerSnapshot(latestSnapshot, acceptedSnapshot) ?? latestSnapshot
+  }
+
+  if (acceptedSnapshot?.roomCode === roomCode) {
+    return acceptedSnapshot
   }
 
   if (routeSnapshot?.roomCode === roomCode) {
@@ -308,4 +439,17 @@ function selectSnapshot(
   }
 
   return null
+}
+
+function newerSnapshot(
+  latestSnapshot: SessionSnapshot,
+  acceptedSnapshot: SessionSnapshot | null,
+): SessionSnapshot | null {
+  if (acceptedSnapshot?.roomCode !== latestSnapshot.roomCode) {
+    return latestSnapshot
+  }
+
+  return Date.parse(latestSnapshot.updatedAt) >= Date.parse(acceptedSnapshot.updatedAt)
+    ? latestSnapshot
+    : acceptedSnapshot
 }

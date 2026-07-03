@@ -1,0 +1,183 @@
+import { describe, expect, it } from 'vitest'
+import { PLANNING_DECKS } from '../../src/shared/domain/decks.js'
+import type { SessionState } from '../domain/session-store.js'
+import { toPreRevealSessionSnapshot } from './snapshot-mapper.js'
+
+describe('toPreRevealSessionSnapshot', () => {
+  it('returns a status-only moderator snapshot before reveal', () => {
+    const session = createSessionState()
+
+    const snapshot = toPreRevealSessionSnapshot(session, {
+      role: 'moderator',
+      participantId: 'moderator-1',
+    })
+
+    expect(snapshot).toEqual({
+      roomCode: 'ABCD12',
+      deck: PLANNING_DECKS.fibonacci,
+      story: {
+        id: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+        locked: true,
+      },
+      participants: [
+        {
+          id: 'moderator-1',
+          displayName: 'Maxi',
+          role: 'moderator',
+          connected: true,
+          hasVoted: true,
+        },
+        {
+          id: 'participant-2',
+          displayName: 'Ana',
+          role: 'participant',
+          connected: true,
+          hasVoted: true,
+        },
+        {
+          id: 'participant-3',
+          displayName: 'Lee',
+          role: 'participant',
+          connected: true,
+          hasVoted: true,
+        },
+      ],
+      round: {
+        active: true,
+        revealed: false,
+        voteCount: 3,
+      },
+      updatedAt: '2026-07-03T13:00:00.000Z',
+    })
+    expect(snapshot).not.toHaveProperty('votes')
+    expect(snapshot).not.toHaveProperty('results')
+    expect(snapshot).not.toHaveProperty('groupedResults')
+    expect(snapshot.participants[0]).not.toHaveProperty('selectedCard')
+    expect(snapshot.participants[1]).not.toHaveProperty('selectedCard')
+    expect(snapshot.participants[2]).not.toHaveProperty('selectedCard')
+  })
+
+  it('does not expose another participant selected card to a participant viewer', () => {
+    const session = createSessionState()
+
+    const snapshot = toPreRevealSessionSnapshot(session, {
+      role: 'participant',
+      participantId: 'participant-2',
+    })
+
+    expect(snapshot.participants).toEqual([
+      expect.objectContaining({ id: 'moderator-1', hasVoted: true }),
+      expect.objectContaining({ id: 'participant-2', hasVoted: true }),
+      expect.objectContaining({ id: 'participant-3', hasVoted: true }),
+    ])
+    expect(snapshot.participants[0]).not.toHaveProperty('selectedCard')
+    expect(snapshot.participants[1]).not.toHaveProperty('selectedCard')
+    expect(snapshot.participants[2]).not.toHaveProperty('selectedCard')
+    expect(snapshot).not.toHaveProperty('votes')
+    expect(snapshot).not.toHaveProperty('results')
+    expect(snapshot).not.toHaveProperty('groupedResults')
+  })
+
+  it('drops sensitive and moderator-only fields from malformed session state', () => {
+    const session = createSessionState()
+    const unsafeSession = {
+      ...session,
+      snapshot: {
+        ...session.snapshot,
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        participantToken: 'participant-token-abcdefghijklmnopqrstuvwxyz',
+        votes: { 'participant-2': '8' },
+        results: { '8': 1 },
+        groupedResults: [{ value: '8', count: 1 }],
+        estimatedStories: [{ id: 'ADR-20', estimate: '8' }],
+        participants: session.snapshot.participants.map((participant) => ({
+          ...participant,
+          selectedCard: session.votes.get(participant.id) ?? null,
+          token: 'participant-token-abcdefghijklmnopqrstuvwxyz',
+        })),
+        round: {
+          ...session.snapshot.round,
+          distribution: { '8': 1, '13': 1 },
+        },
+      },
+      estimatedStories: [{ id: 'ADR-20', estimate: '8' }],
+    } as unknown as SessionState
+
+    const snapshot = toPreRevealSessionSnapshot(unsafeSession, {
+      role: 'participant',
+      participantId: 'participant-2',
+    })
+    const serialized = JSON.stringify(snapshot)
+
+    expect(snapshot).not.toHaveProperty('moderatorToken')
+    expect(snapshot).not.toHaveProperty('participantToken')
+    expect(snapshot).not.toHaveProperty('votes')
+    expect(snapshot).not.toHaveProperty('results')
+    expect(snapshot).not.toHaveProperty('groupedResults')
+    expect(snapshot).not.toHaveProperty('estimatedStories')
+    expect(snapshot.round).not.toHaveProperty('distribution')
+    expect(snapshot.round.voteCount).toBe(3)
+    expect(serialized).not.toContain('moderator-token')
+    expect(serialized).not.toContain('participant-token')
+    expect(serialized).not.toContain('selectedCard')
+    expect(serialized).not.toContain('"8":')
+    expect(serialized).not.toContain('"13":')
+  })
+})
+
+function createSessionState(): SessionState {
+  return {
+    roomCode: 'ABCD12',
+    moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    moderatorParticipantId: 'moderator-1',
+    participantTokens: new Map([
+      ['participant-2', 'participant-token-2-abcdefghijklmnopqrstuvwxyz'],
+      ['participant-3', 'participant-token-3-abcdefghijklmnopqrstuvwxyz'],
+    ]),
+    votes: new Map([
+      ['moderator-1', '13'],
+      ['participant-2', '8'],
+      ['participant-3', '5'],
+    ]),
+    estimatedStories: [],
+    snapshot: {
+      roomCode: 'ABCD12',
+      deck: PLANNING_DECKS.fibonacci,
+      story: {
+        id: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+        locked: true,
+      },
+      participants: [
+        {
+          id: 'moderator-1',
+          displayName: 'Maxi',
+          role: 'moderator',
+          connected: true,
+          hasVoted: true,
+        },
+        {
+          id: 'participant-2',
+          displayName: 'Ana',
+          role: 'participant',
+          connected: true,
+          hasVoted: true,
+        },
+        {
+          id: 'participant-3',
+          displayName: 'Lee',
+          role: 'participant',
+          connected: true,
+          hasVoted: true,
+        },
+      ],
+      round: {
+        active: true,
+        revealed: false,
+        voteCount: 3,
+      },
+      updatedAt: '2026-07-03T13:00:00.000Z',
+    },
+  }
+}

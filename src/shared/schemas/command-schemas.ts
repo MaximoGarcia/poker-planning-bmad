@@ -51,7 +51,7 @@ export const StartRoundCommandSchema = z
   })
   .strict()
 
-export const SubmitVoteCommandSchema = z
+const SubmitParticipantVoteCommandSchema = z
   .object({
     roomCode: RoomCodeSchema,
     participantId: z.string().trim().min(1).max(120),
@@ -59,6 +59,19 @@ export const SubmitVoteCommandSchema = z
     value: z.string().trim().min(1).max(40),
   })
   .strict()
+
+const SubmitModeratorVoteCommandSchema = z
+  .object({
+    roomCode: RoomCodeSchema,
+    moderatorToken: CapabilityTokenSchema,
+    value: z.string().trim().min(1).max(40),
+  })
+  .strict()
+
+export const SubmitVoteCommandSchema = z.union([
+  SubmitParticipantVoteCommandSchema,
+  SubmitModeratorVoteCommandSchema,
+])
 
 export type CreateSessionCommand = z.infer<typeof CreateSessionCommandSchema>
 export type JoinSessionCommand = z.infer<typeof JoinSessionCommandSchema>

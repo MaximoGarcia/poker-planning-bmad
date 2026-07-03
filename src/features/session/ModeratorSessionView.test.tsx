@@ -13,6 +13,7 @@ const socketState = vi.hoisted(() => ({
   updateStory: vi.fn(),
   selectDeck: vi.fn(),
   startRound: vi.fn(),
+  submitVote: vi.fn(),
 }))
 
 vi.mock('./useSessionSocket', () => ({
@@ -22,6 +23,7 @@ vi.mock('./useSessionSocket', () => ({
     latestSnapshot: socketState.latestSnapshot,
     selectDeck: socketState.selectDeck,
     startRound: socketState.startRound,
+    submitVote: socketState.submitVote,
     updateStory: socketState.updateStory,
   }),
 }))
@@ -71,9 +73,11 @@ describe('ModeratorSessionView', () => {
     socketState.updateStory.mockReset()
     socketState.selectDeck.mockReset()
     socketState.startRound.mockReset()
+    socketState.submitVote.mockReset()
     socketState.updateStory.mockResolvedValue(createSuccessAck(snapshot))
     socketState.selectDeck.mockResolvedValue(createSuccessAck(snapshot))
     socketState.startRound.mockResolvedValue(createSuccessAck(snapshot))
+    socketState.submitVote.mockResolvedValue(createSuccessAck(snapshot))
   })
 
   it('shows the room code and empty story state from the returned snapshot', () => {
@@ -454,5 +458,262 @@ describe('ModeratorSessionView', () => {
 
     expect(screen.getByRole('button', { name: 'Round active' })).toBeDisabled()
     expect(screen.getByText('Story and deck are locked during an active round.')).toBeInTheDocument()
+  })
+
+  it('renders active deck cards for moderator voting during an unrevealed round', () => {
+    window.sessionStorage.setItem(
+      moderatorTokenStorageKey('ABCD12'),
+      'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    )
+    socketState.latestSnapshot = {
+      ...snapshot,
+      story: {
+        id: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+        locked: true,
+      },
+      round: {
+        active: true,
+        revealed: false,
+        voteCount: 0,
+      },
+    }
+
+    renderModeratorRoute({ snapshot })
+
+    expect(screen.getByRole('group', { name: 'Moderator vote cards' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Submit moderator vote 8' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+  })
+
+  it('submits moderator votes with the stored moderator token and does not render the token', async () => {
+    window.sessionStorage.setItem(
+      moderatorTokenStorageKey('ABCD12'),
+      'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    )
+    socketState.latestSnapshot = {
+      ...snapshot,
+      story: {
+        id: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+        locked: true,
+      },
+      round: {
+        active: true,
+        revealed: false,
+        voteCount: 0,
+      },
+    }
+    socketState.submitVote.mockResolvedValue(
+      createSuccessAck({
+        ...socketState.latestSnapshot,
+        updatedAt: '2026-07-03T13:05:00.000Z',
+        participants: [
+          {
+            ...snapshot.participants[0],
+            hasVoted: true,
+          },
+        ],
+        round: {
+          active: true,
+          revealed: false,
+          voteCount: 1,
+        },
+      }),
+    )
+
+    renderModeratorRoute({ snapshot })
+    fireEvent.click(screen.getByRole('button', { name: 'Submit moderator vote 8' }))
+
+    await waitFor(() => {
+      expect(socketState.submitVote).toHaveBeenCalledWith({
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        value: '8',
+      })
+    })
+    expect(await screen.findByText('Vote submitted')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Change moderator vote to 8' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(screen.queryByText(/moderator-token/i)).not.toBeInTheDocument()
+  })
+
+  it('clears local moderator selected state when an equal-timestamp socket snapshot resets the vote', async () => {
+    window.sessionStorage.setItem(
+      moderatorTokenStorageKey('ABCD12'),
+      'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    )
+    const updatedAt = '2026-07-03T13:05:00.000Z'
+    const activeSnapshot = {
+      ...snapshot,
+      story: {
+        id: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+        locked: true,
+      },
+      round: {
+        active: true,
+        revealed: false,
+        voteCount: 0,
+      },
+    }
+    socketState.latestSnapshot = activeSnapshot
+    socketState.submitVote.mockResolvedValue(
+      createSuccessAck({
+        ...activeSnapshot,
+        updatedAt,
+        participants: snapshot.participants.map((participant) => ({
+          ...participant,
+          hasVoted: true,
+        })),
+        round: {
+          active: true,
+          revealed: false,
+          voteCount: 1,
+        },
+      }),
+    )
+
+    const { rerender } = renderModeratorRoute({ snapshot })
+    fireEvent.click(screen.getByRole('button', { name: 'Submit moderator vote 8' }))
+
+    expect(await screen.findByText('Vote submitted')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Change moderator vote to 8' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+
+    socketState.latestSnapshot = {
+      ...activeSnapshot,
+      updatedAt,
+    }
+    rerender(
+      <MemoryRouter
+        initialEntries={[
+          {
+            pathname: '/session/ABCD12/moderator',
+            state: { snapshot },
+          },
+        ]}
+      >
+        <Routes>
+          <Route path="/session/:roomCode/moderator" element={<ModeratorSessionView />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      expect(screen.queryByText('Vote submitted')).not.toBeInTheDocument()
+    })
+    expect(screen.getByRole('button', { name: 'Submit moderator vote 8' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+    expect(screen.queryByText('Selected')).not.toBeInTheDocument()
+  })
+
+  it('shows pending state without marking the moderator voted before acknowledgement', async () => {
+    window.sessionStorage.setItem(
+      moderatorTokenStorageKey('ABCD12'),
+      'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    )
+    socketState.latestSnapshot = {
+      ...snapshot,
+      story: {
+        id: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+        locked: true,
+      },
+      round: {
+        active: true,
+        revealed: false,
+        voteCount: 0,
+      },
+    }
+    let resolveAck: ((value: ReturnType<typeof createSuccessAck>) => void) | undefined
+    socketState.submitVote.mockReturnValue(
+      new Promise((resolve) => {
+        resolveAck = resolve
+      }),
+    )
+
+    renderModeratorRoute({ snapshot })
+    fireEvent.click(screen.getByRole('button', { name: 'Submit moderator vote 13' }))
+
+    expect(screen.getByRole('button', { name: 'Submitting moderator vote 13...' })).toBeDisabled()
+    expect(screen.queryByText('Vote submitted')).not.toBeInTheDocument()
+    resolveAck?.(createSuccessAck(socketState.latestSnapshot) as never)
+
+    await waitFor(() => {
+      expect(socketState.submitVote).toHaveBeenCalled()
+    })
+  })
+
+  it('submits changed moderator votes and shows readable failures', async () => {
+    window.sessionStorage.setItem(
+      moderatorTokenStorageKey('ABCD12'),
+      'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    )
+    socketState.latestSnapshot = {
+      ...snapshot,
+      participants: [
+        {
+          ...snapshot.participants[0],
+          hasVoted: true,
+        },
+      ],
+      story: {
+        id: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+        locked: true,
+      },
+      round: {
+        active: true,
+        revealed: false,
+        voteCount: 1,
+      },
+    }
+    socketState.submitVote
+      .mockResolvedValueOnce(createSuccessAck(socketState.latestSnapshot))
+      .mockResolvedValueOnce(
+        createFailureAck({
+          code: ERROR_CODES.voteLocked,
+          message: 'Votes are locked for this round.',
+        }),
+      )
+
+    renderModeratorRoute({ snapshot })
+    fireEvent.click(screen.getByRole('button', { name: 'Change moderator vote to 5' }))
+
+    await screen.findByText('Vote change submitted')
+    fireEvent.click(screen.getByRole('button', { name: 'Change moderator vote to 8' }))
+
+    await screen.findByRole('alert')
+    expect(screen.getByRole('alert')).toHaveTextContent('Votes are locked for this round.')
+  })
+
+  it('keeps moderator vote controls disabled when the token is unavailable', () => {
+    socketState.latestSnapshot = {
+      ...snapshot,
+      story: {
+        id: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+        locked: true,
+      },
+      round: {
+        active: true,
+        revealed: false,
+        voteCount: 0,
+      },
+    }
+
+    renderModeratorRoute({ snapshot })
+
+    expect(screen.getByRole('button', { name: 'Voting unavailable for moderator card 8' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Save story' })).toBeDisabled()
   })
 })

@@ -828,6 +828,119 @@ describe('submitVote', () => {
     ])
   })
 
+  it('records a moderator first vote, marks only the moderator voted, and keeps the card hidden', () => {
+    const { store } = createActiveVotingSession()
+
+    const result = submitVote(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        value: '13',
+      },
+      {
+        store,
+        now: () => new Date('2026-07-03T13:05:00.000Z'),
+      },
+    )
+
+    expect(result).toEqual({
+      ok: true,
+      data: expect.objectContaining({
+        roomCode: 'ABCD12',
+        round: {
+          active: true,
+          revealed: false,
+          voteCount: 1,
+        },
+        updatedAt: '2026-07-03T13:05:00.000Z',
+      }),
+    })
+    expect(result.ok ? result.data.participants : []).toEqual([
+      {
+        id: 'moderator-1',
+        displayName: 'Maxi',
+        role: 'moderator',
+        connected: true,
+        hasVoted: true,
+      },
+      {
+        id: 'participant-2',
+        displayName: 'Ana',
+        role: 'participant',
+        connected: true,
+        hasVoted: false,
+      },
+    ])
+    expect(Array.from(store.get('ABCD12')?.votes.entries() ?? [])).toEqual([
+      ['moderator-1', '13'],
+    ])
+    expect(JSON.stringify(result.ok ? result.data : {})).not.toContain(
+      'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    )
+    expect(result.ok ? result.data : {}).not.toHaveProperty('selectedCard')
+    expect(result.ok ? result.data : {}).not.toHaveProperty('votes')
+    expect(result.ok ? result.data : {}).not.toHaveProperty('results')
+    expect(result.ok ? result.data.participants[0] : {}).not.toHaveProperty('selectedCard')
+  })
+
+  it('replaces a moderator changed vote without increasing vote count', () => {
+    const { store } = createActiveVotingSession()
+
+    submitVote(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        value: '8',
+      },
+      { store },
+    )
+    const result = submitVote(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        value: '13',
+      },
+      { store },
+    )
+
+    expect(result.ok ? result.data.round.voteCount : 0).toBe(1)
+    expect(Array.from(store.get('ABCD12')?.votes.entries() ?? [])).toEqual([
+      ['moderator-1', '13'],
+    ])
+  })
+
+  it('counts one participant vote and one moderator vote in the same active round', () => {
+    const { store } = createActiveVotingSession()
+
+    submitVote(
+      {
+        roomCode: 'ABCD12',
+        participantId: 'participant-2',
+        participantToken: 'participant-token-abcdefghijklmnopqrstuvwxyz',
+        value: '5',
+      },
+      { store },
+    )
+    const result = submitVote(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        value: '8',
+      },
+      { store },
+    )
+
+    expect(result.ok ? result.data.round.voteCount : 0).toBe(2)
+    expect(result.ok ? result.data.participants.map(({ id, hasVoted }) => ({ id, hasVoted })) : []).toEqual([
+      { id: 'moderator-1', hasVoted: true },
+      { id: 'participant-2', hasVoted: true },
+    ])
+    expect(Array.from(store.get('ABCD12')?.votes.entries() ?? [])).toEqual([
+      ['participant-2', '5'],
+      ['moderator-1', '8'],
+    ])
+  })
+
   it('returns invalid room code for missing sessions', () => {
     const result = submitVote(
       {
@@ -883,6 +996,67 @@ describe('submitVote', () => {
     expect(store.get('ABCD12')?.votes.size).toBe(0)
   })
 
+  it('returns unauthorized for bad moderator tokens and participant-token misuse without mutation', () => {
+    const { store } = createActiveVotingSession()
+    const before = store.get('ABCD12')
+
+    const result = submitVote(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'participant-token-abcdefghijklmnopqrstuvwxyz',
+        value: '8',
+      },
+      { store },
+    )
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        code: ERROR_CODES.unauthorized,
+        message: 'Only the moderator can submit their vote.',
+      },
+    })
+    expect(store.get('ABCD12')).toEqual(before)
+  })
+
+  it('returns unauthorized for moderator votes when the moderator participant entry is missing', () => {
+    const { store } = createActiveVotingSession()
+    const session = store.get('ABCD12')
+
+    if (!session) {
+      throw new Error('Expected session to exist')
+    }
+
+    store.set({
+      ...session,
+      snapshot: {
+        ...session.snapshot,
+        participants: session.snapshot.participants.filter(
+          (participant) => participant.id !== session.moderatorParticipantId,
+        ),
+      },
+    })
+    const before = store.get('ABCD12')
+
+    const result = submitVote(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        value: '8',
+      },
+      { store },
+    )
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        code: ERROR_CODES.unauthorized,
+        message: 'Only the moderator can submit their vote.',
+      },
+    })
+    expect(store.get('ABCD12')).toEqual(before)
+  })
+
   it('returns ROUND_NOT_ACTIVE when no round is active without mutating state', () => {
     const { store } = createActiveVotingSession({ active: false })
     const before = store.get('ABCD12')
@@ -892,6 +1066,29 @@ describe('submitVote', () => {
         roomCode: 'ABCD12',
         participantId: 'participant-2',
         participantToken: 'participant-token-abcdefghijklmnopqrstuvwxyz',
+        value: '8',
+      },
+      { store },
+    )
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        code: ERROR_CODES.roundNotActive,
+        message: 'Voting is not active for this session.',
+      },
+    })
+    expect(store.get('ABCD12')).toEqual(before)
+  })
+
+  it('returns ROUND_NOT_ACTIVE for moderator votes when no round is active without mutating state', () => {
+    const { store } = createActiveVotingSession({ active: false })
+    const before = store.get('ABCD12')
+
+    const result = submitVote(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
         value: '8',
       },
       { store },
@@ -931,6 +1128,29 @@ describe('submitVote', () => {
     expect(store.get('ABCD12')).toEqual(before)
   })
 
+  it('returns VOTE_LOCKED for moderator votes when the round is revealed without mutating state', () => {
+    const { store } = createActiveVotingSession({ revealed: true })
+    const before = store.get('ABCD12')
+
+    const result = submitVote(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        value: '8',
+      },
+      { store },
+    )
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        code: ERROR_CODES.voteLocked,
+        message: 'Votes are locked for this round.',
+      },
+    })
+    expect(store.get('ABCD12')).toEqual(before)
+  })
+
   it('returns validation failed for values outside the active deck without mutating state', () => {
     const { store } = createActiveVotingSession()
     const before = store.get('ABCD12')
@@ -940,6 +1160,29 @@ describe('submitVote', () => {
         roomCode: 'ABCD12',
         participantId: 'participant-2',
         participantToken: 'participant-token-abcdefghijklmnopqrstuvwxyz',
+        value: 'XXL',
+      },
+      { store },
+    )
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        code: ERROR_CODES.validationFailed,
+        message: 'Vote value is not part of the active deck.',
+      },
+    })
+    expect(store.get('ABCD12')).toEqual(before)
+  })
+
+  it('returns validation failed for moderator values outside the active deck without mutating state', () => {
+    const { store } = createActiveVotingSession()
+    const before = store.get('ABCD12')
+
+    const result = submitVote(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
         value: 'XXL',
       },
       { store },

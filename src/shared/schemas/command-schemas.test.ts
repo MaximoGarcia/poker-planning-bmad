@@ -138,6 +138,59 @@ describe('shared contracts and schemas', () => {
         value: '8',
       }).success,
     ).toBe(false)
+    expect(
+      SubmitVoteCommandSchema.safeParse({
+        roomCode: 'ABCD12',
+        participantId: 'participant-2',
+        participantToken: 'participant-token-abcdefghijklmnopqrstuvwxyz',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        value: '8',
+      }).success,
+    ).toBe(false)
+  })
+
+  it('validates moderator vote commands with the moderator token only', () => {
+    expect(
+      SubmitVoteCommandSchema.parse({
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        value: '13',
+      }),
+    ).toEqual({
+      roomCode: 'ABCD12',
+      moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      value: '13',
+    })
+
+    expect(
+      SubmitVoteCommandSchema.safeParse({
+        roomCode: 'ABCD12',
+        moderatorToken: 'short',
+        value: '13',
+      }).success,
+    ).toBe(false)
+    expect(
+      SubmitVoteCommandSchema.safeParse({
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      }).success,
+    ).toBe(false)
+    expect(
+      SubmitVoteCommandSchema.safeParse({
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        participantId: 'participant-2',
+        value: '13',
+      }).success,
+    ).toBe(false)
+    expect(
+      SubmitVoteCommandSchema.safeParse({
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        value: '13',
+        extra: true,
+      }).success,
+    ).toBe(false)
   })
 
   it('validates snapshot acknowledgements for moderator commands', () => {

@@ -31,6 +31,7 @@ import {
   SubmitVoteCommandSchema,
   UpdateStoryCommandSchema,
 } from '../../src/shared/schemas/command-schemas.js'
+import { toPreRevealSessionSnapshot, type SnapshotViewer } from './snapshot-mapper.js'
 
 interface SessionSocketData {
   connectedAt?: string
@@ -141,8 +142,13 @@ export function registerSessionHandlers(
         return
       }
 
-      ack(createSuccessAck(result))
-      socket.emit(SERVER_EVENTS.sessionSnapshot, result.snapshot)
+      const snapshot = sanitizedSnapshot(result.roomCode, {
+        participantId: moderator.id,
+        role: 'moderator',
+      })
+
+      ack(createSuccessAck({ ...result, snapshot }))
+      socket.emit(SERVER_EVENTS.sessionSnapshot, snapshot)
     })
 
     socket.on(CLIENT_EVENTS.sessionJoin, (payload, ack) => {
@@ -218,8 +224,13 @@ export function registerSessionHandlers(
         return
       }
 
-      ack(createSuccessAck(domainResult.data))
-      io.to(domainResult.data.roomCode).emit(SERVER_EVENTS.sessionSnapshot, domainResult.data.snapshot)
+      const snapshot = sanitizedSnapshot(domainResult.data.roomCode, {
+        participantId: domainResult.data.participantId,
+        role: 'participant',
+      })
+
+      ack(createSuccessAck({ ...domainResult.data, snapshot }))
+      io.to(domainResult.data.roomCode).emit(SERVER_EVENTS.sessionSnapshot, snapshot)
     })
 
     socket.on(CLIENT_EVENTS.storyUpdate, (payload, ack) => {
@@ -326,8 +337,11 @@ export function registerSessionHandlers(
           return
         }
 
-        ack(createSuccessAck(result.data))
-        io.to(result.data.roomCode).emit(SERVER_EVENTS.sessionSnapshot, result.data)
+        const viewer = socket.data.identity ?? inferSnapshotViewer(parsedCommand.data)
+        const snapshot = sanitizedSnapshot(result.data.roomCode, viewer)
+
+        ack(createSuccessAck(snapshot))
+        io.to(result.data.roomCode).emit(SERVER_EVENTS.sessionSnapshot, snapshot)
       } catch {
         ack(
           createFailureAck({
@@ -337,5 +351,34 @@ export function registerSessionHandlers(
         )
       }
     }
+
+    function sanitizedSnapshot(roomCode: string, viewer: SnapshotViewer) {
+      const session = store.get(roomCode)
+
+      if (!session) {
+        throw new Error('Session state missing after successful command')
+      }
+
+      return toPreRevealSessionSnapshot(session, viewer)
+    }
   })
+}
+
+function inferSnapshotViewer(command: unknown): SnapshotViewer {
+  if (
+    command &&
+    typeof command === 'object' &&
+    'participantId' in command &&
+    typeof command.participantId === 'string'
+  ) {
+    return {
+      participantId: command.participantId,
+      role: 'participant',
+    }
+  }
+
+  return {
+    participantId: 'moderator',
+    role: 'moderator',
+  }
 }

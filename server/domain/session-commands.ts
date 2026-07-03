@@ -202,17 +202,12 @@ export function submitVote(
     return invalidRoomCodeResult()
   }
 
-  const participant = session.snapshot.participants.find(
-    (candidate) => candidate.id === command.participantId,
-  )
-  const participantToken = session.participantTokens.get(command.participantId)
+  const voter = resolveVoteActor(command, session)
 
-  if (
-    !participant ||
-    participant.role !== 'participant' ||
-    participantToken !== command.participantToken
-  ) {
-    return participantUnauthorizedResult()
+  if (!voter) {
+    return isModeratorVoteCommand(command)
+      ? moderatorVoteUnauthorizedResult()
+      : participantUnauthorizedResult()
   }
 
   if (!session.snapshot.round.active) {
@@ -228,12 +223,12 @@ export function submitVote(
   }
 
   const votes = new Map(session.votes)
-  votes.set(command.participantId, command.value)
+  votes.set(voter.participantId, command.value)
 
   const snapshot = {
     ...session.snapshot,
     participants: session.snapshot.participants.map((candidate) =>
-      candidate.id === command.participantId
+      candidate.id === voter.participantId && candidate.role === voter.role
         ? {
             ...candidate,
             hasVoted: true,
@@ -256,6 +251,49 @@ export function submitVote(
   return {
     ok: true,
     data: snapshot,
+  }
+}
+
+function isModeratorVoteCommand(
+  command: SubmitVoteCommand,
+): command is Extract<SubmitVoteCommand, { moderatorToken: string }> {
+  return 'moderatorToken' in command
+}
+
+function resolveVoteActor(
+  command: SubmitVoteCommand,
+  session: NonNullable<ReturnType<SessionStore['get']>>,
+): { participantId: string; role: 'moderator' | 'participant' } | null {
+  if (isModeratorVoteCommand(command)) {
+    const moderator = session.snapshot.participants.find(
+      (candidate) =>
+        candidate.id === session.moderatorParticipantId && candidate.role === 'moderator',
+    )
+
+    return moderator && session.moderatorToken === command.moderatorToken
+      ? {
+          participantId: moderator.id,
+          role: 'moderator',
+        }
+      : null
+  }
+
+  const participant = session.snapshot.participants.find(
+    (candidate) => candidate.id === command.participantId,
+  )
+  const participantToken = session.participantTokens.get(command.participantId)
+
+  if (
+    !participant ||
+    participant.role !== 'participant' ||
+    participantToken !== command.participantToken
+  ) {
+    return null
+  }
+
+  return {
+    participantId: command.participantId,
+    role: 'participant',
   }
 }
 
@@ -453,6 +491,16 @@ function participantUnauthorizedResult(): DomainFailureResult {
     error: {
       code: ERROR_CODES.unauthorized,
       message: 'Only the participant can submit their vote.',
+    },
+  }
+}
+
+function moderatorVoteUnauthorizedResult(): DomainFailureResult {
+  return {
+    ok: false,
+    error: {
+      code: ERROR_CODES.unauthorized,
+      message: 'Only the moderator can submit their vote.',
     },
   }
 }

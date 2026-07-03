@@ -4,7 +4,7 @@ baseline_commit: d4307df
 
 # Story 2.4: Moderator Votes In The Round
 
-Status: ready-for-dev
+Status: done
 
 Completion Note: Ultimate context engine analysis completed - comprehensive developer guide created.
 
@@ -23,54 +23,60 @@ so that I can contribute an estimate under the same hidden-vote rules as Partici
 
 ## Tasks / Subtasks
 
-- [ ] Extend the shared vote command contract for Moderator voting without breaking Participant voting. (AC: 1-4)
-  - [ ] Preserve the existing Participant vote payload shape `{ roomCode, participantId, participantToken, value }` unless there is a deliberate migration with all affected tests updated.
-  - [ ] Add a Moderator vote branch such as `{ roomCode, moderatorToken, value }` to `SubmitVoteCommandSchema` in `src/shared/schemas/command-schemas.ts`.
-  - [ ] Keep `roomCode`, capability token, and `value` validation strict; reject payloads that mix participant and moderator credentials.
-  - [ ] Keep `CLIENT_EVENTS.voteSubmit` / `vote:submit` as the stable Socket.IO event in `src/shared/contracts/socket-events.ts`.
-  - [ ] Add schema tests for valid Moderator vote payloads, invalid or short moderator tokens, extra fields, missing value, and participant-payload regression coverage.
-- [ ] Implement server-authoritative Moderator vote submission in the domain layer. (AC: 1-3)
-  - [ ] Update `submitVote` in `server/domain/session-commands.ts` to handle both Participant and Moderator vote commands.
-  - [ ] For Moderator commands, authorize only with `session.moderatorToken`; do not accept participant tokens or route/client role claims.
-  - [ ] Store the Moderator vote using `session.moderatorParticipantId` as the vote key in `session.votes`.
-  - [ ] Set only the Moderator participant entry (`role: 'moderator'`) to `hasVoted: true`.
-  - [ ] Recompute `round.voteCount` from `votes.size`, so a Moderator vote increments the count once and a changed Moderator vote does not increment it again.
-  - [ ] Keep failure guard behavior stable: missing room -> `INVALID_ROOM_CODE`; bad Moderator token -> `UNAUTHORIZED`; inactive round -> `ROUND_NOT_ACTIVE`; revealed round -> `VOTE_LOCKED`; out-of-deck value -> `VALIDATION_FAILED`.
-  - [ ] Assert every failure path leaves `votes`, `participants`, `round`, and `updatedAt` unchanged.
-- [ ] Preserve hidden-vote privacy for room-wide snapshots. (AC: 3)
-  - [ ] Do not add selected card values, grouped counts, result distributions, or `selectedCard` fields to `SessionSnapshot` before reveal.
-  - [ ] It is acceptable for the room-wide snapshot to show `hasVoted: true` on the Moderator participant entry; it must not include the Moderator's chosen card.
-  - [ ] Do not log moderator tokens, participant tokens, or hidden vote values.
-  - [ ] Avoid viewer-specific selected-card fields unless a role-aware snapshot mapper is introduced; the current room-wide `session:snapshot` object is unsafe for hidden values.
-- [ ] Wire Moderator voting through the existing Socket.IO vote path. (AC: 1-4)
-  - [ ] Reuse the existing `CLIENT_EVENTS.voteSubmit` handler in `server/socket/register-session-handlers.ts`; keep it thin: validate, delegate, ack, broadcast sanitized snapshot.
-  - [ ] Preserve the existing acknowledgement-before-broadcast ordering.
-  - [ ] Return stable validation and authorization failures without broadcasting.
-  - [ ] Keep accepted broadcasts room-scoped with `io.to(roomCode).emit(SERVER_EVENTS.sessionSnapshot, snapshot)`.
-- [ ] Add Moderator Card selection UI. (AC: 1, 2, 4)
-  - [ ] Update `src/features/session/ModeratorSessionView.tsx` so active unrevealed rounds render selectable active Deck cards for the Moderator.
-  - [ ] Read the Moderator token via `readModeratorToken(roomCode)`; never expose it in UI text, route state, logs, snapshots, or local storage.
-  - [ ] Disable vote controls when no round is active, results are revealed, no moderator token exists, or a vote command is pending.
-  - [ ] Show pending, submitted, changed, and readable error states derived from the server acknowledgement/snapshot; do not optimistically mark the Moderator as voted before accepted server state.
-  - [ ] Keep Story, Deck, and Start Round controls behavior unchanged.
-  - [ ] Use real buttons or radio-style controls with readable labels and `aria-pressed` or equivalent selected state.
-- [ ] Reuse or carefully extract Card vote UI to avoid divergent Participant and Moderator behavior. (AC: 1, 2, 4)
-  - [ ] Prefer a small presentational component under `src/features/cards` only if it removes meaningful duplication between Participant and Moderator card grids.
-  - [ ] Keep socket commands, token lookup, and role-specific state in the owning session views or hooks; do not bury authorization behavior inside a visual component.
-  - [ ] Preserve existing Participant voting behavior and tests while adding Moderator voting.
-- [ ] Add focused automated coverage. (AC: 1-4)
-  - [ ] Add domain tests for successful Moderator first vote, changed Moderator vote replacement, combined Participant plus Moderator `voteCount`, invalid room, bad moderator token, participant token misuse, inactive round, revealed round, invalid deck value, no selected-card leakage, and unchanged state on failure.
-  - [ ] Add socket handler tests for valid Moderator `vote:submit` ack/broadcast, malformed Moderator payload validation, unauthorized token failure, no broadcast on failure, and sanitized snapshot broadcast.
-  - [ ] Add or extend `useSessionSocket` tests if the command type or harness needs coverage for Moderator vote payloads.
-  - [ ] Add Moderator component tests for active card rendering, token-backed submit command, changed vote, missing token disabled state, pending state, readable failures, keyboard-accessible labels, and no hidden value/token rendering.
-  - [ ] Keep existing Participant component tests passing; add regression coverage if shared card UI is extracted.
-  - [ ] Extend Playwright coverage in `tests/e2e/create-session.spec.ts` or add `tests/e2e/voting-round.spec.ts` for a Moderator-started round where both a Participant and the Moderator vote before reveal, the Moderator can change their vote, vote status is visible only as status, and selected card values are not visible in the other browser before reveal.
-- [ ] Verify the story end to end. (AC: 1-4)
-  - [ ] Run `cmd.exe /c npm run typecheck`.
-  - [ ] Run `cmd.exe /c npm run test`.
-  - [ ] Run `cmd.exe /c npm run build`.
-  - [ ] Run `cmd.exe /c npm run lint`.
-  - [ ] Run `cmd.exe /c npm run test:e2e` after browser-flow coverage is updated.
+- [x] Extend the shared vote command contract for Moderator voting without breaking Participant voting. (AC: 1-4)
+  - [x] Preserve the existing Participant vote payload shape `{ roomCode, participantId, participantToken, value }` unless there is a deliberate migration with all affected tests updated.
+  - [x] Add a Moderator vote branch such as `{ roomCode, moderatorToken, value }` to `SubmitVoteCommandSchema` in `src/shared/schemas/command-schemas.ts`.
+  - [x] Keep `roomCode`, capability token, and `value` validation strict; reject payloads that mix participant and moderator credentials.
+  - [x] Keep `CLIENT_EVENTS.voteSubmit` / `vote:submit` as the stable Socket.IO event in `src/shared/contracts/socket-events.ts`.
+  - [x] Add schema tests for valid Moderator vote payloads, invalid or short moderator tokens, extra fields, missing value, and participant-payload regression coverage.
+- [x] Implement server-authoritative Moderator vote submission in the domain layer. (AC: 1-3)
+  - [x] Update `submitVote` in `server/domain/session-commands.ts` to handle both Participant and Moderator vote commands.
+  - [x] For Moderator commands, authorize only with `session.moderatorToken`; do not accept participant tokens or route/client role claims.
+  - [x] Store the Moderator vote using `session.moderatorParticipantId` as the vote key in `session.votes`.
+  - [x] Set only the Moderator participant entry (`role: 'moderator'`) to `hasVoted: true`.
+  - [x] Recompute `round.voteCount` from `votes.size`, so a Moderator vote increments the count once and a changed Moderator vote does not increment it again.
+  - [x] Keep failure guard behavior stable: missing room -> `INVALID_ROOM_CODE`; bad Moderator token -> `UNAUTHORIZED`; inactive round -> `ROUND_NOT_ACTIVE`; revealed round -> `VOTE_LOCKED`; out-of-deck value -> `VALIDATION_FAILED`.
+  - [x] Assert every failure path leaves `votes`, `participants`, `round`, and `updatedAt` unchanged.
+- [x] Preserve hidden-vote privacy for room-wide snapshots. (AC: 3)
+  - [x] Do not add selected card values, grouped counts, result distributions, or `selectedCard` fields to `SessionSnapshot` before reveal.
+  - [x] It is acceptable for the room-wide snapshot to show `hasVoted: true` on the Moderator participant entry; it must not include the Moderator's chosen card.
+  - [x] Do not log moderator tokens, participant tokens, or hidden vote values.
+  - [x] Avoid viewer-specific selected-card fields unless a role-aware snapshot mapper is introduced; the current room-wide `session:snapshot` object is unsafe for hidden values.
+- [x] Wire Moderator voting through the existing Socket.IO vote path. (AC: 1-4)
+  - [x] Reuse the existing `CLIENT_EVENTS.voteSubmit` handler in `server/socket/register-session-handlers.ts`; keep it thin: validate, delegate, ack, broadcast sanitized snapshot.
+  - [x] Preserve the existing acknowledgement-before-broadcast ordering.
+  - [x] Return stable validation and authorization failures without broadcasting.
+  - [x] Keep accepted broadcasts room-scoped with `io.to(roomCode).emit(SERVER_EVENTS.sessionSnapshot, snapshot)`.
+- [x] Add Moderator Card selection UI. (AC: 1, 2, 4)
+  - [x] Update `src/features/session/ModeratorSessionView.tsx` so active unrevealed rounds render selectable active Deck cards for the Moderator.
+  - [x] Read the Moderator token via `readModeratorToken(roomCode)`; never expose it in UI text, route state, logs, snapshots, or local storage.
+  - [x] Disable vote controls when no round is active, results are revealed, no moderator token exists, or a vote command is pending.
+  - [x] Show pending, submitted, changed, and readable error states derived from the server acknowledgement/snapshot; do not optimistically mark the Moderator as voted before accepted server state.
+  - [x] Keep Story, Deck, and Start Round controls behavior unchanged.
+  - [x] Use real buttons or radio-style controls with readable labels and `aria-pressed` or equivalent selected state.
+- [x] Reuse or carefully extract Card vote UI to avoid divergent Participant and Moderator behavior. (AC: 1, 2, 4)
+  - [x] Prefer a small presentational component under `src/features/cards` only if it removes meaningful duplication between Participant and Moderator card grids.
+  - [x] Keep socket commands, token lookup, and role-specific state in the owning session views or hooks; do not bury authorization behavior inside a visual component.
+  - [x] Preserve existing Participant voting behavior and tests while adding Moderator voting.
+- [x] Add focused automated coverage. (AC: 1-4)
+  - [x] Add domain tests for successful Moderator first vote, changed Moderator vote replacement, combined Participant plus Moderator `voteCount`, invalid room, bad moderator token, participant token misuse, inactive round, revealed round, invalid deck value, no selected-card leakage, and unchanged state on failure.
+  - [x] Add socket handler tests for valid Moderator `vote:submit` ack/broadcast, malformed Moderator payload validation, unauthorized token failure, no broadcast on failure, and sanitized snapshot broadcast.
+  - [x] Add or extend `useSessionSocket` tests if the command type or harness needs coverage for Moderator vote payloads.
+  - [x] Add Moderator component tests for active card rendering, token-backed submit command, changed vote, missing token disabled state, pending state, readable failures, keyboard-accessible labels, and no hidden value/token rendering.
+  - [x] Keep existing Participant component tests passing; add regression coverage if shared card UI is extracted.
+  - [x] Extend Playwright coverage in `tests/e2e/create-session.spec.ts` or add `tests/e2e/voting-round.spec.ts` for a Moderator-started round where both a Participant and the Moderator vote before reveal, the Moderator can change their vote, vote status is visible only as status, and selected card values are not visible in the other browser before reveal.
+- [x] Verify the story end to end. (AC: 1-4)
+  - [x] Run `cmd.exe /c npm run typecheck`.
+  - [x] Run `cmd.exe /c npm run test`.
+  - [x] Run `cmd.exe /c npm run build`.
+  - [x] Run `cmd.exe /c npm run lint`.
+  - [x] Run `cmd.exe /c npm run test:e2e` after browser-flow coverage is updated.
+
+### Review Findings
+
+- [x] [Review][Patch] Verify the moderator participant entry before accepting a moderator vote [server/domain/session-commands.ts:267]
+- [x] [Review][Patch] Prefer the latest moderator socket snapshot when timestamps are equal [src/features/session/ModeratorSessionView.tsx:452]
+- [x] [Review][Patch] Prefer the latest participant socket snapshot when timestamps are equal [src/features/session/ParticipantSessionView.tsx:205]
 
 ## Dev Notes
 
@@ -290,10 +296,40 @@ Avoid new top-level folders and duplicate command/snapshot definitions.
 
 ### Agent Model Used
 
-TBD by dev agent.
+GPT-5 Codex
 
 ### Debug Log References
 
+- `cmd.exe /c npm run test -- src/shared/schemas/command-schemas.test.ts` failed before schema implementation, then passed after adding the strict Moderator branch.
+- `cmd.exe /c npm run test -- server/domain/session-commands.test.ts` failed before Moderator actor resolution, then passed after splitting Participant/Moderator vote authorization.
+- `cmd.exe /c npm run test -- src/features/session/ModeratorSessionView.test.tsx` failed before Moderator vote controls existed, then passed after wiring server-acknowledged card selection.
+- `cmd.exe /c npm run lint` initially failed on synchronous state reset effects; replaced them with derived display state and timestamp-aware snapshot precedence.
+- Final validation passed: `cmd.exe /c npm run typecheck`, `cmd.exe /c npm run test`, `cmd.exe /c npm run build`, `cmd.exe /c npm run lint`, `cmd.exe /c npm run test:e2e`.
+
 ### Completion Notes List
 
+- Added strict Participant/Moderator vote command union while preserving `vote:submit` and the Participant payload shape.
+- Extended `submitVote` to authorize Moderator votes using only `session.moderatorToken`, store them under `session.moderatorParticipantId`, update only Moderator `hasVoted`, and recompute `voteCount` from `votes.size`.
+- Kept snapshots status-only before reveal; no selected-card, result, token, or vote-store fields were added to room-wide snapshots.
+- Added Moderator vote cards in active unrevealed rounds with pending, submitted, changed, disabled, and error states driven by server acknowledgements/snapshots.
+- Kept Participant voting behavior passing and tightened accepted-ack versus later snapshot precedence for both session views.
+- Extended schema, domain, socket, component, and Playwright coverage for Moderator voting.
+
 ### File List
+
+- `_bmad-output/implementation-artifacts/2-4-moderator-votes-in-the-round.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `server/domain/session-commands.ts`
+- `server/domain/session-commands.test.ts`
+- `server/socket/register-session-handlers.test.ts`
+- `src/features/session/ModeratorSessionView.tsx`
+- `src/features/session/ModeratorSessionView.test.tsx`
+- `src/features/session/ParticipantSessionView.tsx`
+- `src/shared/schemas/command-schemas.ts`
+- `src/shared/schemas/command-schemas.test.ts`
+- `tests/e2e/create-session.spec.ts`
+
+### Change Log
+
+- 2026-07-03: Implemented Moderator voting through shared schema, domain command, existing Socket.IO vote path, Moderator UI, and automated coverage.
+- 2026-07-03: Validated with typecheck, full Vitest suite, production build, lint, and Playwright e2e.

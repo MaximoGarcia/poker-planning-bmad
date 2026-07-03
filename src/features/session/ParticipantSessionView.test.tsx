@@ -247,6 +247,7 @@ describe('ParticipantSessionView', () => {
       participantTokenStorageKey('ABCD12', 'participant-2'),
       'participant-token-abcdefghijklmnopqrstuvwxyz',
     )
+    const updatedAt = '2026-07-03T13:05:00.000Z'
     const activeSnapshot = {
       ...snapshot,
       story: {
@@ -263,6 +264,7 @@ describe('ParticipantSessionView', () => {
     socketState.submitVote.mockResolvedValue(
       createSuccessAck({
         ...activeSnapshot,
+        updatedAt,
         participants: snapshot.participants.map((participant) =>
           participant.id === 'participant-2' ? { ...participant, hasVoted: true } : participant,
         ),
@@ -285,7 +287,7 @@ describe('ParticipantSessionView', () => {
 
     socketState.latestSnapshot = {
       ...activeSnapshot,
-      updatedAt: '2026-07-03T13:05:00.000Z',
+      updatedAt,
     }
     rerender(buildParticipantRoute({ snapshot: activeSnapshot }))
 
