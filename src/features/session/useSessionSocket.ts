@@ -20,26 +20,25 @@ import {
   type ServerToClientEvents,
 } from '@shared/contracts/socket-events'
 import type { SessionSnapshot } from '@shared/contracts/snapshots'
-import type { CreateSessionCommand, JoinSessionCommand } from '@shared/schemas/command-schemas'
+import type {
+  CreateSessionCommand,
+  JoinSessionCommand,
+  SelectDeckCommand,
+  UpdateStoryCommand,
+} from '@shared/schemas/command-schemas'
 import {
   CreateSessionResultSchema,
   JoinSessionResultSchema,
+  SessionSnapshotAckSchema,
   SessionSnapshotSchema,
 } from '@shared/schemas/session-schemas'
 
 type SessionClientSocket = Socket<ServerToClientEvents, ClientToServerEvents>
-type TimeoutSessionCreateSocket = {
+type TimeoutSessionSocket = {
   emit: (
-    eventName: typeof CLIENT_EVENTS.sessionCreate,
-    command: CreateSessionCommand,
-    callback: (error: Error | null, ack?: Ack<CreateSessionResult>) => void,
-  ) => void
-}
-type TimeoutSessionJoinSocket = {
-  emit: (
-    eventName: typeof CLIENT_EVENTS.sessionJoin,
-    command: JoinSessionCommand,
-    callback: (error: Error | null, ack?: Ack<JoinSessionResult>) => void,
+    eventName: keyof ClientToServerEvents,
+    command: unknown,
+    callback: (error: Error | null, ack?: Ack<unknown>) => void,
   ) => void
 }
 
@@ -52,6 +51,8 @@ export interface UseSessionSocketResult {
   latestSnapshot: SessionSnapshot | null
   createSession: (command: CreateSessionCommand) => Promise<Ack<CreateSessionResult>>
   joinSession: (command: JoinSessionCommand) => Promise<Ack<JoinSessionResult>>
+  updateStory: (command: UpdateStoryCommand) => Promise<Ack<SessionSnapshot>>
+  selectDeck: (command: SelectDeckCommand) => Promise<Ack<SessionSnapshot>>
 }
 
 const SessionSocketContext = createContext<UseSessionSocketResult | null>(null)
@@ -99,9 +100,16 @@ function useSessionSocketConnection(): UseSessionSocketResult {
     }
   }, [])
 
-  const createSession = useCallback(
-    (command: CreateSessionCommand) =>
-      new Promise<Ack<CreateSessionResult>>((resolve) => {
+  const emitValidatedCommand = useCallback(
+    <TAck,>(
+      eventName: keyof ClientToServerEvents,
+      command: unknown,
+      schema: {
+        safeParse: (input: unknown) => { success: true; data: TAck } | { success: false }
+      },
+      onSuccess?: (ackData: TAck) => void,
+    ) =>
+      new Promise<Ack<TAck>>((resolve) => {
         const socket = socketRef.current
 
         if (!socket?.connected) {
@@ -109,74 +117,55 @@ function useSessionSocketConnection(): UseSessionSocketResult {
           return
         }
 
-        const socketWithTimeout = socket.timeout(ACK_TIMEOUT_MS) as unknown as TimeoutSessionCreateSocket
+        const socketWithTimeout = socket.timeout(ACK_TIMEOUT_MS) as unknown as TimeoutSessionSocket
 
-        socketWithTimeout.emit(
-          CLIENT_EVENTS.sessionCreate,
-          command,
-          (error: Error | null, ack?: Ack<CreateSessionResult>) => {
-            if (error || !ack) {
-              resolve(createConnectionUnavailableAck())
-              return
-            }
+        socketWithTimeout.emit(eventName, command, (error: Error | null, ack?: Ack<unknown>) => {
+          if (error || !ack) {
+            resolve(createConnectionUnavailableAck())
+            return
+          }
 
-            if (!ack.ok) {
-              resolve(ack)
-              return
-            }
+          if (!ack.ok) {
+            resolve(ack as Ack<TAck>)
+            return
+          }
 
-            const parsedResult = CreateSessionResultSchema.safeParse(ack.data)
+          const parsedResult = schema.safeParse(ack.data)
 
-            if (!parsedResult.success) {
-              resolve(createConnectionUnavailableAck())
-              return
-            }
+          if (!parsedResult.success) {
+            resolve(createConnectionUnavailableAck())
+            return
+          }
 
-            resolve(createSuccessAck(parsedResult.data))
-          },
-        )
+          onSuccess?.(parsedResult.data)
+          resolve(createSuccessAck(parsedResult.data))
+        })
       }),
     [],
   )
 
+  const createSession = useCallback(
+    (command: CreateSessionCommand) =>
+      emitValidatedCommand(CLIENT_EVENTS.sessionCreate, command, CreateSessionResultSchema),
+    [emitValidatedCommand],
+  )
+
   const joinSession = useCallback(
     (command: JoinSessionCommand) =>
-      new Promise<Ack<JoinSessionResult>>((resolve) => {
-        const socket = socketRef.current
+      emitValidatedCommand(CLIENT_EVENTS.sessionJoin, command, JoinSessionResultSchema),
+    [emitValidatedCommand],
+  )
 
-        if (!socket?.connected) {
-          resolve(createConnectionUnavailableAck())
-          return
-        }
+  const updateStory = useCallback(
+    (command: UpdateStoryCommand) =>
+      emitValidatedCommand(CLIENT_EVENTS.storyUpdate, command, SessionSnapshotAckSchema, setLatestSnapshot),
+    [emitValidatedCommand],
+  )
 
-        const socketWithTimeout = socket.timeout(ACK_TIMEOUT_MS) as unknown as TimeoutSessionJoinSocket
-
-        socketWithTimeout.emit(
-          CLIENT_EVENTS.sessionJoin,
-          command,
-          (error: Error | null, ack?: Ack<JoinSessionResult>) => {
-            if (error || !ack) {
-              resolve(createConnectionUnavailableAck())
-              return
-            }
-
-            if (!ack.ok) {
-              resolve(ack)
-              return
-            }
-
-            const parsedResult = JoinSessionResultSchema.safeParse(ack.data)
-
-            if (!parsedResult.success) {
-              resolve(createConnectionUnavailableAck())
-              return
-            }
-
-            resolve(createSuccessAck(parsedResult.data))
-          },
-        )
-      }),
-    [],
+  const selectDeck = useCallback(
+    (command: SelectDeckCommand) =>
+      emitValidatedCommand(CLIENT_EVENTS.deckSelect, command, SessionSnapshotAckSchema, setLatestSnapshot),
+    [emitValidatedCommand],
   )
 
   return {
@@ -184,6 +173,8 @@ function useSessionSocketConnection(): UseSessionSocketResult {
     latestSnapshot,
     createSession,
     joinSession,
+    updateStory,
+    selectDeck,
   }
 }
 

@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
+import { ERROR_CODES } from '@shared/contracts/errors'
+import { PLANNING_DECKS, PLANNING_DECK_ID_VALUES, type PlanningDeckId } from '@shared/domain/decks'
 import type { SessionSnapshot } from '@shared/contracts/snapshots'
 import { SessionSnapshotSchema } from '@shared/schemas/session-schemas'
 import { readModeratorToken } from './session-storage'
@@ -12,10 +14,10 @@ interface ModeratorRouteState {
 export function ModeratorSessionView() {
   const { roomCode = '' } = useParams()
   const location = useLocation()
-  const { latestSnapshot } = useSessionSocket()
+  const sessionSocket = useSessionSocket()
   const [copied, setCopied] = useState(false)
   const routeSnapshot = snapshotFromRouteState(location.state)
-  const snapshot = selectSnapshot(roomCode, latestSnapshot, routeSnapshot)
+  const snapshot = selectSnapshot(roomCode, sessionSocket.latestSnapshot, routeSnapshot)
   const moderatorToken = roomCode ? readModeratorToken(roomCode) : null
   const participants =
     snapshot?.participants.filter((participant) => participant.role === 'participant') ?? []
@@ -62,10 +64,13 @@ export function ModeratorSessionView() {
             {copied ? 'Copied' : 'Copy room code'}
           </button>
         </div>
-        <section className="empty-state" aria-labelledby="active-story-title">
-          <h2 id="active-story-title">No active story yet</h2>
-          <p>Ready for the first story.</p>
-        </section>
+        <StoryDeckEditor
+          key={`${snapshot.story?.id ?? ''}:${snapshot.story?.title ?? ''}:${snapshot.deck.id}:${snapshot.round.active ? 'locked' : 'open'}`}
+          moderatorToken={moderatorToken}
+          roomCode={roomCode}
+          sessionSnapshot={snapshot}
+          sessionSocket={sessionSocket}
+        />
         <section className="presence-section" aria-labelledby="presence-title">
           <div className="section-heading">
             <p className="eyebrow">Presence</p>
@@ -94,6 +99,161 @@ export function ModeratorSessionView() {
       </section>
     </main>
   )
+}
+
+function StoryDeckEditor({
+  moderatorToken,
+  roomCode,
+  sessionSnapshot,
+  sessionSocket,
+}: {
+  moderatorToken: string
+  roomCode: string
+  sessionSnapshot: SessionSnapshot
+  sessionSocket: ReturnType<typeof useSessionSocket>
+}) {
+  const [storyId, setStoryId] = useState(sessionSnapshot.story?.id ?? '')
+  const [storyTitle, setStoryTitle] = useState(sessionSnapshot.story?.title ?? '')
+  const [pendingStoryUpdate, setPendingStoryUpdate] = useState(false)
+  const [pendingDeckId, setPendingDeckId] = useState<PlanningDeckId | null>(null)
+  const [commandError, setCommandError] = useState<string | null>(null)
+  const commandPending = pendingStoryUpdate || Boolean(pendingDeckId)
+
+  async function handleStorySubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    setPendingStoryUpdate(true)
+    setCommandError(null)
+
+    const result = await sessionSocket.updateStory({
+      roomCode,
+      moderatorToken,
+      storyId,
+      title: storyTitle,
+    })
+
+    setPendingStoryUpdate(false)
+
+    if (!result.ok) {
+      setCommandError(errorMessageForCode(result.error.code))
+    }
+  }
+
+  async function handleDeckSelect(deckId: PlanningDeckId) {
+    setPendingDeckId(deckId)
+    setCommandError(null)
+
+    const result = await sessionSocket.selectDeck({
+      roomCode,
+      moderatorToken,
+      deckId,
+    })
+
+    setPendingDeckId(null)
+
+    if (!result.ok) {
+      setCommandError(errorMessageForCode(result.error.code))
+    }
+  }
+
+  return (
+    <section className="session-summary" aria-labelledby="story-controls-title">
+      <div className="section-heading">
+        <p className="eyebrow">Current story</p>
+        <h2 id="story-controls-title">Story and deck</h2>
+      </div>
+      <form aria-label="Current story form" onSubmit={handleStorySubmit}>
+        <label>
+          Story identifier
+          <input
+            aria-label="Story identifier"
+            disabled={commandPending || sessionSnapshot.round.active}
+            maxLength={120}
+            onChange={(event) => setStoryId(event.target.value)}
+            required
+            type="text"
+            value={storyId}
+          />
+        </label>
+        <label>
+          Brief description
+          <input
+            aria-label="Brief description"
+            disabled={commandPending || sessionSnapshot.round.active}
+            maxLength={240}
+            onChange={(event) => setStoryTitle(event.target.value)}
+            required
+            type="text"
+            value={storyTitle}
+          />
+        </label>
+        <button
+          className="primary-action"
+          disabled={commandPending || sessionSnapshot.round.active}
+          type="submit"
+        >
+          {pendingStoryUpdate ? 'Saving story...' : 'Save story'}
+        </button>
+      </form>
+      <div aria-label="Deck selection" role="group">
+        {PLANNING_DECK_ID_VALUES.map((deckId) => {
+          const deck = PLANNING_DECKS[deckId]
+          const isActive = sessionSnapshot.deck.id === deckId
+          const isPending = pendingDeckId === deckId
+
+          return (
+            <button
+              aria-pressed={isActive}
+              className="secondary-action"
+              disabled={commandPending || sessionSnapshot.round.active}
+              key={deckId}
+              onClick={() => void handleDeckSelect(deckId)}
+              type="button"
+            >
+              {isPending ? `Switching to ${deck.label}...` : deck.label}
+            </button>
+          )
+        })}
+      </div>
+      {commandError ? <p role="alert">{commandError}</p> : null}
+      {sessionSnapshot.story ? (
+        <section aria-labelledby="active-story-title">
+          <h3 id="active-story-title">{sessionSnapshot.story.id}</h3>
+          <p>{sessionSnapshot.story.title}</p>
+        </section>
+      ) : (
+        <section className="empty-state" aria-labelledby="active-story-title">
+          <h2 id="active-story-title">No active story yet</h2>
+          <p>Ready for the first story.</p>
+        </section>
+      )}
+      <p>Deck: {sessionSnapshot.deck.label}</p>
+      <section className="deck-options" aria-label="Moderator deck options">
+        <h3>{sessionSnapshot.deck.label} options</h3>
+        <ul>
+          {sessionSnapshot.deck.values.map((value) => (
+            <li key={value}>{value}</li>
+          ))}
+        </ul>
+      </section>
+      <p>
+        {sessionSnapshot.round.active
+          ? 'Story and deck are locked during an active round.'
+          : 'Story and deck are ready to edit.'}
+      </p>
+    </section>
+  )
+}
+
+function errorMessageForCode(code: string): string {
+  switch (code) {
+    case ERROR_CODES.storyLocked:
+      return 'Story and deck changes are locked while a round is active.'
+    case ERROR_CODES.unauthorized:
+      return 'Only the moderator can update the current story and deck.'
+    default:
+      return 'The story or deck update could not be completed.'
+  }
 }
 
 function snapshotFromRouteState(state: unknown): SessionSnapshot | null {

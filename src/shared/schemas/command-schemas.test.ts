@@ -2,7 +2,13 @@ import { createFailureAck, createSuccessAck } from '../contracts/ack'
 import { ERROR_CODES } from '../contracts/errors'
 import { CLIENT_EVENTS, SERVER_EVENTS } from '../contracts/socket-events'
 import { PLANNING_DECKS } from '../domain/decks'
-import { CreateSessionCommandSchema, JoinSessionCommandSchema } from './command-schemas'
+import {
+  CreateSessionCommandSchema,
+  JoinSessionCommandSchema,
+  SelectDeckCommandSchema,
+  UpdateStoryCommandSchema,
+} from './command-schemas'
+import { SessionSnapshotAckSchema } from './session-schemas'
 
 describe('shared contracts and schemas', () => {
   it('uses a single acknowledgement shape', () => {
@@ -36,5 +42,72 @@ describe('shared contracts and schemas', () => {
       deckId: 'fibonacci',
     })
     expect(JoinSessionCommandSchema.safeParse({ roomCode: 'abc', displayName: 'Ana' }).success).toBe(false)
+  })
+
+  it('validates moderator story and deck commands with shared schemas', () => {
+    expect(
+      UpdateStoryCommandSchema.parse({
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        storyId: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+      }),
+    ).toEqual({
+      roomCode: 'ABCD12',
+      moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      storyId: 'ADR-21',
+      title: 'Estimate socket moderation flow',
+    })
+
+    expect(
+      SelectDeckCommandSchema.parse({
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        deckId: 'tshirt',
+      }),
+    ).toEqual({
+      roomCode: 'ABCD12',
+      moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      deckId: 'tshirt',
+    })
+
+    expect(
+      UpdateStoryCommandSchema.safeParse({
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator token with spaces ################',
+        storyId: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+      }).success,
+    ).toBe(false)
+  })
+
+  it('validates snapshot acknowledgements for moderator commands', () => {
+    const snapshot = SessionSnapshotAckSchema.parse({
+      roomCode: 'ABCD12',
+      deck: PLANNING_DECKS.tshirt,
+      story: {
+        id: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+        locked: false,
+      },
+      participants: [
+        {
+          id: 'moderator-1',
+          displayName: 'Maxi',
+          role: 'moderator',
+          connected: true,
+          hasVoted: false,
+        },
+      ],
+      round: {
+        active: false,
+        revealed: false,
+        voteCount: 0,
+      },
+      updatedAt: '2026-07-02T12:00:00.000Z',
+    })
+
+    expect(snapshot.story?.id).toBe('ADR-21')
+    expect(snapshot.deck.values).toEqual(['XS', 'S', 'M', 'L', 'XL'])
   })
 })

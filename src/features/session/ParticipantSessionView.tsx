@@ -50,8 +50,12 @@ export function ParticipantSessionView() {
             <strong>{participant.displayName}</strong>
           </div>
           <div>
-            <span>Story</span>
-            <strong>{snapshot.story?.title ?? 'No active story yet'}</strong>
+            <span>Story ID</span>
+            <strong>{snapshot.story?.id ?? 'No active story yet'}</strong>
+          </div>
+          <div>
+            <span>Story description</span>
+            <strong>{snapshot.story?.title ?? 'Waiting for the moderator to choose the first story.'}</strong>
           </div>
           <div>
             <span>Deck</span>

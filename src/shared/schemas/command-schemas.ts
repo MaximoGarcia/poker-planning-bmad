@@ -29,8 +29,17 @@ export const JoinSessionCommandSchema = z
 export const UpdateStoryCommandSchema = z
   .object({
     roomCode: RoomCodeSchema,
+    moderatorToken: z.string().trim().min(32).max(256).regex(/^[A-Za-z0-9_-]+$/),
     storyId: z.string().trim().min(1).max(120),
     title: z.string().trim().min(1).max(240),
+  })
+  .strict()
+
+export const SelectDeckCommandSchema = z
+  .object({
+    roomCode: RoomCodeSchema,
+    moderatorToken: z.string().trim().min(32).max(256).regex(/^[A-Za-z0-9_-]+$/),
+    deckId: PlanningDeckIdSchema,
   })
   .strict()
 
@@ -44,4 +53,5 @@ export const SubmitVoteCommandSchema = z
 export type CreateSessionCommand = z.infer<typeof CreateSessionCommandSchema>
 export type JoinSessionCommand = z.infer<typeof JoinSessionCommandSchema>
 export type UpdateStoryCommand = z.infer<typeof UpdateStoryCommandSchema>
+export type SelectDeckCommand = z.infer<typeof SelectDeckCommandSchema>
 export type SubmitVoteCommand = z.infer<typeof SubmitVoteCommandSchema>

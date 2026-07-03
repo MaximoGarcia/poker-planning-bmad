@@ -2,12 +2,16 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render } from '@/test/render'
+import { createFailureAck, createSuccessAck } from '@shared/contracts/ack'
+import { ERROR_CODES } from '@shared/contracts/errors'
 import { PLANNING_DECKS } from '@shared/domain/decks'
 import { ModeratorSessionView } from './ModeratorSessionView'
 import { moderatorTokenStorageKey } from './session-storage'
 
 const socketState = vi.hoisted(() => ({
   latestSnapshot: null as typeof snapshot | null,
+  updateStory: vi.fn(),
+  selectDeck: vi.fn(),
 }))
 
 vi.mock('./useSessionSocket', () => ({
@@ -15,6 +19,8 @@ vi.mock('./useSessionSocket', () => ({
     connectionStatus: 'connected',
     createSession: vi.fn(),
     latestSnapshot: socketState.latestSnapshot,
+    selectDeck: socketState.selectDeck,
+    updateStory: socketState.updateStory,
   }),
 }))
 
@@ -60,6 +66,10 @@ describe('ModeratorSessionView', () => {
   beforeEach(() => {
     window.sessionStorage.clear()
     socketState.latestSnapshot = null
+    socketState.updateStory.mockReset()
+    socketState.selectDeck.mockReset()
+    socketState.updateStory.mockResolvedValue(createSuccessAck(snapshot))
+    socketState.selectDeck.mockResolvedValue(createSuccessAck(snapshot))
   })
 
   it('shows the room code and empty story state from the returned snapshot', () => {
@@ -121,7 +131,7 @@ describe('ModeratorSessionView', () => {
     expect(within(list).queryByText('Maxi', { exact: true })).not.toBeInTheDocument()
   })
 
-  it('does not render selected card values, tokens, or internal identity metadata', () => {
+  it('does not render tokens or internal identity metadata', () => {
     window.sessionStorage.setItem(
       moderatorTokenStorageKey('ABCD12'),
       'moderator-token-abcdefghijklmnopqrstuvwxyz',
@@ -148,7 +158,6 @@ describe('ModeratorSessionView', () => {
     renderModeratorRoute({ snapshot })
 
     expect(screen.getByText('Maxi (2)')).toBeInTheDocument()
-    expect(screen.queryByText('13')).not.toBeInTheDocument()
     expect(screen.queryByText(/token-should-stay-hidden/i)).not.toBeInTheDocument()
     expect(screen.queryByText('participant-hidden-id')).not.toBeInTheDocument()
     expect(screen.queryByText('socket-hidden-id')).not.toBeInTheDocument()
@@ -219,5 +228,105 @@ describe('ModeratorSessionView', () => {
       expect(writeText).toHaveBeenCalledWith('ABCD12')
     })
     expect(screen.getByRole('button', { name: 'Copy room code' })).toBeInTheDocument()
+  })
+
+  it('renders moderator story controls and submits token-backed story updates', async () => {
+    window.sessionStorage.setItem(
+      moderatorTokenStorageKey('ABCD12'),
+      'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    )
+    socketState.latestSnapshot = {
+      ...snapshot,
+      story: {
+        id: 'ADR-20',
+        title: 'Existing story',
+        locked: false,
+      },
+    }
+
+    renderModeratorRoute({ snapshot })
+    fireEvent.change(screen.getByLabelText('Story identifier'), { target: { value: 'ADR-21' } })
+    fireEvent.change(screen.getByLabelText('Brief description'), {
+      target: { value: 'Estimate socket moderation flow' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Save story' }))
+
+    await waitFor(() => {
+      expect(socketState.updateStory).toHaveBeenCalledWith({
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        storyId: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+      })
+    })
+
+    expect(screen.getByLabelText('Story identifier')).toHaveAttribute('maxLength', '120')
+  })
+
+  it('shows the active deck values to the moderator', () => {
+    window.sessionStorage.setItem(
+      moderatorTokenStorageKey('ABCD12'),
+      'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    )
+
+    renderModeratorRoute({ snapshot })
+
+    expect(screen.getByRole('heading', { name: 'Fibonacci options' })).toBeInTheDocument()
+    expect(screen.getByText('Coffee')).toBeInTheDocument()
+  })
+
+  it('shows pending and error states for moderator deck changes and blocks overlapping story edits', async () => {
+    window.sessionStorage.setItem(
+      moderatorTokenStorageKey('ABCD12'),
+      'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    )
+    let resolveAck: ((value: ReturnType<typeof createSuccessAck>) => void) | undefined
+    socketState.selectDeck.mockReturnValue(
+      new Promise((resolve) => {
+        resolveAck = resolve
+      }),
+    )
+
+    renderModeratorRoute({ snapshot })
+    fireEvent.click(screen.getByRole('button', { name: 'T-shirt' }))
+
+    expect(screen.getByRole('button', { name: 'Switching to T-shirt...' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Save story' })).toBeDisabled()
+    expect(screen.getByLabelText('Story identifier')).toBeDisabled()
+    resolveAck?.(createFailureAck({
+      code: ERROR_CODES.storyLocked,
+      message: 'The current story and deck cannot change during an active round.',
+    }) as never)
+
+    await screen.findByRole('alert')
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Story and deck changes are locked while a round is active.',
+    )
+  })
+
+  it('blocks deck changes while a story save is pending', async () => {
+    window.sessionStorage.setItem(
+      moderatorTokenStorageKey('ABCD12'),
+      'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    )
+    let resolveAck: ((value: ReturnType<typeof createSuccessAck>) => void) | undefined
+    socketState.updateStory.mockReturnValue(
+      new Promise((resolve) => {
+        resolveAck = resolve
+      }),
+    )
+
+    renderModeratorRoute({ snapshot })
+    fireEvent.change(screen.getByLabelText('Story identifier'), { target: { value: 'ADR-21' } })
+    fireEvent.change(screen.getByLabelText('Brief description'), {
+      target: { value: 'Estimate socket moderation flow' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Save story' }))
+
+    expect(screen.getByRole('button', { name: 'T-shirt' })).toBeDisabled()
+    resolveAck?.(createSuccessAck(snapshot) as never)
+    await waitFor(() => {
+      expect(socketState.updateStory).toHaveBeenCalled()
+    })
   })
 })

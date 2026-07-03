@@ -1,4 +1,9 @@
-import type { CreateSessionCommand, JoinSessionCommand } from '../schemas/command-schemas.js'
+import type {
+  CreateSessionCommand,
+  JoinSessionCommand,
+  SelectDeckCommand,
+  UpdateStoryCommand,
+} from '../schemas/command-schemas.js'
 import type { SessionSnapshot } from './snapshots.js'
 import type { AckCallback } from './ack.js'
 
@@ -42,8 +47,8 @@ export interface JoinSessionResult {
 export interface ClientToServerEventPayloads {
   'session:create': CreateSessionCommand
   'session:join': JoinSessionCommand
-  'story:update': { roomCode: string; storyId: string; title: string }
-  'deck:select': { roomCode: string; deckId: string }
+  'story:update': UpdateStoryCommand
+  'deck:select': SelectDeckCommand
   'round:start': { roomCode: string }
   'vote:submit': { roomCode: string; value: string }
   'round:reveal': { roomCode: string }

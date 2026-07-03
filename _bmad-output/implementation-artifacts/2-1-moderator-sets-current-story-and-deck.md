@@ -4,7 +4,7 @@ baseline_commit: 5b18d4266678a5237c5c8f6260ded6f682a91c71
 
 # Story 2.1: Moderator Sets Current Story And Deck
 
-Status: ready-for-dev
+Status: done
 
 Completion Note: Ultimate context engine analysis completed - comprehensive developer guide created.
 
@@ -24,48 +24,56 @@ so that everyone estimates the same work item using the same card options.
 
 ## Tasks / Subtasks
 
-- [ ] Add shared command contracts for story/deck updates. (AC: 1-5)
-  - [ ] Promote `story:update` payloads to a shared command schema and strict payload type instead of the current inline event payload typing.
-  - [ ] Add a strict `deck:select` command schema using the existing `PlanningDeckIdSchema`.
-  - [ ] Include `moderatorToken` in both command payloads so authorization stays server-enforced and does not depend on socket identity alone.
-  - [ ] Keep acknowledgement shapes as `{ ok: true, data }` or `{ ok: false, error }`; do not introduce ad hoc response formats.
-- [ ] Implement server-side domain behavior for story/deck changes. (AC: 1-4)
-  - [ ] Add domain commands in `server/domain/session-commands.ts` for story update and deck selection.
-  - [ ] Authorize these commands with the stored moderator token and reject invalid tokens with `UNAUTHORIZED`.
-  - [ ] Reject story/deck changes when `snapshot.round.active === true` with `STORY_LOCKED`.
-  - [ ] Preserve existing votes, round flags, participant list, and estimated stories when changing story/deck outside an active round.
-  - [ ] Update `snapshot.story`, `snapshot.deck`, and `snapshot.updatedAt` only through the domain layer.
-- [ ] Wire Socket.IO handlers for `story:update` and `deck:select`. (AC: 1-5)
-  - [ ] Extend `server/socket/register-session-handlers.ts` to validate, authorize, delegate to domain commands, acknowledge the caller, and emit the resulting sanitized `session:snapshot` to the room.
-  - [ ] Keep handlers thin; do not mutate session state directly in the socket layer.
-  - [ ] Reuse stable error codes from `src/shared/contracts/errors.ts`; add no new transport channel or REST endpoint.
-- [ ] Add Moderator story/deck controls in the session UI. (AC: 1-4)
-  - [ ] Update `src/features/session/ModeratorSessionView.tsx` to render an editable current-story form with Story identifier and brief description fields.
-  - [ ] Add Deck selection controls that clearly switch between the existing shared Fibonacci and T-shirt decks.
-  - [ ] Read the moderator token from `sessionStorage` and send it with `story:update` and `deck:select` commands through `useSessionSocket`.
-  - [ ] Show pending/disabled states while acknowledgements are in flight and avoid optimistic authority-sensitive UI updates.
-  - [ ] Keep the existing room code, participant presence, and missing-session behavior intact.
-- [ ] Keep Participant UI read-only and synchronized. (AC: 1, 2, 3, 5)
-  - [ ] Update `src/features/session/ParticipantSessionView.tsx` to display the current Story identifier and description from the server snapshot.
-  - [ ] Continue rendering the active deck from `snapshot.deck`; do not add story/deck editing controls to the Participant view.
-  - [ ] Ensure Moderator-only tokens, edit actions, and internal metadata remain absent from Participant rendering.
-- [ ] Extend the socket client helper to support moderator commands. (AC: 1-5)
-  - [ ] Add typed `updateStory` and `selectDeck` helpers to `src/features/session/useSessionSocket.ts`.
-  - [ ] Validate successful acknowledgements using shared schemas before updating local caller state.
-  - [ ] Preserve existing create/join behavior and the validated `session:snapshot` listener.
-- [ ] Add focused automated coverage. (AC: 1-5)
-  - [ ] Add schema tests for story/deck update payloads and acknowledgement parsing.
-  - [ ] Add domain tests for authorized Moderator updates, unauthorized attempts, and `STORY_LOCKED` behavior.
-  - [ ] Add socket handler tests proving valid Moderator commands broadcast the room snapshot and invalid/participant commands return stable errors without mutation.
-  - [ ] Add component tests for Moderator edit controls, pending states, and Participant read-only rendering.
-  - [ ] Add or update Playwright coverage for Moderator editing Story/Deck and Participant near-real-time visibility.
-- [ ] Verify the story end to end. (AC: 1-5)
-  - [ ] Run `npm run typecheck`.
-  - [ ] Run `npm run test`.
-  - [ ] Run `npm run build`.
-  - [ ] Run `npm run lint`.
-  - [ ] Run `npm run test:e2e` after browser coverage is updated.
-  - [ ] Confirm no unchecked tasks remain before moving the story to `in-progress` or `review`.
+- [x] Add shared command contracts for story/deck updates. (AC: 1-5)
+  - [x] Promote `story:update` payloads to a shared command schema and strict payload type instead of the current inline event payload typing.
+  - [x] Add a strict `deck:select` command schema using the existing `PlanningDeckIdSchema`.
+  - [x] Include `moderatorToken` in both command payloads so authorization stays server-enforced and does not depend on socket identity alone.
+  - [x] Keep acknowledgement shapes as `{ ok: true, data }` or `{ ok: false, error }`; do not introduce ad hoc response formats.
+- [x] Implement server-side domain behavior for story/deck changes. (AC: 1-4)
+  - [x] Add domain commands in `server/domain/session-commands.ts` for story update and deck selection.
+  - [x] Authorize these commands with the stored moderator token and reject invalid tokens with `UNAUTHORIZED`.
+  - [x] Reject story/deck changes when `snapshot.round.active === true` with `STORY_LOCKED`.
+  - [x] Preserve existing votes, round flags, participant list, and estimated stories when changing story/deck outside an active round.
+  - [x] Update `snapshot.story`, `snapshot.deck`, and `snapshot.updatedAt` only through the domain layer.
+- [x] Wire Socket.IO handlers for `story:update` and `deck:select`. (AC: 1-5)
+  - [x] Extend `server/socket/register-session-handlers.ts` to validate, authorize, delegate to domain commands, acknowledge the caller, and emit the resulting sanitized `session:snapshot` to the room.
+  - [x] Keep handlers thin; do not mutate session state directly in the socket layer.
+  - [x] Reuse stable error codes from `src/shared/contracts/errors.ts`; add no new transport channel or REST endpoint.
+- [x] Add Moderator story/deck controls in the session UI. (AC: 1-4)
+  - [x] Update `src/features/session/ModeratorSessionView.tsx` to render an editable current-story form with Story identifier and brief description fields.
+  - [x] Add Deck selection controls that clearly switch between the existing shared Fibonacci and T-shirt decks.
+  - [x] Read the moderator token from `sessionStorage` and send it with `story:update` and `deck:select` commands through `useSessionSocket`.
+  - [x] Show pending/disabled states while acknowledgements are in flight and avoid optimistic authority-sensitive UI updates.
+  - [x] Keep the existing room code, participant presence, and missing-session behavior intact.
+- [x] Keep Participant UI read-only and synchronized. (AC: 1, 2, 3, 5)
+  - [x] Update `src/features/session/ParticipantSessionView.tsx` to display the current Story identifier and description from the server snapshot.
+  - [x] Continue rendering the active deck from `snapshot.deck`; do not add story/deck editing controls to the Participant view.
+  - [x] Ensure Moderator-only tokens, edit actions, and internal metadata remain absent from Participant rendering.
+- [x] Extend the socket client helper to support moderator commands. (AC: 1-5)
+  - [x] Add typed `updateStory` and `selectDeck` helpers to `src/features/session/useSessionSocket.ts`.
+  - [x] Validate successful acknowledgements using shared schemas before updating local caller state.
+  - [x] Preserve existing create/join behavior and the validated `session:snapshot` listener.
+- [x] Add focused automated coverage. (AC: 1-5)
+  - [x] Add schema tests for story/deck update payloads and acknowledgement parsing.
+  - [x] Add domain tests for authorized Moderator updates, unauthorized attempts, and `STORY_LOCKED` behavior.
+  - [x] Add socket handler tests proving valid Moderator commands broadcast the room snapshot and invalid/participant commands return stable errors without mutation.
+  - [x] Add component tests for Moderator edit controls, pending states, and Participant read-only rendering.
+  - [x] Add or update Playwright coverage for Moderator editing Story/Deck and Participant near-real-time visibility.
+- [x] Verify the story end to end. (AC: 1-5)
+  - [x] Run `npm run typecheck`.
+  - [x] Run `npm run test`.
+  - [x] Run `npm run build`.
+  - [x] Run `npm run lint`.
+  - [x] Run `npm run test:e2e` after browser coverage is updated.
+  - [x] Confirm no unchecked tasks remain before moving the story to `in-progress` or `review`.
+
+### Review Findings
+
+- [x] [Review][Patch] Successful moderator command acknowledgements are validated but never applied to local snapshot state [src/features/session/useSessionSocket.ts:132]
+- [x] [Review][Patch] Story and deck controls can still dispatch overlapping commands while another acknowledgement is in flight [src/features/session/ModeratorSessionView.tsx:169]
+- [x] [Review][Patch] Moderator socket handlers do not translate thrown domain/store failures into stable error acknowledgements [server/socket/register-session-handlers.ts:286]
+- [x] [Review][Patch] Moderator view now renders the active deck card options alongside participants [src/features/session/ModeratorSessionView.tsx:229]
+- [x] [Review][Patch] Moderator command inputs now enforce the shared story-length and token-format constraints earlier on the client [src/features/session/ModeratorSessionView.tsx:168]
 
 ## Dev Notes
 
@@ -253,6 +261,8 @@ GPT-5 Codex
 - 2026-07-02: No `project-context.md` file was found from the configured persistent-facts glob.
 - 2026-07-02: Loaded epic, PRD, architecture, sprint status, Story 1.4, current socket/domain/shared contract files, session views, session storage helpers, tests, package dependencies, and recent git history.
 - 2026-07-02: Confirmed Epic 2 Story 1 is the next backlog item and that Epic 2 must move from `backlog` to `in-progress` when this story file is created.
+- 2026-07-02: Story status moved to in-progress and sprint tracking synced before implementation work started.
+- 2026-07-02: Completed `npm run typecheck`, `npm run test`, `npm run build`, `npm run lint`, and `npm run test:e2e` after implementing moderator story/deck commands.
 
 ### Implementation Plan
 
@@ -263,15 +273,33 @@ GPT-5 Codex
 
 ### Completion Notes List
 
-- Created Story 2.1 developer context for Moderator-only current Story and deck selection.
-- Included authorization, round-lock, snapshot-sanitization, and UI/state-management guardrails tied to the current codebase.
-- Included implementation and testing guidance covering shared schemas, domain logic, socket handlers, Moderator UI, Participant UI, and browser-flow verification.
+- Implemented token-aware shared `story:update` and `deck:select` command schemas plus validated snapshot acknowledgements.
+- Added domain and socket support for moderator-only story/deck mutations with `UNAUTHORIZED` and `STORY_LOCKED` enforcement.
+- Delivered moderator editing controls, participant read-only story visibility, and snapshot-driven pending/error handling without exposing capability tokens.
+- Added schema, domain, socket, component, hook, and Playwright coverage, then passed typecheck, unit tests, lint, build, and end-to-end validation.
 
 ### File List
 
 - `_bmad-output/implementation-artifacts/2-1-moderator-sets-current-story-and-deck.md`
 - `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `server/domain/session-commands.ts`
+- `server/domain/session-commands.test.ts`
+- `server/socket/register-session-handlers.ts`
+- `server/socket/register-session-handlers.test.ts`
+- `src/shared/contracts/socket-events.ts`
+- `src/shared/schemas/command-schemas.ts`
+- `src/shared/schemas/command-schemas.test.ts`
+- `src/shared/schemas/session-schemas.ts`
+- `src/features/session/useSessionSocket.ts`
+- `src/features/session/useSessionSocket.test.tsx`
+- `src/features/session/ModeratorSessionView.tsx`
+- `src/features/session/ModeratorSessionView.test.tsx`
+- `src/features/session/ParticipantSessionView.tsx`
+- `src/features/session/ParticipantSessionView.test.tsx`
+- `tests/e2e/create-session.spec.ts`
 
 ## Change Log
 
 - 2026-07-02: Created Story 2.1 developer context and marked it ready for development.
+- 2026-07-02: Moved Story 2.1 to in-progress before implementation began.
+- 2026-07-02: Implemented moderator story/deck commands, synchronized session UI updates, and completed the full validation suite before moving the story to review.

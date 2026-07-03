@@ -12,6 +12,7 @@ function createHarness(
   rateLimiter?: Partial<SocketRateLimiter>,
   createSessionDependencies?: Partial<Omit<CreateSessionDependencies, 'store'>>,
   joinSessionDependencies?: Partial<Omit<JoinSessionDependencies, 'store'>>,
+  moderatorSessionDependencies?: { now?: () => Date },
 ) {
   const store = createSessionStore()
   let connectionHandler: EventHandler | undefined
@@ -57,6 +58,7 @@ function createHarness(
       now: () => new Date('2026-07-02T12:00:00.000Z'),
       ...joinSessionDependencies,
     },
+    moderatorSessionDependencies,
   })
   connectionHandler?.(socket)
 
@@ -68,6 +70,8 @@ function createHarness(
     disconnectHandler: socketHandlers.get('disconnect'),
     sessionCreateHandler: socketHandlers.get(CLIENT_EVENTS.sessionCreate),
     sessionJoinHandler: socketHandlers.get(CLIENT_EVENTS.sessionJoin),
+    storyUpdateHandler: socketHandlers.get(CLIENT_EVENTS.storyUpdate),
+    deckSelectHandler: socketHandlers.get(CLIENT_EVENTS.deckSelect),
   }
 }
 
@@ -420,5 +424,213 @@ describe('registerSessionHandlers', () => {
 
     expect(consume).not.toHaveBeenCalled()
     expect(socket.join).not.toHaveBeenCalled()
+  })
+
+  it('broadcasts a sanitized snapshot after a valid moderator story update', () => {
+    const { roomEmitter, sessionCreateHandler, storyUpdateHandler } = createHarness(
+      undefined,
+      undefined,
+      undefined,
+    )
+    sessionCreateHandler?.({ moderatorName: 'Maxi' }, vi.fn())
+    const ack = vi.fn()
+
+    storyUpdateHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        storyId: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+      },
+      ack,
+    )
+
+    expect(ack).toHaveBeenCalledWith({
+      ok: true,
+      data: expect.objectContaining({
+        roomCode: 'ABCD12',
+        story: {
+          id: 'ADR-21',
+          title: 'Estimate socket moderation flow',
+          locked: false,
+        },
+      }),
+    })
+    expect(roomEmitter.emit).toHaveBeenCalledWith(
+      SERVER_EVENTS.sessionSnapshot,
+      expect.not.objectContaining({ moderatorToken: expect.any(String) }),
+    )
+  })
+
+  it('returns unauthorized when a participant token is used for a moderator story update', () => {
+    const { roomEmitter, sessionCreateHandler, storyUpdateHandler } = createHarness()
+    sessionCreateHandler?.({ moderatorName: 'Maxi' }, vi.fn())
+    const ack = vi.fn()
+
+    storyUpdateHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'participant-token-abcdefghijklmnopqrstuvwxyz',
+        storyId: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+      },
+      ack,
+    )
+
+    expect(ack).toHaveBeenCalledWith({
+      ok: false,
+      error: {
+        code: ERROR_CODES.unauthorized,
+        message: 'Only the moderator can update the current story or deck.',
+      },
+    })
+    expect(roomEmitter.emit).not.toHaveBeenCalled()
+  })
+
+  it('returns stable validation failures for malformed deck selection payloads', () => {
+    const { roomEmitter, deckSelectHandler } = createHarness()
+    const ack = vi.fn()
+
+    deckSelectHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'short',
+        deckId: 'nope',
+      },
+      ack,
+    )
+
+    expect(ack).toHaveBeenCalledWith({
+      ok: false,
+      error: {
+        code: ERROR_CODES.validationFailed,
+        message: 'Deck selection details could not be validated.',
+      },
+    })
+    expect(roomEmitter.emit).not.toHaveBeenCalled()
+  })
+
+  it('returns STORY_LOCKED without broadcasting when the moderator changes deck mid-round', () => {
+    const { roomEmitter, store, sessionCreateHandler, storyUpdateHandler, deckSelectHandler } =
+      createHarness(
+        undefined,
+        undefined,
+        undefined,
+      )
+    sessionCreateHandler?.({ moderatorName: 'Maxi' }, vi.fn())
+    storyUpdateHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        storyId: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+      },
+      vi.fn(),
+    )
+
+    const session = store.get('ABCD12')
+
+    if (!session) {
+      throw new Error('Expected session to exist')
+    }
+
+    store.set({
+      ...session,
+      snapshot: {
+        ...session.snapshot,
+        round: {
+          active: true,
+          revealed: false,
+          voteCount: 1,
+        },
+        story: {
+          id: 'ADR-21',
+          title: 'Estimate socket moderation flow',
+          locked: true,
+        },
+      },
+    })
+    roomEmitter.emit.mockClear()
+    const ack = vi.fn()
+
+    deckSelectHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        deckId: 'tshirt',
+      },
+      ack,
+    )
+
+    expect(ack).toHaveBeenCalledWith({
+      ok: false,
+      error: {
+        code: ERROR_CODES.storyLocked,
+        message: 'The current story and deck cannot change during an active round.',
+      },
+    })
+    expect(roomEmitter.emit).not.toHaveBeenCalled()
+    expect(store.get('ABCD12')?.snapshot.deck.id).toBe('fibonacci')
+  })
+
+  it('returns a stable failure when a moderator command throws before acknowledgement', () => {
+    const { roomEmitter, sessionCreateHandler, storyUpdateHandler } = createHarness(
+      undefined,
+      undefined,
+      undefined,
+      {
+        now: () => {
+          throw new Error('clock failed')
+        },
+      },
+    )
+    sessionCreateHandler?.({ moderatorName: 'Maxi' }, vi.fn())
+    const ack = vi.fn()
+
+    storyUpdateHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        storyId: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+      },
+      ack,
+    )
+
+    expect(ack).toHaveBeenCalledWith({
+      ok: false,
+      error: {
+        code: ERROR_CODES.connectionUnavailable,
+        message: 'Moderator command could not be completed. Please try again.',
+      },
+    })
+    expect(roomEmitter.emit).not.toHaveBeenCalled()
+  })
+
+  it('returns a stable failure when broadcasting a moderator update throws', () => {
+    const { roomEmitter, sessionCreateHandler, storyUpdateHandler } = createHarness()
+    sessionCreateHandler?.({ moderatorName: 'Maxi' }, vi.fn())
+    roomEmitter.emit.mockImplementation(() => {
+      throw new Error('broadcast failed')
+    })
+    const ack = vi.fn()
+
+    storyUpdateHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        storyId: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+      },
+      ack,
+    )
+
+    expect(ack).toHaveBeenCalledWith({
+      ok: false,
+      error: {
+        code: ERROR_CODES.connectionUnavailable,
+        message: 'Moderator command could not be completed. Please try again.',
+      },
+    })
   })
 })

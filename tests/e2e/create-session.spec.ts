@@ -76,3 +76,42 @@ test('participant joins a session with a room code and display name', async ({ b
   await moderatorContext.close()
   await participantContext.close()
 })
+
+test('moderator updates the current story and deck for all participants', async ({ browser }) => {
+  const moderatorContext = await browser.newContext()
+  const participantContext = await browser.newContext()
+  const moderatorPage = await moderatorContext.newPage()
+  const participantPage = await participantContext.newPage()
+
+  await moderatorPage.goto('/')
+  await moderatorPage.getByLabel('Moderator name').fill('Maxi')
+  await moderatorPage.getByRole('button', { name: 'Create session' }).click()
+  await expect(moderatorPage).toHaveURL(/\/session\/[A-Z0-9]{4,12}\/moderator$/)
+
+  const roomCodeMatch = moderatorPage.url().match(/\/session\/([A-Z0-9]{4,12})\/moderator$/)
+  const roomCode = roomCodeMatch?.[1] ?? ''
+
+  await participantPage.goto('/')
+  await participantPage.getByLabel('Room code').fill(roomCode)
+  await participantPage.getByLabel('Display name').fill('Ana')
+  await participantPage.getByRole('button', { name: 'Join session' }).click()
+  await expect(participantPage).toHaveURL(new RegExp(`/session/${roomCode}$`))
+
+  await moderatorPage.getByLabel('Story identifier').fill('ADR-21')
+  await moderatorPage.getByLabel('Brief description').fill('Estimate socket moderation flow')
+  await moderatorPage.getByRole('button', { name: 'Save story' }).click()
+
+  await expect(moderatorPage.getByRole('heading', { name: 'ADR-21' })).toBeVisible()
+  await expect(moderatorPage.getByText('Estimate socket moderation flow')).toBeVisible()
+  await expect(participantPage.getByText('ADR-21')).toBeVisible()
+  await expect(participantPage.getByText('Estimate socket moderation flow')).toBeVisible()
+
+  await moderatorPage.getByRole('button', { name: 'T-shirt' }).click()
+
+  await expect(moderatorPage.getByText('Deck: T-shirt')).toBeVisible()
+  await expect(participantPage.getByRole('heading', { name: 'T-shirt options' })).toBeVisible()
+  await expect(participantPage.getByText('XL')).toBeVisible()
+
+  await moderatorContext.close()
+  await participantContext.close()
+})

@@ -5,8 +5,14 @@ import {
   DISPLAY_NAME_MAX_LENGTH,
   type CreateSessionCommand,
   type JoinSessionCommand,
+  type SelectDeckCommand,
+  type UpdateStoryCommand,
 } from '../../src/shared/schemas/command-schemas.js'
-import type { CreateSessionResult, JoinSessionResult } from '../../src/shared/contracts/socket-events.js'
+import type {
+  CreateSessionResult,
+  JoinSessionResult,
+} from '../../src/shared/contracts/socket-events.js'
+import type { SessionSnapshot } from '../../src/shared/contracts/snapshots.js'
 import {
   generateModeratorToken as generateDefaultModeratorToken,
   generateParticipantToken as generateDefaultParticipantToken,
@@ -29,18 +35,112 @@ export interface JoinSessionDependencies {
   now?: () => Date
 }
 
+export interface ModeratorSessionCommandDependencies {
+  store: SessionStore
+  now?: () => Date
+}
+
 export type JoinSessionDomainResult =
-  | {
-      ok: true
-      data: JoinSessionResult
-    }
-  | {
-      ok: false
-      error: {
-        code: ErrorCode
-        message: string
-      }
-    }
+  | DomainSuccessResult<JoinSessionResult>
+  | DomainFailureResult
+
+export type ModeratorSessionCommandResult =
+  | DomainSuccessResult<SessionSnapshot>
+  | DomainFailureResult
+
+type DomainSuccessResult<TData> = {
+  ok: true
+  data: TData
+}
+
+type DomainFailureResult = {
+  ok: false
+  error: {
+    code: ErrorCode
+    message: string
+  }
+}
+
+export function updateStory(
+  command: UpdateStoryCommand,
+  { store, now = () => new Date() }: ModeratorSessionCommandDependencies,
+): ModeratorSessionCommandResult {
+  const session = store.get(command.roomCode)
+
+  if (!session) {
+    return invalidRoomCodeResult()
+  }
+
+  if (session.moderatorToken !== command.moderatorToken) {
+    return unauthorizedResult()
+  }
+
+  if (session.snapshot.round.active) {
+    return storyLockedResult()
+  }
+
+  const snapshot = {
+    ...session.snapshot,
+    story: {
+      id: command.storyId,
+      title: command.title,
+      locked: false,
+    },
+    updatedAt: now().toISOString(),
+  }
+
+  store.set({
+    ...session,
+    snapshot,
+  })
+
+  return {
+    ok: true,
+    data: snapshot,
+  }
+}
+
+export function selectDeck(
+  command: SelectDeckCommand,
+  { store, now = () => new Date() }: ModeratorSessionCommandDependencies,
+): ModeratorSessionCommandResult {
+  const session = store.get(command.roomCode)
+
+  if (!session) {
+    return invalidRoomCodeResult()
+  }
+
+  if (session.moderatorToken !== command.moderatorToken) {
+    return unauthorizedResult()
+  }
+
+  if (session.snapshot.round.active) {
+    return storyLockedResult()
+  }
+
+  const deckId: PlanningDeckId = command.deckId
+  const snapshot = {
+    ...session.snapshot,
+    deck: PLANNING_DECKS[deckId],
+    story: session.snapshot.story
+      ? {
+          ...session.snapshot.story,
+          locked: false,
+        }
+      : null,
+    updatedAt: now().toISOString(),
+  }
+
+  store.set({
+    ...session,
+    snapshot,
+  })
+
+  return {
+    ok: true,
+    data: snapshot,
+  }
+}
 
 export function createSession(
   command: CreateSessionCommand,
@@ -109,13 +209,7 @@ export function joinSession(
   const session = store.get(command.roomCode)
 
   if (!session) {
-    return {
-      ok: false,
-      error: {
-        code: ERROR_CODES.invalidRoomCode,
-        message: 'Room code is invalid or inactive.',
-      },
-    }
+    return invalidRoomCodeResult()
   }
 
   const participantId = generateParticipantId()
@@ -204,4 +298,34 @@ function suffixedDisplayName(displayName: string, suffix: number): string {
   const baseLength = Math.max(DISPLAY_NAME_MAX_LENGTH - suffixText.length, 0)
 
   return `${displayName.slice(0, baseLength)}${suffixText}`
+}
+
+function invalidRoomCodeResult(): DomainFailureResult {
+  return {
+    ok: false,
+    error: {
+      code: ERROR_CODES.invalidRoomCode,
+      message: 'Room code is invalid or inactive.',
+    },
+  }
+}
+
+function unauthorizedResult(): DomainFailureResult {
+  return {
+    ok: false,
+    error: {
+      code: ERROR_CODES.unauthorized,
+      message: 'Only the moderator can update the current story or deck.',
+    },
+  }
+}
+
+function storyLockedResult(): DomainFailureResult {
+  return {
+    ok: false,
+    error: {
+      code: ERROR_CODES.storyLocked,
+      message: 'The current story and deck cannot change during an active round.',
+    },
+  }
 }

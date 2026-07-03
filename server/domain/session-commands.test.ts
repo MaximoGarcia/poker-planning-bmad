@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { PLANNING_DECKS } from '../../src/shared/domain/decks.js'
 import { ERROR_CODES } from '../../src/shared/contracts/errors.js'
-import { createSession, joinSession } from './session-commands.js'
+import { createSession, joinSession, selectDeck, updateStory } from './session-commands.js'
 import { createSessionStore } from './session-store.js'
 
 describe('createSession', () => {
@@ -262,5 +262,272 @@ describe('joinSession', () => {
 
     expect(result.ok ? result.data.displayName : '').toHaveLength(80)
     expect(result.ok ? result.data.displayName : '').toBe(`${'A'.repeat(76)} (2)`)
+  })
+})
+
+describe('updateStory', () => {
+  it('lets the moderator update the active story when no round is running', () => {
+    const store = createSessionStore()
+    createSession(
+      { moderatorName: 'Maxi', deckId: 'fibonacci' },
+      {
+        store,
+        generateRoomCode: () => 'ABCD12',
+        generateModeratorToken: () => 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        generateParticipantId: () => 'moderator-1',
+        now: () => new Date('2026-07-02T12:00:00.000Z'),
+      },
+    )
+
+    const result = updateStory(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        storyId: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+      },
+      {
+        store,
+        now: () => new Date('2026-07-02T12:05:00.000Z'),
+      },
+    )
+
+    expect(result).toEqual({
+      ok: true,
+      data: expect.objectContaining({
+        roomCode: 'ABCD12',
+        deck: PLANNING_DECKS.fibonacci,
+        story: {
+          id: 'ADR-21',
+          title: 'Estimate socket moderation flow',
+          locked: false,
+        },
+        round: {
+          active: false,
+          revealed: false,
+          voteCount: 0,
+        },
+        updatedAt: '2026-07-02T12:05:00.000Z',
+      }),
+    })
+  })
+
+  it('rejects invalid moderator tokens with a stable unauthorized error', () => {
+    const store = createSessionStore()
+    createSession(
+      { moderatorName: 'Maxi', deckId: 'fibonacci' },
+      {
+        store,
+        generateRoomCode: () => 'ABCD12',
+        generateModeratorToken: () => 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        generateParticipantId: () => 'moderator-1',
+      },
+    )
+
+    const result = updateStory(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'participant-token-abcdefghijklmnopqrstuvwxyz',
+        storyId: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+      },
+      { store },
+    )
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        code: ERROR_CODES.unauthorized,
+        message: 'Only the moderator can update the current story or deck.',
+      },
+    })
+  })
+
+  it('rejects story updates while a round is active without mutating session state', () => {
+    const store = createSessionStore()
+    createSession(
+      { moderatorName: 'Maxi', deckId: 'fibonacci' },
+      {
+        store,
+        generateRoomCode: () => 'ABCD12',
+        generateModeratorToken: () => 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        generateParticipantId: () => 'moderator-1',
+      },
+    )
+    const session = store.get('ABCD12')
+
+    if (!session) {
+      throw new Error('Expected session to exist')
+    }
+
+    store.set({
+      ...session,
+      votes: new Map([
+        ['moderator-1', '8'],
+        ['participant-2', '5'],
+      ]),
+      snapshot: {
+        ...session.snapshot,
+        story: {
+          id: 'ADR-20',
+          title: 'Previous story',
+          locked: true,
+        },
+        round: {
+          active: true,
+          revealed: false,
+          voteCount: 2,
+        },
+      },
+    })
+
+    const result = updateStory(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        storyId: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+      },
+      {
+        store,
+        now: () => new Date('2026-07-02T12:10:00.000Z'),
+      },
+    )
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        code: ERROR_CODES.storyLocked,
+        message: 'The current story and deck cannot change during an active round.',
+      },
+    })
+    expect(store.get('ABCD12')?.snapshot.story).toEqual({
+      id: 'ADR-20',
+      title: 'Previous story',
+      locked: true,
+    })
+    expect(store.get('ABCD12')?.snapshot.round).toEqual({
+      active: true,
+      revealed: false,
+      voteCount: 2,
+    })
+    expect(Array.from(store.get('ABCD12')?.votes.entries() ?? [])).toEqual([
+      ['moderator-1', '8'],
+      ['participant-2', '5'],
+    ])
+  })
+})
+
+describe('selectDeck', () => {
+  it('lets the moderator switch the shared planning deck when no round is running', () => {
+    const store = createSessionStore()
+    createSession(
+      { moderatorName: 'Maxi', deckId: 'fibonacci' },
+      {
+        store,
+        generateRoomCode: () => 'ABCD12',
+        generateModeratorToken: () => 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        generateParticipantId: () => 'moderator-1',
+        now: () => new Date('2026-07-02T12:00:00.000Z'),
+      },
+    )
+    updateStory(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        storyId: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+      },
+      {
+        store,
+        now: () => new Date('2026-07-02T12:05:00.000Z'),
+      },
+    )
+
+    const result = selectDeck(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        deckId: 'tshirt',
+      },
+      {
+        store,
+        now: () => new Date('2026-07-02T12:06:00.000Z'),
+      },
+    )
+
+    expect(result).toEqual({
+      ok: true,
+      data: expect.objectContaining({
+        roomCode: 'ABCD12',
+        deck: PLANNING_DECKS.tshirt,
+        story: {
+          id: 'ADR-21',
+          title: 'Estimate socket moderation flow',
+          locked: false,
+        },
+        updatedAt: '2026-07-02T12:06:00.000Z',
+      }),
+    })
+  })
+
+  it('rejects deck changes during an active round without mutating story or votes', () => {
+    const store = createSessionStore()
+    createSession(
+      { moderatorName: 'Maxi', deckId: 'fibonacci' },
+      {
+        store,
+        generateRoomCode: () => 'ABCD12',
+        generateModeratorToken: () => 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        generateParticipantId: () => 'moderator-1',
+      },
+    )
+    const session = store.get('ABCD12')
+
+    if (!session) {
+      throw new Error('Expected session to exist')
+    }
+
+    store.set({
+      ...session,
+      votes: new Map([['participant-2', '3']]),
+      snapshot: {
+        ...session.snapshot,
+        story: {
+          id: 'ADR-21',
+          title: 'Estimate socket moderation flow',
+          locked: true,
+        },
+        round: {
+          active: true,
+          revealed: false,
+          voteCount: 1,
+        },
+      },
+    })
+
+    const result = selectDeck(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        deckId: 'tshirt',
+      },
+      { store },
+    )
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        code: ERROR_CODES.storyLocked,
+        message: 'The current story and deck cannot change during an active round.',
+      },
+    })
+    expect(store.get('ABCD12')?.snapshot.deck).toBe(PLANNING_DECKS.fibonacci)
+    expect(store.get('ABCD12')?.snapshot.story).toEqual({
+      id: 'ADR-21',
+      title: 'Estimate socket moderation flow',
+      locked: true,
+    })
+    expect(Array.from(store.get('ABCD12')?.votes.entries() ?? [])).toEqual([['participant-2', '3']])
   })
 })

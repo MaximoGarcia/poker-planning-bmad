@@ -75,4 +75,36 @@ describe('ParticipantSessionView', () => {
     expect(screen.queryByText(/moderator token/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/final estimate/i)).not.toBeInTheDocument()
   })
+
+  it('renders the shared story identifier and description without exposing edit controls', () => {
+    render(
+      <MemoryRouter
+        initialEntries={[
+          {
+            pathname: '/session/ABCD12',
+            state: {
+              participantId: 'participant-2',
+              snapshot: {
+                ...snapshot,
+                story: {
+                  id: 'ADR-21',
+                  title: 'Estimate socket moderation flow',
+                  locked: false,
+                },
+              },
+            },
+          },
+        ]}
+      >
+        <Routes>
+          <Route path="/session/:roomCode" element={<ParticipantSessionView />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByText('ADR-21')).toBeInTheDocument()
+    expect(screen.getByText('Estimate socket moderation flow')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Save story' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'T-shirt' })).not.toBeInTheDocument()
+  })
 })

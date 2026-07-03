@@ -82,7 +82,10 @@ export const JoinSessionResultSchema = z
     },
   )
 
+export const SessionSnapshotAckSchema = SessionSnapshotSchema
+
 export type ParticipantSnapshotData = z.infer<typeof ParticipantSnapshotSchema>
 export type SessionSnapshotData = z.infer<typeof SessionSnapshotSchema>
 export type CreateSessionResultData = z.infer<typeof CreateSessionResultSchema>
 export type JoinSessionResultData = z.infer<typeof JoinSessionResultSchema>
+export type SessionSnapshotAckData = z.infer<typeof SessionSnapshotAckSchema>

@@ -5,6 +5,7 @@ import { render } from '@/test/render'
 import type { Ack } from '@shared/contracts/ack'
 import { SERVER_EVENTS } from '@shared/contracts/socket-events'
 import type { CreateSessionResult, JoinSessionResult } from '@shared/contracts/socket-events'
+import { PLANNING_DECKS } from '@shared/domain/decks'
 import { SessionSocketProvider, useSessionSocket } from './useSessionSocket'
 
 const socketMock = {
@@ -64,6 +65,46 @@ function JoinHarness() {
         Join
       </button>
       {ack && <p role="alert">{ack.ok ? ack.data.displayName : ack.error.code}</p>}
+    </>
+  )
+}
+
+function ModeratorCommandHarness() {
+  const { latestSnapshot, selectDeck, updateStory } = useSessionSocket()
+  const [ack, setAck] = useState<Ack<{ roomCode: string }> | null>(null)
+
+  async function handleStoryUpdate() {
+    setAck(
+      await updateStory({
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        storyId: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+      }),
+    )
+  }
+
+  async function handleDeckSelect() {
+    setAck(
+      await selectDeck({
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        deckId: 'tshirt',
+      }),
+    )
+  }
+
+  return (
+    <>
+      <button onClick={handleStoryUpdate} type="button">
+        Update story
+      </button>
+      <button onClick={handleDeckSelect} type="button">
+        Select deck
+      </button>
+      <p data-testid="moderator-snapshot-story">{latestSnapshot?.story?.id ?? 'no story'}</p>
+      <p data-testid="moderator-snapshot-deck">{latestSnapshot?.deck.label ?? 'no deck'}</p>
+      {ack && <p role="alert">{ack.ok ? 'ok' : ack.error.code}</p>}
     </>
   )
 }
@@ -235,5 +276,111 @@ describe('useSessionSocket', () => {
 
     expect(screen.getByText('participant')).toBeInTheDocument()
     expect(socketMock.disconnect).not.toHaveBeenCalled()
+  })
+
+  it('uses the same acknowledgement timeout and schema validation for moderator story updates', async () => {
+    socketMock.timeout.mockReturnValue({
+      emit: vi.fn((_event, _command, callback) => {
+        callback(null, {
+          ok: true,
+          data: {
+            roomCode: 'ABCD12',
+            deck: PLANNING_DECKS.fibonacci,
+            story: {
+              id: 'ADR-21',
+              title: 'Estimate socket moderation flow',
+              locked: false,
+            },
+            participants: [
+              {
+                id: 'moderator-1',
+                displayName: 'Maxi',
+                role: 'moderator',
+                connected: true,
+                hasVoted: false,
+              },
+            ],
+            round: {
+              active: false,
+              revealed: false,
+              voteCount: 0,
+            },
+            updatedAt: '2026-07-02T12:00:00.000Z',
+          },
+        })
+      }),
+    })
+
+    renderWithSocketProvider(<ModeratorCommandHarness />)
+    fireEvent.click(screen.getByRole('button', { name: 'Update story' }))
+
+    await screen.findByRole('alert')
+    expect(socketMock.timeout).toHaveBeenCalledWith(5000)
+    expect(screen.getByRole('alert')).toHaveTextContent('ok')
+    expect(screen.getByTestId('moderator-snapshot-story')).toHaveTextContent('ADR-21')
+  })
+
+  it('applies successful moderator deck acknowledgements to the local snapshot state', async () => {
+    socketMock.timeout.mockReturnValue({
+      emit: vi.fn((_event, _command, callback) => {
+        callback(null, {
+          ok: true,
+          data: {
+            roomCode: 'ABCD12',
+            deck: PLANNING_DECKS.tshirt,
+            story: {
+              id: 'ADR-21',
+              title: 'Estimate socket moderation flow',
+              locked: false,
+            },
+            participants: [
+              {
+                id: 'moderator-1',
+                displayName: 'Maxi',
+                role: 'moderator',
+                connected: true,
+                hasVoted: false,
+              },
+            ],
+            round: {
+              active: false,
+              revealed: false,
+              voteCount: 0,
+            },
+            updatedAt: '2026-07-02T12:01:00.000Z',
+          },
+        })
+      }),
+    })
+
+    renderWithSocketProvider(<ModeratorCommandHarness />)
+    fireEvent.click(screen.getByRole('button', { name: 'Select deck' }))
+
+    await screen.findByRole('alert')
+    expect(screen.getByTestId('moderator-snapshot-deck')).toHaveTextContent('T-shirt')
+  })
+
+  it('returns a stable failure when a moderator command acknowledgement is malformed', async () => {
+    socketMock.timeout.mockReturnValue({
+      emit: vi.fn((_event, _command, callback) => {
+        callback(null, {
+          ok: true,
+          data: {
+            roomCode: 'ABCD12',
+            deck: {
+              id: 'not-a-real-deck',
+              label: 'Broken',
+              values: [],
+            },
+          },
+        })
+      }),
+    })
+
+    renderWithSocketProvider(<ModeratorCommandHarness />)
+    fireEvent.click(screen.getByRole('button', { name: 'Select deck' }))
+
+    await screen.findByRole('alert')
+    expect(screen.getByRole('alert')).toHaveTextContent('CONNECTION_UNAVAILABLE')
   })
 })
