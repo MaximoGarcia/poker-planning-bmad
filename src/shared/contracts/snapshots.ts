@@ -21,11 +21,23 @@ export interface RoundSnapshot {
   voteCount: number
 }
 
+export interface RevealedVoteSnapshot {
+  participantId: string
+  displayName: string
+  role: ParticipantRole
+  value: string
+}
+
+export interface RevealedResultsSnapshot {
+  votes: RevealedVoteSnapshot[]
+}
+
 export interface SessionSnapshot {
   roomCode: string
   deck: PlanningDeck
   story: StorySnapshot | null
   participants: ParticipantSnapshot[]
   round: RoundSnapshot
+  results: RevealedResultsSnapshot | null
   updatedAt: string
 }

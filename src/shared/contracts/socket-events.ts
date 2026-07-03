@@ -3,6 +3,7 @@ import type {
   JoinSessionCommand,
   SelectDeckCommand,
   StartRoundCommand,
+  RevealRoundCommand,
   SubmitVoteCommand,
   UpdateStoryCommand,
 } from '../schemas/command-schemas.js'
@@ -53,7 +54,7 @@ export interface ClientToServerEventPayloads {
   'deck:select': SelectDeckCommand
   'round:start': StartRoundCommand
   'vote:submit': SubmitVoteCommand
-  'round:reveal': { roomCode: string }
+  'round:reveal': RevealRoundCommand
   'round:reset': { roomCode: string }
   'estimate:record': { roomCode: string; estimate: string }
   'story:advance': { roomCode: string; storyId?: string }

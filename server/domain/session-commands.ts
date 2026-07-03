@@ -5,6 +5,7 @@ import {
   DISPLAY_NAME_MAX_LENGTH,
   type CreateSessionCommand,
   type JoinSessionCommand,
+  type RevealRoundCommand,
   type SelectDeckCommand,
   type StartRoundCommand,
   type SubmitVoteCommand,
@@ -177,12 +178,80 @@ export function startRound(
       revealed: false,
       voteCount: 0,
     },
+    results: null,
     updatedAt: now().toISOString(),
   }
 
   store.set({
     ...session,
     votes: new Map(),
+    snapshot,
+  })
+
+  return {
+    ok: true,
+    data: snapshot,
+  }
+}
+
+export function revealRound(
+  command: RevealRoundCommand,
+  { store, now = () => new Date() }: ModeratorSessionCommandDependencies,
+): ModeratorSessionCommandResult {
+  const session = store.get(command.roomCode)
+
+  if (!session) {
+    return invalidRoomCodeResult()
+  }
+
+  if (session.moderatorToken !== command.moderatorToken) {
+    return revealUnauthorizedResult()
+  }
+
+  if (!session.snapshot.round.active) {
+    return roundNotActiveResult()
+  }
+
+  if (session.snapshot.round.revealed) {
+    return {
+      ok: true,
+      data: session.snapshot,
+    }
+  }
+
+  const results = {
+    votes: Array.from(session.votes.entries()).flatMap(([participantId, value]) => {
+      const participant = session.snapshot.participants.find(
+        (candidate) => candidate.id === participantId,
+      )
+
+      return participant
+        ? [
+            {
+              participantId,
+              displayName: participant.displayName,
+              role: participant.role,
+              value,
+            },
+          ]
+        : []
+    }),
+  }
+
+  const snapshot = {
+    ...session.snapshot,
+    round: {
+      ...session.snapshot.round,
+      active: true,
+      revealed: true,
+      voteCount: session.votes.size,
+    },
+    results,
+    updatedAt: now().toISOString(),
+  }
+
+  store.set({
+    ...session,
     snapshot,
   })
 
@@ -332,6 +401,7 @@ export function createSession(
       revealed: false,
       voteCount: 0,
     },
+    results: null,
     updatedAt: now().toISOString(),
   }
 
@@ -481,6 +551,16 @@ function roundUnauthorizedResult(): DomainFailureResult {
     error: {
       code: ERROR_CODES.unauthorized,
       message: 'Only the moderator can start a voting round.',
+    },
+  }
+}
+
+function revealUnauthorizedResult(): DomainFailureResult {
+  return {
+    ok: false,
+    error: {
+      code: ERROR_CODES.unauthorized,
+      message: 'Only the moderator can reveal round results.',
     },
   }
 }

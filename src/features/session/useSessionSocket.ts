@@ -23,6 +23,7 @@ import type { SessionSnapshot } from '@shared/contracts/snapshots'
 import type {
   CreateSessionCommand,
   JoinSessionCommand,
+  RevealRoundCommand,
   SelectDeckCommand,
   StartRoundCommand,
   SubmitVoteCommand,
@@ -56,6 +57,7 @@ export interface UseSessionSocketResult {
   updateStory: (command: UpdateStoryCommand) => Promise<Ack<SessionSnapshot>>
   selectDeck: (command: SelectDeckCommand) => Promise<Ack<SessionSnapshot>>
   startRound: (command: StartRoundCommand) => Promise<Ack<SessionSnapshot>>
+  revealRound: (command: RevealRoundCommand) => Promise<Ack<SessionSnapshot>>
   submitVote: (command: SubmitVoteCommand) => Promise<Ack<SessionSnapshot>>
 }
 
@@ -178,6 +180,12 @@ function useSessionSocketConnection(): UseSessionSocketResult {
     [emitValidatedCommand],
   )
 
+  const revealRound = useCallback(
+    (command: RevealRoundCommand) =>
+      emitValidatedCommand(CLIENT_EVENTS.roundReveal, command, SessionSnapshotAckSchema, setLatestSnapshot),
+    [emitValidatedCommand],
+  )
+
   const submitVote = useCallback(
     (command: SubmitVoteCommand) =>
       emitValidatedCommand(CLIENT_EVENTS.voteSubmit, command, SessionSnapshotAckSchema, setLatestSnapshot),
@@ -192,6 +200,7 @@ function useSessionSocketConnection(): UseSessionSocketResult {
     updateStory,
     selectDeck,
     startRound,
+    revealRound,
     submitVote,
   }
 }

@@ -121,13 +121,18 @@ function StoryDeckEditor({
   const [pendingStoryUpdate, setPendingStoryUpdate] = useState(false)
   const [pendingDeckId, setPendingDeckId] = useState<PlanningDeckId | null>(null)
   const [pendingRoundStart, setPendingRoundStart] = useState(false)
+  const [pendingReveal, setPendingReveal] = useState(false)
   const [pendingVoteValue, setPendingVoteValue] = useState<string | null>(null)
   const [lastSubmittedValue, setLastSubmittedValue] = useState<string | null>(null)
   const [voteStatusMessage, setVoteStatusMessage] = useState<string | null>(null)
   const [voteError, setVoteError] = useState<string | null>(null)
   const [commandError, setCommandError] = useState<string | null>(null)
   const commandPending =
-    pendingStoryUpdate || Boolean(pendingDeckId) || pendingRoundStart || Boolean(pendingVoteValue)
+    pendingStoryUpdate ||
+    Boolean(pendingDeckId) ||
+    pendingRoundStart ||
+    pendingReveal ||
+    Boolean(pendingVoteValue)
   const moderator = sessionSnapshot.participants.find((participant) => participant.role === 'moderator')
   const visibleLastSubmittedValue = moderator?.hasVoted ? lastSubmittedValue : null
   const visibleVoteStatusMessage = moderator?.hasVoted ? voteStatusMessage : null
@@ -225,6 +230,29 @@ function StoryDeckEditor({
     setVoteStatusMessage(wasChangingVote ? 'Vote change submitted' : 'Vote submitted')
   }
 
+  async function handleRevealRound() {
+    if (!moderatorToken || !canRevealRound(sessionSnapshot, moderatorToken)) {
+      return
+    }
+
+    setPendingReveal(true)
+    setCommandError(null)
+
+    const result = await sessionSocket.revealRound({
+      roomCode,
+      moderatorToken,
+    })
+
+    setPendingReveal(false)
+
+    if (!result.ok) {
+      setCommandError(revealErrorMessageForCode(result.error.code))
+      return
+    }
+
+    onAcceptedSnapshot(result.data)
+  }
+
   return (
     <section className="session-summary" aria-labelledby="story-controls-title">
       <div className="section-heading">
@@ -294,8 +322,18 @@ function StoryDeckEditor({
           ? 'Round active'
           : pendingRoundStart
             ? 'Starting round...'
-            : 'Start round'}
+          : 'Start round'}
       </button>
+      {sessionSnapshot.round.active && !sessionSnapshot.round.revealed ? (
+        <button
+          className="primary-action"
+          disabled={!canRevealRound(sessionSnapshot, moderatorToken) || commandPending}
+          onClick={() => void handleRevealRound()}
+          type="button"
+        >
+          {pendingReveal ? 'Revealing results...' : 'Reveal results'}
+        </button>
+      ) : null}
       {commandError ? <p role="alert">{commandError}</p> : null}
       {sessionSnapshot.story ? (
         <section aria-labelledby="active-story-title">
@@ -350,6 +388,7 @@ function StoryDeckEditor({
           {voteError}
         </p>
       ) : null}
+      <RevealedResults snapshot={sessionSnapshot} />
       <p>
         {sessionSnapshot.round.active
           ? 'Story and deck are locked during an active round.'
@@ -360,6 +399,10 @@ function StoryDeckEditor({
 }
 
 function canSubmitModeratorVote(snapshot: SessionSnapshot, moderatorToken: string | null): boolean {
+  return Boolean(moderatorToken && snapshot.round.active && !snapshot.round.revealed)
+}
+
+function canRevealRound(snapshot: SessionSnapshot, moderatorToken: string | null): boolean {
   return Boolean(moderatorToken && snapshot.round.active && !snapshot.round.revealed)
 }
 
@@ -411,6 +454,42 @@ function voteErrorMessageForCode(code: string): string {
     default:
       return 'Vote could not be submitted. Please try again.'
   }
+}
+
+function revealErrorMessageForCode(code: string): string {
+  switch (code) {
+    case ERROR_CODES.roundNotActive:
+      return 'Voting is not active right now.'
+    case ERROR_CODES.unauthorized:
+      return 'Only the moderator can reveal results.'
+    case ERROR_CODES.validationFailed:
+      return 'Reveal request could not be validated.'
+    default:
+      return 'Results could not be revealed. Please try again.'
+  }
+}
+
+function RevealedResults({ snapshot }: { snapshot: SessionSnapshot }) {
+  if (!snapshot.round.revealed || !snapshot.results) {
+    return null
+  }
+
+  return (
+    <section className="revealed-results" aria-labelledby="revealed-results-title">
+      <h3 id="revealed-results-title">Revealed votes</h3>
+      {snapshot.results.votes.length === 0 ? (
+        <p>No votes were submitted.</p>
+      ) : (
+        <ul aria-label="Revealed votes">
+          {snapshot.results.votes.map((vote) => (
+            <li key={vote.participantId}>
+              {vote.displayName}: {vote.value}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  )
 }
 
 function snapshotFromRouteState(state: unknown): SessionSnapshot | null {

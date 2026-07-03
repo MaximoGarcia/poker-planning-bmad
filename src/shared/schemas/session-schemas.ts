@@ -28,6 +28,21 @@ export const RoundSnapshotSchema = z
   })
   .strict()
 
+export const RevealedVoteSnapshotSchema = z
+  .object({
+    participantId: z.string().min(1),
+    displayName: z.string().min(1),
+    role: z.enum(PARTICIPANT_ROLES),
+    value: z.string().min(1),
+  })
+  .strict()
+
+export const RevealedResultsSnapshotSchema = z
+  .object({
+    votes: z.array(RevealedVoteSnapshotSchema),
+  })
+  .strict()
+
 export const SessionSnapshotSchema = z
   .object({
     roomCode: RoomCodeSchema,
@@ -39,9 +54,27 @@ export const SessionSnapshotSchema = z
     story: StorySnapshotSchema.nullable(),
     participants: z.array(ParticipantSnapshotSchema),
     round: RoundSnapshotSchema,
+    results: RevealedResultsSnapshotSchema.nullable().default(null),
     updatedAt: z.string().datetime(),
   })
   .strict()
+  .superRefine((snapshot, context) => {
+    if (snapshot.round.revealed && !snapshot.results) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Results are required after reveal.',
+        path: ['results'],
+      })
+    }
+
+    if (!snapshot.round.revealed && snapshot.results) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Results must be null before reveal.',
+        path: ['results'],
+      })
+    }
+  })
 
 export const CreateSessionResultSchema = z
   .object({
@@ -85,6 +118,8 @@ export const JoinSessionResultSchema = z
 export const SessionSnapshotAckSchema = SessionSnapshotSchema
 
 export type ParticipantSnapshotData = z.infer<typeof ParticipantSnapshotSchema>
+export type RevealedVoteSnapshotData = z.infer<typeof RevealedVoteSnapshotSchema>
+export type RevealedResultsSnapshotData = z.infer<typeof RevealedResultsSnapshotSchema>
 export type SessionSnapshotData = z.infer<typeof SessionSnapshotSchema>
 export type CreateSessionResultData = z.infer<typeof CreateSessionResultSchema>
 export type JoinSessionResultData = z.infer<typeof JoinSessionResultSchema>

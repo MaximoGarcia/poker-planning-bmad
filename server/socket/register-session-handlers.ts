@@ -3,6 +3,7 @@ import {
   createSession,
   createSessionStore,
   joinSession,
+  revealRound,
   removeJoinedParticipant,
   selectDeck,
   startRound,
@@ -26,6 +27,7 @@ import type { SessionIdentity } from '../../src/shared/domain/session-types.js'
 import {
   CreateSessionCommandSchema,
   JoinSessionCommandSchema,
+  RevealRoundCommandSchema,
   SelectDeckCommandSchema,
   StartRoundCommandSchema,
   SubmitVoteCommandSchema,
@@ -269,6 +271,20 @@ export function registerSessionHandlers(
         validationMessage: 'Round start details could not be validated.',
         domainCommand: (command) =>
           startRound(command, {
+            store,
+            ...moderatorSessionDependencies,
+          }),
+      })
+    })
+
+    socket.on(CLIENT_EVENTS.roundReveal, (payload, ack) => {
+      handleModeratorCommand({
+        ack,
+        payload,
+        schema: RevealRoundCommandSchema,
+        validationMessage: 'Round reveal details could not be validated.',
+        domainCommand: (command) =>
+          revealRound(command, {
             store,
             ...moderatorSessionDependencies,
           }),

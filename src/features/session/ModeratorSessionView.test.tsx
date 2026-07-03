@@ -14,6 +14,7 @@ const socketState = vi.hoisted(() => ({
   selectDeck: vi.fn(),
   startRound: vi.fn(),
   submitVote: vi.fn(),
+  revealRound: vi.fn(),
 }))
 
 vi.mock('./useSessionSocket', () => ({
@@ -21,6 +22,7 @@ vi.mock('./useSessionSocket', () => ({
     connectionStatus: 'connected',
     createSession: vi.fn(),
     latestSnapshot: socketState.latestSnapshot,
+    revealRound: socketState.revealRound,
     selectDeck: socketState.selectDeck,
     startRound: socketState.startRound,
     submitVote: socketState.submitVote,
@@ -74,10 +76,12 @@ describe('ModeratorSessionView', () => {
     socketState.selectDeck.mockReset()
     socketState.startRound.mockReset()
     socketState.submitVote.mockReset()
+    socketState.revealRound.mockReset()
     socketState.updateStory.mockResolvedValue(createSuccessAck(snapshot))
     socketState.selectDeck.mockResolvedValue(createSuccessAck(snapshot))
     socketState.startRound.mockResolvedValue(createSuccessAck(snapshot))
     socketState.submitVote.mockResolvedValue(createSuccessAck(snapshot))
+    socketState.revealRound.mockResolvedValue(createSuccessAck(snapshot))
   })
 
   it('shows the room code and empty story state from the returned snapshot', () => {
@@ -715,5 +719,168 @@ describe('ModeratorSessionView', () => {
 
     expect(screen.getByRole('button', { name: 'Voting unavailable for moderator card 8' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Save story' })).toBeDisabled()
+  })
+
+  it('shows moderator reveal controls only during an active unrevealed round and waits for ack', async () => {
+    window.sessionStorage.setItem(
+      moderatorTokenStorageKey('ABCD12'),
+      'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    )
+    socketState.latestSnapshot = {
+      ...snapshot,
+      story: {
+        id: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+        locked: true,
+      },
+      participants: [
+        snapshot.participants[0],
+        {
+          id: 'participant-2',
+          displayName: 'Ana',
+          role: 'participant' as const,
+          connected: true,
+          hasVoted: true,
+        },
+      ],
+      round: {
+        active: true,
+        revealed: false,
+        voteCount: 1,
+      },
+    }
+    let resolveAck: ((value: ReturnType<typeof createSuccessAck>) => void) | undefined
+    socketState.revealRound.mockReturnValue(
+      new Promise((resolve) => {
+        resolveAck = resolve
+      }),
+    )
+
+    renderModeratorRoute({ snapshot })
+    fireEvent.click(screen.getByRole('button', { name: 'Reveal results' }))
+
+    expect(screen.getByRole('button', { name: 'Revealing results...' })).toBeDisabled()
+    expect(screen.queryByText('Ana: 8')).not.toBeInTheDocument()
+    resolveAck?.(
+      createSuccessAck({
+        ...socketState.latestSnapshot,
+        round: {
+          active: true,
+          revealed: true,
+          voteCount: 1,
+        },
+        results: {
+          votes: [
+            {
+              participantId: 'participant-2',
+              displayName: 'Ana',
+              role: 'participant',
+              value: '8',
+            },
+          ],
+        },
+        updatedAt: '2026-07-03T13:30:00.000Z',
+      }) as never,
+    )
+
+    await waitFor(() => {
+      expect(socketState.revealRound).toHaveBeenCalledWith({
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      })
+    })
+    expect(await screen.findByText('Ana: 8')).toBeInTheDocument()
+  })
+
+  it('shows readable reveal errors and renders non-voters in presence without card values', async () => {
+    window.sessionStorage.setItem(
+      moderatorTokenStorageKey('ABCD12'),
+      'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    )
+    socketState.latestSnapshot = {
+      ...snapshot,
+      story: {
+        id: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+        locked: true,
+      },
+      participants: [
+        snapshot.participants[0],
+        {
+          id: 'participant-2',
+          displayName: 'Ana',
+          role: 'participant' as const,
+          connected: true,
+          hasVoted: false,
+        },
+      ],
+      round: {
+        active: true,
+        revealed: false,
+        voteCount: 0,
+      },
+    }
+    socketState.revealRound.mockResolvedValue(
+      createFailureAck({
+        code: ERROR_CODES.unauthorized,
+        message: 'Only the moderator can reveal round results.',
+      }),
+    )
+
+    renderModeratorRoute({ snapshot })
+    fireEvent.click(screen.getByRole('button', { name: 'Reveal results' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Only the moderator can reveal results.')
+    const row = screen
+      .getByRole('list', { name: 'Joined participants' })
+      .querySelector('li') as HTMLElement
+    expect(row).toHaveTextContent('Ana')
+    expect(row).toHaveTextContent('Not voted')
+    expect(row).not.toHaveTextContent('8')
+  })
+
+  it('renders a flat revealed vote list and hides reveal controls once revealed', () => {
+    window.sessionStorage.setItem(
+      moderatorTokenStorageKey('ABCD12'),
+      'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    )
+    socketState.latestSnapshot = {
+      ...snapshot,
+      story: {
+        id: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+        locked: true,
+      },
+      participants: [
+        snapshot.participants[0],
+        {
+          id: 'participant-2',
+          displayName: 'Ana',
+          role: 'participant' as const,
+          connected: true,
+          hasVoted: true,
+        },
+      ],
+      round: {
+        active: true,
+        revealed: true,
+        voteCount: 1,
+      },
+      results: {
+        votes: [
+          {
+            participantId: 'participant-2',
+            displayName: 'Ana',
+            role: 'participant',
+            value: '8',
+          },
+        ],
+      },
+    }
+
+    renderModeratorRoute({ snapshot })
+
+    expect(screen.queryByRole('button', { name: 'Reveal results' })).not.toBeInTheDocument()
+    expect(screen.getByText('Ana: 8')).toBeInTheDocument()
   })
 })

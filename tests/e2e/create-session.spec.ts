@@ -181,3 +181,66 @@ test('moderator starts a voting round and participant plus moderator votes stay 
   await moderatorContext.close()
   await participantContext.close()
 })
+
+test('moderator reveals results to voters and non-voters across live session pages', async ({ browser }) => {
+  const moderatorContext = await browser.newContext()
+  const voterContext = await browser.newContext()
+  const nonVoterContext = await browser.newContext()
+  const moderatorPage = await moderatorContext.newPage()
+  const voterPage = await voterContext.newPage()
+  const nonVoterPage = await nonVoterContext.newPage()
+
+  await moderatorPage.goto('/')
+  await moderatorPage.getByLabel('Moderator name').fill('Maxi')
+  await moderatorPage.getByRole('button', { name: 'Create session' }).click()
+  await expect(moderatorPage).toHaveURL(/\/session\/[A-Z0-9]{4,12}\/moderator$/)
+
+  const roomCodeMatch = moderatorPage.url().match(/\/session\/([A-Z0-9]{4,12})\/moderator$/)
+  const roomCode = roomCodeMatch?.[1] ?? ''
+
+  await voterPage.goto('/')
+  await voterPage.getByLabel('Room code').fill(roomCode)
+  await voterPage.getByLabel('Display name').fill('Ana')
+  await voterPage.getByRole('button', { name: 'Join session' }).click()
+  await expect(voterPage).toHaveURL(new RegExp(`/session/${roomCode}$`))
+
+  await nonVoterPage.goto('/')
+  await nonVoterPage.getByLabel('Room code').fill(roomCode)
+  await nonVoterPage.getByLabel('Display name').fill('Lee')
+  await nonVoterPage.getByRole('button', { name: 'Join session' }).click()
+  await expect(nonVoterPage).toHaveURL(new RegExp(`/session/${roomCode}$`))
+
+  await moderatorPage.getByLabel('Story identifier').fill('ADR-31')
+  await moderatorPage.getByLabel('Brief description').fill('Reveal active round results')
+  await moderatorPage.getByRole('button', { name: 'Save story' }).click()
+  await expect(voterPage.getByText('ADR-31')).toBeVisible()
+  await expect(nonVoterPage.getByText('ADR-31')).toBeVisible()
+
+  await moderatorPage.getByRole('button', { name: 'Start round' }).click()
+  await expect(voterPage.getByText('Voting')).toBeVisible()
+
+  await voterPage.getByRole('button', { name: 'Submit vote 8' }).click()
+  await expect(voterPage.getByText('Vote submitted')).toBeVisible()
+
+  const nonVoterRow = moderatorPage
+    .getByRole('list', { name: 'Joined participants' })
+    .getByRole('listitem')
+    .filter({ hasText: 'Lee' })
+  await expect(nonVoterRow).toContainText('Not voted')
+
+  await moderatorPage.getByRole('button', { name: 'Reveal results' }).click()
+
+  await expect(moderatorPage.getByText('Ana: 8')).toBeVisible()
+  await expect(voterPage.getByText('Ana: 8')).toBeVisible()
+  await expect(nonVoterPage.getByText('Ana: 8')).toBeVisible()
+  await expect(voterPage.getByText('Lee - Not voted')).toBeVisible()
+  await expect(nonVoterPage.getByText('Lee - Not voted')).toBeVisible()
+  await expect(voterPage.getByText('Revealed', { exact: true })).toBeVisible()
+  await expect(nonVoterPage.getByText('Revealed', { exact: true })).toBeVisible()
+  await expect(voterPage.getByRole('button', { name: 'Voting unavailable for 13' })).toBeDisabled()
+  await expect(nonVoterPage.getByRole('button', { name: 'Voting unavailable for 8' })).toBeDisabled()
+
+  await moderatorContext.close()
+  await voterContext.close()
+  await nonVoterContext.close()
+})

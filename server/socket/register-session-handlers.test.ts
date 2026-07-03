@@ -73,6 +73,7 @@ function createHarness(
     storyUpdateHandler: socketHandlers.get(CLIENT_EVENTS.storyUpdate),
     deckSelectHandler: socketHandlers.get(CLIENT_EVENTS.deckSelect),
     roundStartHandler: socketHandlers.get(CLIENT_EVENTS.roundStart),
+    roundRevealHandler: socketHandlers.get(CLIENT_EVENTS.roundReveal),
     voteSubmitHandler: socketHandlers.get(CLIENT_EVENTS.voteSubmit),
   }
 }
@@ -927,6 +928,8 @@ describe('registerSessionHandlers', () => {
       },
       vi.fn(),
     )
+    roomEmitter.emit.mockClear()
+
     roundStartHandler?.(
       {
         roomCode: 'ABCD12',
@@ -1004,6 +1007,8 @@ describe('registerSessionHandlers', () => {
       },
       vi.fn(),
     )
+    roomEmitter.emit.mockClear()
+
     roundStartHandler?.(
       {
         roomCode: 'ABCD12',
@@ -1198,6 +1203,182 @@ describe('registerSessionHandlers', () => {
       },
     })
     expect(store.get('ABCD12')?.votes.size).toBe(0)
+    expect(roomEmitter.emit).not.toHaveBeenCalled()
+  })
+
+  it('acknowledges before broadcasting a sanitized revealed snapshot after a valid reveal command', () => {
+    const {
+      roomEmitter,
+      sessionCreateHandler,
+      sessionJoinHandler,
+      storyUpdateHandler,
+      roundStartHandler,
+      voteSubmitHandler,
+      roundRevealHandler,
+    } = createHarness(undefined, undefined, undefined, {
+      now: () => new Date('2026-07-03T13:30:00.000Z'),
+    })
+    sessionCreateHandler?.({ moderatorName: 'Maxi' }, vi.fn())
+    sessionJoinHandler?.({ roomCode: 'ABCD12', displayName: 'Ana' }, vi.fn())
+    storyUpdateHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        storyId: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+      },
+      vi.fn(),
+    )
+    roundStartHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      },
+      vi.fn(),
+    )
+    voteSubmitHandler?.(
+      {
+        roomCode: 'ABCD12',
+        participantId: 'participant-2',
+        participantToken: 'participant-token-abcdefghijklmnopqrstuvwxyz',
+        value: '8',
+      },
+      vi.fn(),
+    )
+    roomEmitter.emit.mockClear()
+    const ack = vi.fn()
+
+    roundRevealHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      },
+      ack,
+    )
+
+    expect(ack).toHaveBeenCalledWith({
+      ok: true,
+      data: expect.objectContaining({
+        roomCode: 'ABCD12',
+        round: {
+          active: true,
+          revealed: true,
+          voteCount: 1,
+        },
+        results: {
+          votes: [
+            {
+              participantId: 'participant-2',
+              displayName: 'Ana',
+              role: 'participant',
+              value: '8',
+            },
+          ],
+        },
+      }),
+    })
+    expect(roomEmitter.emit).toHaveBeenCalledWith(
+      SERVER_EVENTS.sessionSnapshot,
+      expect.objectContaining({
+        roomCode: 'ABCD12',
+        results: expect.objectContaining({
+          votes: expect.arrayContaining([
+            expect.objectContaining({ participantId: 'participant-2', value: '8' }),
+          ]),
+        }),
+      }),
+    )
+    expect(JSON.stringify(roomEmitter.emit.mock.calls)).not.toContain('participant-token')
+    expect(ack.mock.invocationCallOrder[0]).toBeLessThan(
+      roomEmitter.emit.mock.invocationCallOrder[0],
+    )
+  })
+
+  it('returns reveal validation, authorization, and inactive-round failures without broadcasting', () => {
+    const {
+      roomEmitter,
+      sessionCreateHandler,
+      storyUpdateHandler,
+      roundStartHandler,
+      roundRevealHandler,
+    } = createHarness()
+    const ack = vi.fn()
+
+    roundRevealHandler?.({ roomCode: 'ABCD12' }, ack)
+    expect(ack).toHaveBeenLastCalledWith({
+      ok: false,
+      error: {
+        code: ERROR_CODES.validationFailed,
+        message: 'Round reveal details could not be validated.',
+      },
+    })
+
+    sessionCreateHandler?.({ moderatorName: 'Maxi' }, vi.fn())
+    storyUpdateHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        storyId: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+      },
+      vi.fn(),
+    )
+
+    roomEmitter.emit.mockClear()
+    roundRevealHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      },
+      ack,
+    )
+    expect(ack).toHaveBeenLastCalledWith({
+      ok: false,
+      error: {
+        code: ERROR_CODES.roundNotActive,
+        message: 'Voting is not active for this session.',
+      },
+    })
+    expect(roomEmitter.emit).not.toHaveBeenCalled()
+
+    roundStartHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      },
+      vi.fn(),
+    )
+    roomEmitter.emit.mockClear()
+
+    roundRevealHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'participant-token-abcdefghijklmnopqrstuvwxyz',
+      },
+      ack,
+    )
+    expect(ack).toHaveBeenLastCalledWith({
+      ok: false,
+      error: {
+        code: ERROR_CODES.unauthorized,
+        message: 'Only the moderator can reveal round results.',
+      },
+    })
+
+    roundRevealHandler?.(
+      {
+        roomCode: 'NOPE1',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      },
+      ack,
+    )
+    expect(ack).toHaveBeenLastCalledWith({
+      ok: false,
+      error: {
+        code: ERROR_CODES.invalidRoomCode,
+        message: 'Room code is invalid or inactive.',
+      },
+    })
     expect(roomEmitter.emit).not.toHaveBeenCalled()
   })
 })

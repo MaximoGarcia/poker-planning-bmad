@@ -431,6 +431,124 @@ describe('ParticipantSessionView', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Voting is not active right now.')
   })
+
+  it('does not expose reveal controls and disables voting after reveal', () => {
+    window.sessionStorage.setItem(
+      participantTokenStorageKey('ABCD12', 'participant-2'),
+      'participant-token-abcdefghijklmnopqrstuvwxyz',
+    )
+
+    renderParticipantRoute({
+      snapshot: {
+        ...snapshot,
+        story: {
+          id: 'ADR-21',
+          title: 'Estimate socket moderation flow',
+          locked: true,
+        },
+        round: {
+          active: true,
+          revealed: true,
+          voteCount: 1,
+        },
+        results: {
+          votes: [
+            {
+              participantId: 'participant-2',
+              displayName: 'Ana',
+              role: 'participant' as const,
+              value: '8',
+            },
+          ],
+        },
+      },
+    })
+
+    expect(screen.queryByRole('button', { name: 'Reveal results' })).not.toBeInTheDocument()
+    expect(screen.getByText('Revealed')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Voting unavailable for 8' })).toBeDisabled()
+    expect(screen.getByText('Ana: 8')).toBeInTheDocument()
+  })
+
+  it('shows revealed values only after reveal and keeps non-voters readable without cards', () => {
+    renderParticipantRoute({
+      snapshot: {
+        ...snapshot,
+        participants: [
+          snapshot.participants[0],
+          {
+            ...snapshot.participants[1],
+            hasVoted: true,
+          },
+          {
+            id: 'participant-3',
+            displayName: 'Lee',
+            role: 'participant' as const,
+            connected: true,
+            hasVoted: false,
+          },
+        ],
+        story: {
+          id: 'ADR-21',
+          title: 'Estimate socket moderation flow',
+          locked: true,
+        },
+        round: {
+          active: true,
+          revealed: false,
+          voteCount: 1,
+        },
+        results: null,
+      },
+    })
+
+    expect(screen.queryByText('Ana: 8')).not.toBeInTheDocument()
+
+    socketState.latestSnapshot = {
+      ...snapshot,
+      participants: [
+        snapshot.participants[0],
+        {
+          ...snapshot.participants[1],
+          hasVoted: true,
+        },
+        {
+          id: 'participant-3',
+          displayName: 'Lee',
+          role: 'participant' as const,
+          connected: true,
+          hasVoted: false,
+        },
+      ],
+      story: {
+        id: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+        locked: true,
+      },
+      round: {
+        active: true,
+        revealed: true,
+        voteCount: 1,
+      },
+      results: {
+        votes: [
+          {
+            participantId: 'participant-2',
+            displayName: 'Ana',
+            role: 'participant' as const,
+            value: '8',
+          },
+        ],
+      },
+      updatedAt: '2026-07-03T13:30:00.000Z',
+    }
+
+    renderParticipantRoute({ snapshot })
+
+    expect(screen.getByText('Ana: 8')).toBeInTheDocument()
+    expect(screen.getByText('Lee - Not voted')).toBeInTheDocument()
+    expect(screen.queryByText('Lee:')).not.toBeInTheDocument()
+  })
 })
 
 function renderParticipantRoute(state?: unknown) {

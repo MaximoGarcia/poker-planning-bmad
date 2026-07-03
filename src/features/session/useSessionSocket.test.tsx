@@ -3,7 +3,7 @@ import { useState, type ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render } from '@/test/render'
 import type { Ack } from '@shared/contracts/ack'
-import { SERVER_EVENTS } from '@shared/contracts/socket-events'
+import { CLIENT_EVENTS, SERVER_EVENTS } from '@shared/contracts/socket-events'
 import type { CreateSessionResult, JoinSessionResult } from '@shared/contracts/socket-events'
 import { PLANNING_DECKS } from '@shared/domain/decks'
 import { SessionSocketProvider, useSessionSocket } from './useSessionSocket'
@@ -70,7 +70,7 @@ function JoinHarness() {
 }
 
 function ModeratorCommandHarness() {
-  const { latestSnapshot, selectDeck, startRound, updateStory } = useSessionSocket()
+  const { latestSnapshot, revealRound, selectDeck, startRound, updateStory } = useSessionSocket()
   const [ack, setAck] = useState<Ack<{ roomCode: string }> | null>(null)
 
   async function handleStoryUpdate() {
@@ -103,6 +103,15 @@ function ModeratorCommandHarness() {
     )
   }
 
+  async function handleRevealRound() {
+    setAck(
+      await revealRound({
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      }),
+    )
+  }
+
   return (
     <>
       <button onClick={handleStoryUpdate} type="button">
@@ -114,10 +123,17 @@ function ModeratorCommandHarness() {
       <button onClick={handleStartRound} type="button">
         Start round
       </button>
+      <button onClick={handleRevealRound} type="button">
+        Reveal round
+      </button>
       <p data-testid="moderator-snapshot-story">{latestSnapshot?.story?.id ?? 'no story'}</p>
       <p data-testid="moderator-snapshot-deck">{latestSnapshot?.deck.label ?? 'no deck'}</p>
       <p data-testid="moderator-snapshot-round">
         {latestSnapshot?.round.active ? 'Voting' : 'Waiting'}
+      </p>
+      <p data-testid="moderator-snapshot-results">
+        {latestSnapshot?.results?.votes.map((vote) => `${vote.displayName}:${vote.value}`).join(',') ??
+          'no results'}
       </p>
       {ack && <p role="alert">{ack.ok ? 'ok' : ack.error.code}</p>}
     </>
@@ -479,6 +495,83 @@ describe('useSessionSocket', () => {
     await waitFor(() => {
       expect(socketMock.timeout).toHaveBeenCalledWith(5000)
     })
+    expect(screen.getByRole('alert')).toHaveTextContent('CONNECTION_UNAVAILABLE')
+  })
+
+  it('emits reveal commands, validates successful acknowledgements, and updates the local snapshot', async () => {
+    const emit = vi.fn((_event, _command, callback) => {
+      callback(null, {
+        ok: true,
+        data: {
+          roomCode: 'ABCD12',
+          deck: PLANNING_DECKS.fibonacci,
+          story: {
+            id: 'ADR-21',
+            title: 'Estimate socket moderation flow',
+            locked: true,
+          },
+          participants: [
+            {
+              id: 'participant-2',
+              displayName: 'Ana',
+              role: 'participant',
+              connected: true,
+              hasVoted: true,
+            },
+          ],
+          round: {
+            active: true,
+            revealed: true,
+            voteCount: 1,
+          },
+          results: {
+            votes: [
+              {
+                participantId: 'participant-2',
+                displayName: 'Ana',
+                role: 'participant',
+                value: '8',
+              },
+            ],
+          },
+          updatedAt: '2026-07-03T13:30:00.000Z',
+        },
+      })
+    })
+    socketMock.timeout.mockReturnValue({ emit })
+
+    renderWithSocketProvider(<ModeratorCommandHarness />)
+    fireEvent.click(screen.getByRole('button', { name: 'Reveal round' }))
+
+    await screen.findByRole('alert')
+    expect(emit).toHaveBeenCalledWith(
+      CLIENT_EVENTS.roundReveal,
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      },
+      expect.any(Function),
+    )
+    expect(screen.getByRole('alert')).toHaveTextContent('ok')
+    expect(screen.getByTestId('moderator-snapshot-results')).toHaveTextContent('Ana:8')
+  })
+
+  it('returns a stable failure when a reveal acknowledgement is malformed or unavailable', async () => {
+    socketMock.timeout.mockReturnValue({
+      emit: vi.fn((_event, _command, callback) => {
+        callback(null, {
+          ok: true,
+          data: {
+            roomCode: 'ABCD12',
+          },
+        })
+      }),
+    })
+
+    renderWithSocketProvider(<ModeratorCommandHarness />)
+    fireEvent.click(screen.getByRole('button', { name: 'Reveal round' }))
+
+    await screen.findByRole('alert')
     expect(screen.getByRole('alert')).toHaveTextContent('CONNECTION_UNAVAILABLE')
   })
 

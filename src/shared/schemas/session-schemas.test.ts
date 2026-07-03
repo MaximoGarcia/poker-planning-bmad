@@ -20,6 +20,7 @@ const snapshot = {
     revealed: false,
     voteCount: 0,
   },
+  results: null,
   updatedAt: '2026-06-28T16:00:00.000Z',
 }
 

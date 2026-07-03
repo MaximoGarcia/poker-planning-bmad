@@ -6,6 +6,7 @@ import {
   CreateSessionCommandSchema,
   JoinSessionCommandSchema,
   SelectDeckCommandSchema,
+  RevealRoundCommandSchema,
   StartRoundCommandSchema,
   SubmitVoteCommandSchema,
   UpdateStoryCommandSchema,
@@ -104,6 +105,43 @@ describe('shared contracts and schemas', () => {
       StartRoundCommandSchema.safeParse({
         roomCode: 'abc',
         moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      }).success,
+    ).toBe(false)
+  })
+
+  it('validates moderator round-reveal commands with shared schemas', () => {
+    expect(
+      RevealRoundCommandSchema.parse({
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      }),
+    ).toEqual({
+      roomCode: 'ABCD12',
+      moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    })
+
+    expect(
+      RevealRoundCommandSchema.safeParse({
+        roomCode: 'ABCD12',
+      }).success,
+    ).toBe(false)
+    expect(
+      RevealRoundCommandSchema.safeParse({
+        roomCode: 'abc',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      }).success,
+    ).toBe(false)
+    expect(
+      RevealRoundCommandSchema.safeParse({
+        roomCode: 'ABCD12',
+        moderatorToken: 'short',
+      }).success,
+    ).toBe(false)
+    expect(
+      RevealRoundCommandSchema.safeParse({
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        extra: true,
       }).success,
     ).toBe(false)
   })
@@ -216,10 +254,65 @@ describe('shared contracts and schemas', () => {
         revealed: false,
         voteCount: 0,
       },
+      results: null,
       updatedAt: '2026-07-02T12:00:00.000Z',
     })
 
     expect(snapshot.story?.id).toBe('ADR-21')
     expect(snapshot.deck.values).toEqual(['XS', 'S', 'M', 'L', 'XL'])
+  })
+
+  it('validates post-reveal result snapshots without selected-card participant fields', () => {
+    const snapshot = SessionSnapshotAckSchema.parse({
+      roomCode: 'ABCD12',
+      deck: PLANNING_DECKS.fibonacci,
+      story: {
+        id: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+        locked: true,
+      },
+      participants: [
+        {
+          id: 'moderator-1',
+          displayName: 'Maxi',
+          role: 'moderator',
+          connected: true,
+          hasVoted: false,
+        },
+        {
+          id: 'participant-2',
+          displayName: 'Ana',
+          role: 'participant',
+          connected: true,
+          hasVoted: true,
+        },
+      ],
+      round: {
+        active: true,
+        revealed: true,
+        voteCount: 1,
+      },
+      results: {
+        votes: [
+          {
+            participantId: 'participant-2',
+            displayName: 'Ana',
+            role: 'participant',
+            value: '8',
+          },
+        ],
+      },
+      updatedAt: '2026-07-03T13:00:00.000Z',
+    })
+
+    expect(snapshot.results?.votes).toEqual([
+      {
+        participantId: 'participant-2',
+        displayName: 'Ana',
+        role: 'participant',
+        value: '8',
+      },
+    ])
+    expect(snapshot.participants[1]).not.toHaveProperty('selectedCard')
   })
 })

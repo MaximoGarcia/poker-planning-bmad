@@ -1,6 +1,10 @@
+---
+baseline_commit: b2feeab8d78addece55e5e4aeb493258ac8f3d9f
+---
+
 # Story 3.1: Moderator Reveals Round Results
 
-Status: ready-for-dev
+Status: done
 
 Completion Note: Ultimate context engine analysis completed - comprehensive developer guide created.
 
@@ -21,67 +25,72 @@ so that the team can discuss estimates only after private voting is complete.
 
 ## Tasks / Subtasks
 
-- [ ] Confirm dependency readiness before implementation. (AC: 1-6)
-  - [ ] Verify Story 2.4 Moderator voting is implemented if this branch expects Moderator votes to appear in revealed results.
-  - [ ] Verify Story 2.5 pre-reveal privacy hardening is implemented, especially the snapshot sanitization boundary. If not, do not implement reveal in a way that exposes hidden values before reveal.
-  - [ ] Preserve existing Participant voting behavior from Story 2.3 and any Moderator voting behavior from Story 2.4.
-- [ ] Extend shared reveal and post-reveal contracts. (AC: 1-6)
-  - [ ] Add `RevealRoundCommandSchema` in `src/shared/schemas/command-schemas.ts` with strict `{ roomCode, moderatorToken }` validation.
-  - [ ] Export the inferred `RevealRoundCommand` type and wire `CLIENT_EVENTS.roundReveal` to it in `src/shared/contracts/socket-events.ts`.
-  - [ ] Add an explicit post-reveal snapshot shape to `src/shared/contracts/snapshots.ts`; prefer a `results: RevealedResultsSnapshot | null` field where `results` is `null` before reveal and contains a flat list after reveal.
-  - [ ] Recommended flat vote shape: `{ participantId, displayName, role, value }`. Do not include non-voters in this list; non-voters remain visible through `participants` with `hasVoted: false`.
-  - [ ] Update `SessionSnapshotSchema` and related ack/result schemas in `src/shared/schemas/session-schemas.ts` with strict Zod validation for the new post-reveal fields.
-  - [ ] Keep grouped counts, majority labels, outlier summaries, final estimate, and estimated stories out of this story; they belong to Stories 3.2, 3.3, and 3.5.
-- [ ] Implement server-authoritative reveal behavior in the domain layer. (AC: 1-6)
-  - [ ] Add `revealRound(command, deps)` in `server/domain/session-commands.ts`.
-  - [ ] Use guard order: missing room -> `INVALID_ROOM_CODE`; bad moderator token -> `UNAUTHORIZED`; inactive round -> `ROUND_NOT_ACTIVE`; already revealed may return the current revealed snapshot without mutation or a stable no-op success, but it must not duplicate results or alter votes.
-  - [ ] On success, set `snapshot.round.revealed = true`, keep `snapshot.round.active = true`, keep `voteCount = session.votes.size`, set/update `snapshot.results` from the current `session.votes`, and update `updatedAt`.
-  - [ ] Build revealed votes from participant ids in `session.votes`; lookup display name and role from `snapshot.participants`.
-  - [ ] If a vote key has no matching participant, ignore it or return a stable domain error after investigating why the state is inconsistent; do not fabricate display names.
-  - [ ] Do not create a Moderator vote if `session.votes` does not contain `session.moderatorParticipantId`.
-  - [ ] Leave `session.votes` intact after reveal so post-reveal snapshots can represent submitted values and `submitVote` can reject changes with `VOTE_LOCKED`.
-- [ ] Preserve privacy boundaries while making revealed values visible. (AC: 2, 3, 6)
-  - [ ] If `server/socket/snapshot-mapper.ts` exists from Story 2.5, add reveal-aware mapping there instead of returning raw domain state directly.
-  - [ ] Before reveal, `results` must be `null` or omitted and no selected card values, grouped counts, or vote distributions may appear in room-wide snapshots.
-  - [ ] After reveal, selected card values may appear only in the explicit post-reveal results field.
-  - [ ] Never include capability tokens in any snapshot or UI-visible state.
-  - [ ] Do not log raw command payloads, `session.votes`, capability tokens, or selected values before reveal.
-- [ ] Wire the Socket.IO `round:reveal` command. (AC: 1, 5)
-  - [ ] Register `CLIENT_EVENTS.roundReveal` in `server/socket/register-session-handlers.ts`.
-  - [ ] Keep the handler thin: validate with Zod, authorize/delegate through `revealRound`, acknowledge, then broadcast the sanitized `session:snapshot`.
-  - [ ] Preserve ack-before-broadcast ordering already used by `story:update`, `deck:select`, `round:start`, and `vote:submit`.
-  - [ ] Return `UNAUTHORIZED` for a parsed reveal command with an invalid or Participant-held token in `moderatorToken`.
-  - [ ] Do not broadcast on validation, authorization, inactive-round, or thrown-error failures.
-- [ ] Add frontend reveal command support. (AC: 1, 5, 6)
-  - [ ] Add `revealRound(command)` to `src/features/session/useSessionSocket.ts`, using `CLIENT_EVENTS.roundReveal`, `SessionSnapshotAckSchema`, `ACK_TIMEOUT_MS`, and the existing success path that updates `latestSnapshot`.
-  - [ ] Add unit coverage for successful reveal ack parsing, `latestSnapshot` update, failure ack behavior, and connection-unavailable behavior.
-- [ ] Add Moderator reveal controls and post-reveal display. (AC: 1-6)
-  - [ ] Update `src/features/session/ModeratorSessionView.tsx` to render a reveal button only for the Moderator.
-  - [ ] Enable reveal only when a round is active, not revealed, a Moderator token exists, and no reveal command is pending.
-  - [ ] Show pending and readable error states derived from the server acknowledgement; do not optimistically set revealed state before the server ack/snapshot.
-  - [ ] Show revealed vote values after reveal using the explicit results field; non-voters should remain visible in the existing participant list as `Not voted`.
-  - [ ] If grouped display is tempting, defer it to Story 3.2. For this story, a flat accessible list of revealed votes is enough to prove the reveal contract.
-  - [ ] Preserve existing Story/Deck editing, Start Round, participant presence, and pre-reveal privacy behavior.
-- [ ] Update Participant session rendering after reveal. (AC: 1-3, 5, 6)
-  - [ ] Keep Participant UI free of reveal controls.
-  - [ ] Continue disabling vote buttons when `snapshot.round.revealed` is true.
-  - [ ] Render revealed vote values after reveal from the same explicit results field used by the Moderator view.
-  - [ ] Preserve the current pre-reveal behavior where Participants see only voting status and their local accepted selection state.
-- [ ] Add automated coverage. (AC: 1-6)
-  - [ ] Schema tests: valid reveal command, missing token, short token, extra fields, and invalid room code.
-  - [ ] Domain tests in `server/domain/session-commands.test.ts`: successful reveal with Participant votes, successful reveal without Moderator vote, non-voters not assigned values, invalid room, invalid Moderator token, inactive round, idempotent already-revealed handling, and post-reveal `submitVote` returns `VOTE_LOCKED` without mutation.
-  - [ ] Snapshot/schema tests: pre-reveal snapshots contain no `results.votes`; post-reveal snapshots contain only submitted votes; non-voters remain in `participants` without selected card fields.
-  - [ ] Socket handler tests in `server/socket/register-session-handlers.test.ts`: valid reveal ack and broadcast, malformed payload validation, invalid token `UNAUTHORIZED`, inactive round failure, no broadcast on failures, ack-before-broadcast ordering, and no token leakage.
-  - [ ] Hook tests in `src/features/session/useSessionSocket.test.tsx`: `revealRound` emits `round:reveal`, validates ack data, updates `latestSnapshot`, and handles timeout/unavailable connection.
-  - [ ] Moderator component tests: reveal button availability, pending state, hidden from Participants, error message behavior, revealed vote list rendering, and no optimistic reveal.
-  - [ ] Participant component tests: no reveal control, vote controls disabled after reveal, revealed vote values shown only after reveal, non-voters readable.
-  - [ ] E2E coverage across two browser contexts: Moderator starts a round, at least one Participant votes, another user remains a non-voter, Moderator reveals, both browsers show revealed state and submitted values, non-voter is labeled without a card, and later vote attempts are locked.
-- [ ] Run verification.
-  - [ ] `cmd.exe /c npm run typecheck`
-  - [ ] `cmd.exe /c npm run test`
-  - [ ] `cmd.exe /c npm run build`
-  - [ ] `cmd.exe /c npm run lint`
-  - [ ] `cmd.exe /c npm run test:e2e`
+- [x] Confirm dependency readiness before implementation. (AC: 1-6)
+  - [x] Verify Story 2.4 Moderator voting is implemented if this branch expects Moderator votes to appear in revealed results.
+  - [x] Verify Story 2.5 pre-reveal privacy hardening is implemented, especially the snapshot sanitization boundary. If not, do not implement reveal in a way that exposes hidden values before reveal.
+  - [x] Preserve existing Participant voting behavior from Story 2.3 and any Moderator voting behavior from Story 2.4.
+- [x] Extend shared reveal and post-reveal contracts. (AC: 1-6)
+  - [x] Add `RevealRoundCommandSchema` in `src/shared/schemas/command-schemas.ts` with strict `{ roomCode, moderatorToken }` validation.
+  - [x] Export the inferred `RevealRoundCommand` type and wire `CLIENT_EVENTS.roundReveal` to it in `src/shared/contracts/socket-events.ts`.
+  - [x] Add an explicit post-reveal snapshot shape to `src/shared/contracts/snapshots.ts`; prefer a `results: RevealedResultsSnapshot | null` field where `results` is `null` before reveal and contains a flat list after reveal.
+  - [x] Recommended flat vote shape: `{ participantId, displayName, role, value }`. Do not include non-voters in this list; non-voters remain visible through `participants` with `hasVoted: false`.
+  - [x] Update `SessionSnapshotSchema` and related ack/result schemas in `src/shared/schemas/session-schemas.ts` with strict Zod validation for the new post-reveal fields.
+  - [x] Keep grouped counts, majority labels, outlier summaries, final estimate, and estimated stories out of this story; they belong to Stories 3.2, 3.3, and 3.5.
+- [x] Implement server-authoritative reveal behavior in the domain layer. (AC: 1-6)
+  - [x] Add `revealRound(command, deps)` in `server/domain/session-commands.ts`.
+  - [x] Use guard order: missing room -> `INVALID_ROOM_CODE`; bad moderator token -> `UNAUTHORIZED`; inactive round -> `ROUND_NOT_ACTIVE`; already revealed may return the current revealed snapshot without mutation or a stable no-op success, but it must not duplicate results or alter votes.
+  - [x] On success, set `snapshot.round.revealed = true`, keep `snapshot.round.active = true`, keep `voteCount = session.votes.size`, set/update `snapshot.results` from the current `session.votes`, and update `updatedAt`.
+  - [x] Build revealed votes from participant ids in `session.votes`; lookup display name and role from `snapshot.participants`.
+  - [x] If a vote key has no matching participant, ignore it or return a stable domain error after investigating why the state is inconsistent; do not fabricate display names.
+  - [x] Do not create a Moderator vote if `session.votes` does not contain `session.moderatorParticipantId`.
+  - [x] Leave `session.votes` intact after reveal so post-reveal snapshots can represent submitted values and `submitVote` can reject changes with `VOTE_LOCKED`.
+- [x] Preserve privacy boundaries while making revealed values visible. (AC: 2, 3, 6)
+  - [x] If `server/socket/snapshot-mapper.ts` exists from Story 2.5, add reveal-aware mapping there instead of returning raw domain state directly.
+  - [x] Before reveal, `results` must be `null` or omitted and no selected card values, grouped counts, or vote distributions may appear in room-wide snapshots.
+  - [x] After reveal, selected card values may appear only in the explicit post-reveal results field.
+  - [x] Never include capability tokens in any snapshot or UI-visible state.
+  - [x] Do not log raw command payloads, `session.votes`, capability tokens, or selected values before reveal.
+- [x] Wire the Socket.IO `round:reveal` command. (AC: 1, 5)
+  - [x] Register `CLIENT_EVENTS.roundReveal` in `server/socket/register-session-handlers.ts`.
+  - [x] Keep the handler thin: validate with Zod, authorize/delegate through `revealRound`, acknowledge, then broadcast the sanitized `session:snapshot`.
+  - [x] Preserve ack-before-broadcast ordering already used by `story:update`, `deck:select`, `round:start`, and `vote:submit`.
+  - [x] Return `UNAUTHORIZED` for a parsed reveal command with an invalid or Participant-held token in `moderatorToken`.
+  - [x] Do not broadcast on validation, authorization, inactive-round, or thrown-error failures.
+- [x] Add frontend reveal command support. (AC: 1, 5, 6)
+  - [x] Add `revealRound(command)` to `src/features/session/useSessionSocket.ts`, using `CLIENT_EVENTS.roundReveal`, `SessionSnapshotAckSchema`, `ACK_TIMEOUT_MS`, and the existing success path that updates `latestSnapshot`.
+  - [x] Add unit coverage for successful reveal ack parsing, `latestSnapshot` update, failure ack behavior, and connection-unavailable behavior.
+- [x] Add Moderator reveal controls and post-reveal display. (AC: 1-6)
+  - [x] Update `src/features/session/ModeratorSessionView.tsx` to render a reveal button only for the Moderator.
+  - [x] Enable reveal only when a round is active, not revealed, a Moderator token exists, and no reveal command is pending.
+  - [x] Show pending and readable error states derived from the server acknowledgement; do not optimistically set revealed state before the server ack/snapshot.
+  - [x] Show revealed vote values after reveal using the explicit results field; non-voters should remain visible in the existing participant list as `Not voted`.
+  - [x] If grouped display is tempting, defer it to Story 3.2. For this story, a flat accessible list of revealed votes is enough to prove the reveal contract.
+  - [x] Preserve existing Story/Deck editing, Start Round, participant presence, and pre-reveal privacy behavior.
+- [x] Update Participant session rendering after reveal. (AC: 1-3, 5, 6)
+  - [x] Keep Participant UI free of reveal controls.
+  - [x] Continue disabling vote buttons when `snapshot.round.revealed` is true.
+  - [x] Render revealed vote values after reveal from the same explicit results field used by the Moderator view.
+  - [x] Preserve the current pre-reveal behavior where Participants see only voting status and their local accepted selection state.
+- [x] Add automated coverage. (AC: 1-6)
+  - [x] Schema tests: valid reveal command, missing token, short token, extra fields, and invalid room code.
+  - [x] Domain tests in `server/domain/session-commands.test.ts`: successful reveal with Participant votes, successful reveal without Moderator vote, non-voters not assigned values, invalid room, invalid Moderator token, inactive round, idempotent already-revealed handling, and post-reveal `submitVote` returns `VOTE_LOCKED` without mutation.
+  - [x] Snapshot/schema tests: pre-reveal snapshots contain no `results.votes`; post-reveal snapshots contain only submitted votes; non-voters remain in `participants` without selected card fields.
+  - [x] Socket handler tests in `server/socket/register-session-handlers.test.ts`: valid reveal ack and broadcast, malformed payload validation, invalid token `UNAUTHORIZED`, inactive round failure, no broadcast on failures, ack-before-broadcast ordering, and no token leakage.
+  - [x] Hook tests in `src/features/session/useSessionSocket.test.tsx`: `revealRound` emits `round:reveal`, validates ack data, updates `latestSnapshot`, and handles timeout/unavailable connection.
+  - [x] Moderator component tests: reveal button availability, pending state, hidden from Participants, error message behavior, revealed vote list rendering, and no optimistic reveal.
+  - [x] Participant component tests: no reveal control, vote controls disabled after reveal, revealed vote values shown only after reveal, non-voters readable.
+  - [x] E2E coverage across two browser contexts: Moderator starts a round, at least one Participant votes, another user remains a non-voter, Moderator reveals, both browsers show revealed state and submitted values, non-voter is labeled without a card, and later vote attempts are locked.
+- [x] Run verification.
+  - [x] `cmd.exe /c npm run typecheck`
+  - [x] `cmd.exe /c npm run test`
+  - [x] `cmd.exe /c npm run build`
+  - [x] `cmd.exe /c npm run lint`
+  - [x] `cmd.exe /c npm run test:e2e`
+
+### Review Findings
+
+- [x] [Review][Patch] Enforce snapshot `results` consistency with `round.revealed` [src/shared/schemas/session-schemas.ts:57]
+- [x] [Review][Patch] Add real socket-handler coverage for inactive-round reveal failure [server/socket/register-session-handlers.test.ts:1293]
 
 ## Dev Notes
 
@@ -241,22 +250,50 @@ cmd.exe /c npm run test:e2e
 
 ### Agent Model Used
 
-TBD
+GPT-5 Codex
 
 ### Debug Log References
 
-TBD
+- 2026-07-03: Red phase confirmed focused reveal tests failed on missing reveal schema/domain/socket/hook/UI behavior.
+- 2026-07-03: Focused reveal suite passed: 8 files, 149 tests.
+- 2026-07-03: Full verification passed: typecheck, Vitest, build, lint, and Playwright E2E.
 
 ### Completion Notes
 
-TBD
+- Implemented server-authoritative round reveal with strict command validation, guard ordering, idempotent already-revealed handling, and post-reveal `VOTE_LOCKED` protection through the existing `submitVote` guard.
+- Added explicit `results: RevealedResultsSnapshot | null` contract and Zod schemas; pre-reveal snapshots carry `results: null`, while revealed snapshots expose only flat submitted votes.
+- Wired `round:reveal` through Socket.IO with sanitized ack-before-broadcast behavior and no failure broadcasts.
+- Added moderator reveal controls with pending/error states and no optimistic reveal; participants have no reveal controls and see the same flat revealed vote list after reveal.
+- Added schema, domain, socket, hook, component, snapshot, and E2E coverage for reveal behavior, privacy, non-voters, unauthorized reveal, and post-reveal locked voting.
 
 ### File List
 
-TBD
+- `_bmad-output/implementation-artifacts/3-1-moderator-reveals-round-results.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `server/domain/session-commands.test.ts`
+- `server/domain/session-commands.ts`
+- `server/socket/register-session-handlers.test.ts`
+- `server/socket/register-session-handlers.ts`
+- `server/socket/snapshot-mapper.test.ts`
+- `server/socket/snapshot-mapper.ts`
+- `src/app/styles.css`
+- `src/features/session/ModeratorSessionView.test.tsx`
+- `src/features/session/ModeratorSessionView.tsx`
+- `src/features/session/ParticipantSessionView.test.tsx`
+- `src/features/session/ParticipantSessionView.tsx`
+- `src/features/session/useSessionSocket.test.tsx`
+- `src/features/session/useSessionSocket.ts`
+- `src/shared/contracts/snapshots.ts`
+- `src/shared/contracts/socket-events.ts`
+- `src/shared/schemas/command-schemas.test.ts`
+- `src/shared/schemas/command-schemas.ts`
+- `src/shared/schemas/session-schemas.test.ts`
+- `src/shared/schemas/session-schemas.ts`
+- `tests/e2e/create-session.spec.ts`
 
 ## Change Log
 
 | Date | Version | Description | Author |
 | --- | --- | --- | --- |
 | 2026-07-03 | 0.1 | Initial story draft from Epic 3 requirements, architecture, current source, and recent story context. | Scrum Master |
+| 2026-07-03 | 1.0 | Implemented moderator round reveal, post-reveal results snapshots, socket/client/UI wiring, and full automated coverage. | Dev Agent |

@@ -48,10 +48,11 @@ describe('toPreRevealSessionSnapshot', () => {
         revealed: false,
         voteCount: 3,
       },
+      results: null,
       updatedAt: '2026-07-03T13:00:00.000Z',
     })
     expect(snapshot).not.toHaveProperty('votes')
-    expect(snapshot).not.toHaveProperty('results')
+    expect(snapshot.results).toBeNull()
     expect(snapshot).not.toHaveProperty('groupedResults')
     expect(snapshot.participants[0]).not.toHaveProperty('selectedCard')
     expect(snapshot.participants[1]).not.toHaveProperty('selectedCard')
@@ -75,7 +76,7 @@ describe('toPreRevealSessionSnapshot', () => {
     expect(snapshot.participants[1]).not.toHaveProperty('selectedCard')
     expect(snapshot.participants[2]).not.toHaveProperty('selectedCard')
     expect(snapshot).not.toHaveProperty('votes')
-    expect(snapshot).not.toHaveProperty('results')
+    expect(snapshot.results).toBeNull()
     expect(snapshot).not.toHaveProperty('groupedResults')
   })
 
@@ -117,7 +118,7 @@ describe('toPreRevealSessionSnapshot', () => {
     expect(snapshot).not.toHaveProperty('moderatorToken')
     expect(snapshot).not.toHaveProperty('participantToken')
     expect(snapshot).not.toHaveProperty('votes')
-    expect(snapshot).not.toHaveProperty('results')
+    expect(snapshot.results).toBeNull()
     expect(snapshot).not.toHaveProperty('groupedResults')
     expect(snapshot).not.toHaveProperty('estimatedStories')
     expect(snapshot.deck).toEqual(PLANNING_DECKS.fibonacci)
@@ -129,6 +130,86 @@ describe('toPreRevealSessionSnapshot', () => {
     expect(serialized).not.toContain('selectedCard')
     expect(serialized).not.toContain('"8":')
     expect(serialized).not.toContain('"13":')
+  })
+
+  it('returns explicit flat results only after reveal', () => {
+    const session = createSessionState()
+    const snapshot = toPreRevealSessionSnapshot(
+      {
+        ...session,
+        snapshot: {
+          ...session.snapshot,
+          participants: [
+            ...session.snapshot.participants,
+            {
+              id: 'participant-4',
+              displayName: 'No Vote',
+              role: 'participant',
+              connected: true,
+              hasVoted: false,
+            },
+          ],
+          round: {
+            active: true,
+            revealed: true,
+            voteCount: 3,
+          },
+          results: {
+            votes: [
+              {
+                participantId: 'moderator-1',
+                displayName: 'Maxi',
+                role: 'moderator',
+                value: '13',
+              },
+              {
+                participantId: 'participant-2',
+                displayName: 'Ana',
+                role: 'participant',
+                value: '8',
+              },
+              {
+                participantId: 'participant-3',
+                displayName: 'Lee',
+                role: 'participant',
+                value: '5',
+              },
+            ],
+          },
+        },
+      },
+      {
+        role: 'participant',
+        participantId: 'participant-2',
+      },
+    )
+
+    expect(snapshot.results).toEqual({
+      votes: [
+        {
+          participantId: 'moderator-1',
+          displayName: 'Maxi',
+          role: 'moderator',
+          value: '13',
+        },
+        {
+          participantId: 'participant-2',
+          displayName: 'Ana',
+          role: 'participant',
+          value: '8',
+        },
+        {
+          participantId: 'participant-3',
+          displayName: 'Lee',
+          role: 'participant',
+          value: '5',
+        },
+      ],
+    })
+    expect(snapshot.results?.votes).not.toContainEqual(
+      expect.objectContaining({ participantId: 'participant-4' }),
+    )
+    expect(snapshot).not.toHaveProperty('groupedResults')
   })
 })
 
@@ -183,6 +264,7 @@ function createSessionState(): SessionState {
         revealed: false,
         voteCount: 3,
       },
+      results: null,
       updatedAt: '2026-07-03T13:00:00.000Z',
     },
   }

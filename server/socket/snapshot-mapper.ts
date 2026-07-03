@@ -39,6 +39,17 @@ export function toPreRevealSessionSnapshot(
       revealed: session.snapshot.round.revealed,
       voteCount: session.votes.size,
     },
+    results: session.snapshot.round.revealed
+      ? {
+          votes:
+            session.snapshot.results?.votes.map((vote) => ({
+              participantId: vote.participantId,
+              displayName: vote.displayName,
+              role: vote.role,
+              value: vote.value,
+            })) ?? [],
+        }
+      : null,
     updatedAt: session.snapshot.updatedAt,
   }
 }
