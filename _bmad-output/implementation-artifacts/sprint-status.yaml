@@ -1,5 +1,5 @@
 # generated: 2026-06-19T17:11:20.0614856-03:00
-# last_updated: 2026-07-03T17:25:26+00:00
+# last_updated: 2026-07-03T17:58:11+00:00
 # project: adr-buddy
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-19T17:11:20.0614856-03:00
-last_updated: 2026-07-03T17:25:26+00:00
+last_updated: 2026-07-03T17:58:11+00:00
 project: adr-buddy
 project_key: NOKEY
 tracking_system: file-system
@@ -52,12 +52,12 @@ development_status:
   2-1-moderator-sets-current-story-and-deck: done
   2-2-moderator-starts-a-voting-round: done
   2-3-participants-submit-and-change-hidden-votes: done
-  2-4-moderator-votes-in-the-round: backlog
-  2-5-enforce-pre-reveal-vote-privacy: backlog
+  2-4-moderator-votes-in-the-round: ready-for-dev
+  2-5-enforce-pre-reveal-vote-privacy: ready-for-dev
   epic-2-retrospective: optional
-  epic-3: backlog
-  3-1-moderator-reveals-round-results: backlog
-  3-2-users-read-grouped-vote-results: backlog
+  epic-3: in-progress
+  3-1-moderator-reveals-round-results: ready-for-dev
+  3-2-users-read-grouped-vote-results: ready-for-dev
   3-3-moderator-records-final-estimate: backlog
   3-4-moderator-resets-or-advances-the-round: backlog
   3-5-moderator-views-live-estimated-stories: backlog
