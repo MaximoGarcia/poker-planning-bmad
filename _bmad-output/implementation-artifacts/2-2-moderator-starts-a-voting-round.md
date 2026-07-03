@@ -4,7 +4,7 @@ baseline_commit: 3ab212099d0b521966447ebfa40fba66958e09fd
 
 # Story 2.2: Moderator Starts A Voting Round
 
-Status: ready-for-dev
+Status: done
 
 Completion Note: Ultimate context engine analysis completed - comprehensive developer guide created.
 
@@ -24,51 +24,55 @@ so that the team can begin submitting estimates in a controlled live flow.
 
 ## Tasks / Subtasks
 
-- [ ] Add shared round-start command and error contracts. (AC: 1, 3, 4)
-  - [ ] Add `StartRoundCommandSchema` in `src/shared/schemas/command-schemas.ts` with `roomCode` and `moderatorToken`; reuse the existing room-code and token validation style from story/deck commands.
-  - [ ] Update `src/shared/contracts/socket-events.ts` so `round:start` uses the shared command type and acknowledges with `SessionSnapshot`.
-  - [ ] Add `STORY_REQUIRED` to `src/shared/contracts/errors.ts`; keep existing codes unchanged.
-  - [ ] Add or extend schema/contract tests for valid round-start payloads, missing token rejection, and invalid room code rejection.
-- [ ] Implement the server-authoritative start-round domain transition. (AC: 1, 2, 3, 4)
-  - [ ] Add `startRound` to `server/domain/session-commands.ts`.
-  - [ ] Return `INVALID_ROOM_CODE` for missing sessions and `UNAUTHORIZED` for invalid moderator tokens.
-  - [ ] Return `STORY_REQUIRED` when `session.snapshot.story` is `null`; leave `snapshot`, `votes`, and `updatedAt` unchanged on failure.
-  - [ ] On success, set `round.active = true`, `round.revealed = false`, `round.voteCount = 0`, and set `story.locked = true`.
-  - [ ] Clear `session.votes` so any prior unrecorded votes are removed before the new round begins.
-  - [ ] Set every participant snapshot `hasVoted` to `false`, including the moderator participant, so presence and future vote status start clean.
-  - [ ] Update `updatedAt` only on successful mutation.
-- [ ] Wire `round:start` through Socket.IO. (AC: 1, 3, 4, 5)
-  - [ ] Register `CLIENT_EVENTS.roundStart` in `server/socket/register-session-handlers.ts`.
-  - [ ] Reuse the existing moderator-command helper shape: validate, delegate to domain, return stable failure ack or success ack, then emit `SERVER_EVENTS.sessionSnapshot` to `io.to(roomCode)`.
-  - [ ] Keep the handler thin; do not mutate session state in the socket layer.
-  - [ ] Confirm thrown domain/store failures are converted to a stable failure ack rather than leaking exceptions.
-- [ ] Extend the socket client helper. (AC: 1, 5)
-  - [ ] Add `startRound(command: StartRoundCommand)` to `src/features/session/useSessionSocket.ts`.
-  - [ ] Validate the success acknowledgement with `SessionSnapshotAckSchema` and apply it to `latestSnapshot`.
-  - [ ] Preserve the existing 5 second Socket.IO timeout behavior and connection-unavailable fallback.
-- [ ] Add Moderator start-round UI. (AC: 1, 3, 5)
-  - [ ] Update `src/features/session/ModeratorSessionView.tsx` to show a Start round control only for the moderator.
-  - [ ] Read the moderator token with the existing `readModeratorToken(roomCode)` helper; never put the token in route state, snapshots, logs, or local storage.
-  - [ ] Disable the control while a command is pending, while a round is already active, or when no current Story exists.
-  - [ ] Show a pending label/state while waiting for acknowledgement.
-  - [ ] Show readable messages for `STORY_REQUIRED`, `UNAUTHORIZED`, and generic failures without changing local round state optimistically.
-  - [ ] Preserve the existing story/deck editor, room code copy behavior, participant presence list, and missing-session guard.
-- [ ] Keep Participant UI read-only and round-aware. (AC: 1, 4)
-  - [ ] Update `src/features/session/ParticipantSessionView.tsx` only as needed to make the active voting state clear from the server snapshot.
-  - [ ] Do not add start controls, moderator token access, or moderator-only command affordances to the Participant view.
-  - [ ] Keep deck values and current story display driven by `snapshot.deck` and `snapshot.story`.
-- [ ] Add focused automated coverage. (AC: 1-5)
-  - [ ] Add domain tests for successful start, vote clearing, `STORY_REQUIRED`, `UNAUTHORIZED`, invalid room, unchanged failure state, locked story, and `hasVoted` reset.
-  - [ ] Add socket handler tests proving valid start commands ack and broadcast the room snapshot, while invalid/participant commands return stable errors without mutation.
-  - [ ] Add `useSessionSocket` tests for `startRound` success, ack validation failure, timeout/connection failure, and snapshot state update.
-  - [ ] Add Moderator component tests for disabled states, pending state, error messages, and no optimistic active-round rendering.
-  - [ ] Add or extend Playwright coverage in `tests/e2e/create-session.spec.ts` for Moderator starting a round and Participant seeing `Voting` near-real-time.
-- [ ] Verify the story end to end. (AC: 1-5)
-  - [ ] Run `npm run typecheck`.
-  - [ ] Run `npm run test`.
-  - [ ] Run `npm run build`.
-  - [ ] Run `npm run lint`.
-  - [ ] Run `npm run test:e2e` after browser coverage is updated.
+- [x] Add shared round-start command and error contracts. (AC: 1, 3, 4)
+  - [x] Add `StartRoundCommandSchema` in `src/shared/schemas/command-schemas.ts` with `roomCode` and `moderatorToken`; reuse the existing room-code and token validation style from story/deck commands.
+  - [x] Update `src/shared/contracts/socket-events.ts` so `round:start` uses the shared command type and acknowledges with `SessionSnapshot`.
+  - [x] Add `STORY_REQUIRED` to `src/shared/contracts/errors.ts`; keep existing codes unchanged.
+  - [x] Add or extend schema/contract tests for valid round-start payloads, missing token rejection, and invalid room code rejection.
+- [x] Implement the server-authoritative start-round domain transition. (AC: 1, 2, 3, 4)
+  - [x] Add `startRound` to `server/domain/session-commands.ts`.
+  - [x] Return `INVALID_ROOM_CODE` for missing sessions and `UNAUTHORIZED` for invalid moderator tokens.
+  - [x] Return `STORY_REQUIRED` when `session.snapshot.story` is `null`; leave `snapshot`, `votes`, and `updatedAt` unchanged on failure.
+  - [x] On success, set `round.active = true`, `round.revealed = false`, `round.voteCount = 0`, and set `story.locked = true`.
+  - [x] Clear `session.votes` so any prior unrecorded votes are removed before the new round begins.
+  - [x] Set every participant snapshot `hasVoted` to `false`, including the moderator participant, so presence and future vote status start clean.
+  - [x] Update `updatedAt` only on successful mutation.
+- [x] Wire `round:start` through Socket.IO. (AC: 1, 3, 4, 5)
+  - [x] Register `CLIENT_EVENTS.roundStart` in `server/socket/register-session-handlers.ts`.
+  - [x] Reuse the existing moderator-command helper shape: validate, delegate to domain, return stable failure ack or success ack, then emit `SERVER_EVENTS.sessionSnapshot` to `io.to(roomCode)`.
+  - [x] Keep the handler thin; do not mutate session state in the socket layer.
+  - [x] Confirm thrown domain/store failures are converted to a stable failure ack rather than leaking exceptions.
+- [x] Extend the socket client helper. (AC: 1, 5)
+  - [x] Add `startRound(command: StartRoundCommand)` to `src/features/session/useSessionSocket.ts`.
+  - [x] Validate the success acknowledgement with `SessionSnapshotAckSchema` and apply it to `latestSnapshot`.
+  - [x] Preserve the existing 5 second Socket.IO timeout behavior and connection-unavailable fallback.
+- [x] Add Moderator start-round UI. (AC: 1, 3, 5)
+  - [x] Update `src/features/session/ModeratorSessionView.tsx` to show a Start round control only for the moderator.
+  - [x] Read the moderator token with the existing `readModeratorToken(roomCode)` helper; never put the token in route state, snapshots, logs, or local storage.
+  - [x] Disable the control while a command is pending, while a round is already active, or when no current Story exists.
+  - [x] Show a pending label/state while waiting for acknowledgement.
+  - [x] Show readable messages for `STORY_REQUIRED`, `UNAUTHORIZED`, and generic failures without changing local round state optimistically.
+  - [x] Preserve the existing story/deck editor, room code copy behavior, participant presence list, and missing-session guard.
+- [x] Keep Participant UI read-only and round-aware. (AC: 1, 4)
+  - [x] Update `src/features/session/ParticipantSessionView.tsx` only as needed to make the active voting state clear from the server snapshot.
+  - [x] Do not add start controls, moderator token access, or moderator-only command affordances to the Participant view.
+  - [x] Keep deck values and current story display driven by `snapshot.deck` and `snapshot.story`.
+- [x] Add focused automated coverage. (AC: 1-5)
+  - [x] Add domain tests for successful start, vote clearing, `STORY_REQUIRED`, `UNAUTHORIZED`, invalid room, unchanged failure state, locked story, and `hasVoted` reset.
+  - [x] Add socket handler tests proving valid start commands ack and broadcast the room snapshot, while invalid/participant commands return stable errors without mutation.
+  - [x] Add `useSessionSocket` tests for `startRound` success, ack validation failure, timeout/connection failure, and snapshot state update.
+  - [x] Add Moderator component tests for disabled states, pending state, error messages, and no optimistic active-round rendering.
+  - [x] Add or extend Playwright coverage in `tests/e2e/create-session.spec.ts` for Moderator starting a round and Participant seeing `Voting` near-real-time.
+- [x] Verify the story end to end. (AC: 1-5)
+  - [x] Run `npm run typecheck`.
+  - [x] Run `npm run test`.
+  - [x] Run `npm run build`.
+  - [x] Run `npm run lint`.
+  - [x] Run `npm run test:e2e` after browser coverage is updated.
+
+### Review Findings
+
+- [x] [Review][Patch] Success acknowledgement is sent after the room broadcast [server/socket/register-session-handlers.ts:310]
 
 ## Dev Notes
 
@@ -268,11 +272,45 @@ GPT-5 Codex
 ### Debug Log References
 
 - 2026-07-03: `bmad-create-story` workflow customization resolved with no prepend/append activation steps and persistent project-context glob returned no files.
+- 2026-07-03: `bmad-dev-story` workflow customization resolved with no prepend/append activation steps; no project-context files found.
+- 2026-07-03: Initial sandboxed `npm` execution failed because WSL 1 could not resolve the Windows Node runtime; escalated `cmd.exe /c npm ...` commands were used for validation.
+- 2026-07-03: Validation passed: `npm run typecheck`, `npm run test` (18 files, 115 tests), `npm run build`, `npm run lint`, and `npm run test:e2e` (4 tests).
+- 2026-07-03: Code review patch applied to acknowledge successful moderator commands before broadcasting room snapshots; validation passed with `npm run typecheck` and `npm run test` (18 files, 115 tests).
+
+### Implementation Plan
+
+- Added shared `StartRoundCommand` schema, socket event typing, and `STORY_REQUIRED` contract.
+- Added server-authoritative `startRound` domain mutation with failure-order guards, vote clearing, story locking, participant `hasVoted` reset, and success-only timestamp updates.
+- Reused the Socket.IO moderator-command helper for `round:start`, keeping mutation in the domain layer and broadcasting only accepted server snapshots.
+- Added the `useSessionSocket.startRound` helper and Moderator UI pending/error/disabled states without optimistic active-round rendering.
+- Kept Participant UI read-only and verified active voting display from the server snapshot.
 
 ### Completion Notes List
 
 - Story context created for Story 2.2 with implementation guardrails, previous-story intelligence, architecture compliance notes, local file analysis, and latest official-doc checks.
+- Implemented round-start contracts, domain transition, Socket.IO command handling, client socket helper, Moderator start control, and participant round-state coverage.
+- Added automated coverage across shared schemas/contracts, domain commands, socket handlers, socket hook, Moderator component, Participant component, and Playwright live session flow.
+- Verified all required commands through Windows Node runtime: typecheck, test, build, lint, and E2E.
 
 ### File List
 
 - `_bmad-output/implementation-artifacts/2-2-moderator-starts-a-voting-round.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `server/domain/session-commands.test.ts`
+- `server/domain/session-commands.ts`
+- `server/socket/register-session-handlers.test.ts`
+- `server/socket/register-session-handlers.ts`
+- `src/features/session/ModeratorSessionView.test.tsx`
+- `src/features/session/ModeratorSessionView.tsx`
+- `src/features/session/ParticipantSessionView.test.tsx`
+- `src/features/session/useSessionSocket.test.tsx`
+- `src/features/session/useSessionSocket.ts`
+- `src/shared/contracts/errors.ts`
+- `src/shared/contracts/socket-events.ts`
+- `src/shared/schemas/command-schemas.test.ts`
+- `src/shared/schemas/command-schemas.ts`
+- `tests/e2e/create-session.spec.ts`
+
+### Change Log
+
+- 2026-07-03: Implemented Story 2.2 moderator start-round flow and moved story to review.

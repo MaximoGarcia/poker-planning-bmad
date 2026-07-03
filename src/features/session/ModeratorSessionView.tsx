@@ -116,8 +116,9 @@ function StoryDeckEditor({
   const [storyTitle, setStoryTitle] = useState(sessionSnapshot.story?.title ?? '')
   const [pendingStoryUpdate, setPendingStoryUpdate] = useState(false)
   const [pendingDeckId, setPendingDeckId] = useState<PlanningDeckId | null>(null)
+  const [pendingRoundStart, setPendingRoundStart] = useState(false)
   const [commandError, setCommandError] = useState<string | null>(null)
-  const commandPending = pendingStoryUpdate || Boolean(pendingDeckId)
+  const commandPending = pendingStoryUpdate || Boolean(pendingDeckId) || pendingRoundStart
 
   async function handleStorySubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -150,6 +151,22 @@ function StoryDeckEditor({
     })
 
     setPendingDeckId(null)
+
+    if (!result.ok) {
+      setCommandError(errorMessageForCode(result.error.code))
+    }
+  }
+
+  async function handleStartRound() {
+    setPendingRoundStart(true)
+    setCommandError(null)
+
+    const result = await sessionSocket.startRound({
+      roomCode,
+      moderatorToken,
+    })
+
+    setPendingRoundStart(false)
 
     if (!result.ok) {
       setCommandError(errorMessageForCode(result.error.code))
@@ -215,6 +232,18 @@ function StoryDeckEditor({
           )
         })}
       </div>
+      <button
+        className="primary-action"
+        disabled={commandPending || sessionSnapshot.round.active || !sessionSnapshot.story}
+        onClick={() => void handleStartRound()}
+        type="button"
+      >
+        {sessionSnapshot.round.active
+          ? 'Round active'
+          : pendingRoundStart
+            ? 'Starting round...'
+            : 'Start round'}
+      </button>
       {commandError ? <p role="alert">{commandError}</p> : null}
       {sessionSnapshot.story ? (
         <section aria-labelledby="active-story-title">
@@ -247,12 +276,14 @@ function StoryDeckEditor({
 
 function errorMessageForCode(code: string): string {
   switch (code) {
+    case ERROR_CODES.storyRequired:
+      return 'Choose a current story before starting a voting round.'
     case ERROR_CODES.storyLocked:
       return 'Story and deck changes are locked while a round is active.'
     case ERROR_CODES.unauthorized:
-      return 'Only the moderator can update the current story and deck.'
+      return 'Only the moderator can control this session.'
     default:
-      return 'The story or deck update could not be completed.'
+      return 'The moderator command could not be completed.'
   }
 }
 

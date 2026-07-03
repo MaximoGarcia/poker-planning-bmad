@@ -5,6 +5,7 @@ import {
   joinSession,
   removeJoinedParticipant,
   selectDeck,
+  startRound,
   updateStory,
   type CreateSessionDependencies,
   type JoinSessionDependencies,
@@ -25,6 +26,7 @@ import {
   CreateSessionCommandSchema,
   JoinSessionCommandSchema,
   SelectDeckCommandSchema,
+  StartRoundCommandSchema,
   UpdateStoryCommandSchema,
 } from '../../src/shared/schemas/command-schemas.js'
 
@@ -246,6 +248,20 @@ export function registerSessionHandlers(
       })
     })
 
+    socket.on(CLIENT_EVENTS.roundStart, (payload, ack) => {
+      handleModeratorCommand({
+        ack,
+        payload,
+        schema: StartRoundCommandSchema,
+        validationMessage: 'Round start details could not be validated.',
+        domainCommand: (command) =>
+          startRound(command, {
+            store,
+            ...moderatorSessionDependencies,
+          }),
+      })
+    })
+
     socket.on('disconnect', () => {
       rateLimiter.reset(socket.id)
     })
@@ -291,8 +307,8 @@ export function registerSessionHandlers(
           return
         }
 
-        io.to(result.data.roomCode).emit(SERVER_EVENTS.sessionSnapshot, result.data)
         ack(createSuccessAck(result.data))
+        io.to(result.data.roomCode).emit(SERVER_EVENTS.sessionSnapshot, result.data)
       } catch {
         ack(
           createFailureAck({

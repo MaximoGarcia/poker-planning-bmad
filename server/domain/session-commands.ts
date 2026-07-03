@@ -6,6 +6,7 @@ import {
   type CreateSessionCommand,
   type JoinSessionCommand,
   type SelectDeckCommand,
+  type StartRoundCommand,
   type UpdateStoryCommand,
 } from '../../src/shared/schemas/command-schemas.js'
 import type {
@@ -133,6 +134,54 @@ export function selectDeck(
 
   store.set({
     ...session,
+    snapshot,
+  })
+
+  return {
+    ok: true,
+    data: snapshot,
+  }
+}
+
+export function startRound(
+  command: StartRoundCommand,
+  { store, now = () => new Date() }: ModeratorSessionCommandDependencies,
+): ModeratorSessionCommandResult {
+  const session = store.get(command.roomCode)
+
+  if (!session) {
+    return invalidRoomCodeResult()
+  }
+
+  if (session.moderatorToken !== command.moderatorToken) {
+    return roundUnauthorizedResult()
+  }
+
+  if (!session.snapshot.story) {
+    return storyRequiredResult()
+  }
+
+  const snapshot = {
+    ...session.snapshot,
+    story: {
+      ...session.snapshot.story,
+      locked: true,
+    },
+    participants: session.snapshot.participants.map((participant) => ({
+      ...participant,
+      hasVoted: false,
+    })),
+    round: {
+      active: true,
+      revealed: false,
+      voteCount: 0,
+    },
+    updatedAt: now().toISOString(),
+  }
+
+  store.set({
+    ...session,
+    votes: new Map(),
     snapshot,
   })
 
@@ -316,6 +365,26 @@ function unauthorizedResult(): DomainFailureResult {
     error: {
       code: ERROR_CODES.unauthorized,
       message: 'Only the moderator can update the current story or deck.',
+    },
+  }
+}
+
+function roundUnauthorizedResult(): DomainFailureResult {
+  return {
+    ok: false,
+    error: {
+      code: ERROR_CODES.unauthorized,
+      message: 'Only the moderator can start a voting round.',
+    },
+  }
+}
+
+function storyRequiredResult(): DomainFailureResult {
+  return {
+    ok: false,
+    error: {
+      code: ERROR_CODES.storyRequired,
+      message: 'Choose a current story before starting a voting round.',
     },
   }
 }

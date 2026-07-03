@@ -43,6 +43,13 @@ export const SelectDeckCommandSchema = z
   })
   .strict()
 
+export const StartRoundCommandSchema = z
+  .object({
+    roomCode: RoomCodeSchema,
+    moderatorToken: z.string().trim().min(32).max(256).regex(/^[A-Za-z0-9_-]+$/),
+  })
+  .strict()
+
 export const SubmitVoteCommandSchema = z
   .object({
     roomCode: RoomCodeSchema,
@@ -54,4 +61,5 @@ export type CreateSessionCommand = z.infer<typeof CreateSessionCommandSchema>
 export type JoinSessionCommand = z.infer<typeof JoinSessionCommandSchema>
 export type UpdateStoryCommand = z.infer<typeof UpdateStoryCommandSchema>
 export type SelectDeckCommand = z.infer<typeof SelectDeckCommandSchema>
+export type StartRoundCommand = z.infer<typeof StartRoundCommandSchema>
 export type SubmitVoteCommand = z.infer<typeof SubmitVoteCommandSchema>

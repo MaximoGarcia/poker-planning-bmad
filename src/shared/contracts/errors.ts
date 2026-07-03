@@ -6,6 +6,7 @@ export const ERROR_CODES = {
   sessionJoinFailed: 'SESSION_JOIN_FAILED',
   invalidRoomCode: 'INVALID_ROOM_CODE',
   unauthorized: 'UNAUTHORIZED',
+  storyRequired: 'STORY_REQUIRED',
   roundNotActive: 'ROUND_NOT_ACTIVE',
   voteLocked: 'VOTE_LOCKED',
   storyLocked: 'STORY_LOCKED',

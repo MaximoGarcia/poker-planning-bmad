@@ -6,6 +6,7 @@ import {
   CreateSessionCommandSchema,
   JoinSessionCommandSchema,
   SelectDeckCommandSchema,
+  StartRoundCommandSchema,
   UpdateStoryCommandSchema,
 } from './command-schemas'
 import { SessionSnapshotAckSchema } from './session-schemas'
@@ -25,6 +26,7 @@ describe('shared contracts and schemas', () => {
   it('exports stable create-session error codes', () => {
     expect(ERROR_CODES.validationFailed).toBe('VALIDATION_FAILED')
     expect(ERROR_CODES.rateLimited).toBe('RATE_LIMITED')
+    expect(ERROR_CODES.storyRequired).toBe('STORY_REQUIRED')
   })
 
   it('exports stable session event names', () => {
@@ -77,6 +79,30 @@ describe('shared contracts and schemas', () => {
         moderatorToken: 'moderator token with spaces ################',
         storyId: 'ADR-21',
         title: 'Estimate socket moderation flow',
+      }).success,
+    ).toBe(false)
+  })
+
+  it('validates moderator round-start commands with shared schemas', () => {
+    expect(
+      StartRoundCommandSchema.parse({
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      }),
+    ).toEqual({
+      roomCode: 'ABCD12',
+      moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    })
+
+    expect(
+      StartRoundCommandSchema.safeParse({
+        roomCode: 'ABCD12',
+      }).success,
+    ).toBe(false)
+    expect(
+      StartRoundCommandSchema.safeParse({
+        roomCode: 'abc',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
       }).success,
     ).toBe(false)
   })

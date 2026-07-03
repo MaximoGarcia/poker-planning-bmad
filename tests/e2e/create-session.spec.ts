@@ -115,3 +115,39 @@ test('moderator updates the current story and deck for all participants', async 
   await moderatorContext.close()
   await participantContext.close()
 })
+
+test('moderator starts a voting round and participants see voting state', async ({ browser }) => {
+  const moderatorContext = await browser.newContext()
+  const participantContext = await browser.newContext()
+  const moderatorPage = await moderatorContext.newPage()
+  const participantPage = await participantContext.newPage()
+
+  await moderatorPage.goto('/')
+  await moderatorPage.getByLabel('Moderator name').fill('Maxi')
+  await moderatorPage.getByRole('button', { name: 'Create session' }).click()
+  await expect(moderatorPage).toHaveURL(/\/session\/[A-Z0-9]{4,12}\/moderator$/)
+
+  const roomCodeMatch = moderatorPage.url().match(/\/session\/([A-Z0-9]{4,12})\/moderator$/)
+  const roomCode = roomCodeMatch?.[1] ?? ''
+
+  await participantPage.goto('/')
+  await participantPage.getByLabel('Room code').fill(roomCode)
+  await participantPage.getByLabel('Display name').fill('Ana')
+  await participantPage.getByRole('button', { name: 'Join session' }).click()
+  await expect(participantPage).toHaveURL(new RegExp(`/session/${roomCode}$`))
+
+  await moderatorPage.getByLabel('Story identifier').fill('ADR-21')
+  await moderatorPage.getByLabel('Brief description').fill('Estimate socket moderation flow')
+  await moderatorPage.getByRole('button', { name: 'Save story' }).click()
+  await expect(participantPage.getByText('ADR-21')).toBeVisible()
+
+  await moderatorPage.getByRole('button', { name: 'Start round' }).click()
+
+  await expect(moderatorPage.getByRole('button', { name: 'Round active' })).toBeDisabled()
+  await expect(moderatorPage.getByText('Story and deck are locked during an active round.')).toBeVisible()
+  await expect(participantPage.getByText('Voting')).toBeVisible()
+  await expect(participantPage.getByRole('button', { name: 'Start round' })).toHaveCount(0)
+
+  await moderatorContext.close()
+  await participantContext.close()
+})

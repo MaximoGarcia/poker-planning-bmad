@@ -70,7 +70,7 @@ function JoinHarness() {
 }
 
 function ModeratorCommandHarness() {
-  const { latestSnapshot, selectDeck, updateStory } = useSessionSocket()
+  const { latestSnapshot, selectDeck, startRound, updateStory } = useSessionSocket()
   const [ack, setAck] = useState<Ack<{ roomCode: string }> | null>(null)
 
   async function handleStoryUpdate() {
@@ -94,6 +94,15 @@ function ModeratorCommandHarness() {
     )
   }
 
+  async function handleStartRound() {
+    setAck(
+      await startRound({
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      }),
+    )
+  }
+
   return (
     <>
       <button onClick={handleStoryUpdate} type="button">
@@ -102,8 +111,14 @@ function ModeratorCommandHarness() {
       <button onClick={handleDeckSelect} type="button">
         Select deck
       </button>
+      <button onClick={handleStartRound} type="button">
+        Start round
+      </button>
       <p data-testid="moderator-snapshot-story">{latestSnapshot?.story?.id ?? 'no story'}</p>
       <p data-testid="moderator-snapshot-deck">{latestSnapshot?.deck.label ?? 'no deck'}</p>
+      <p data-testid="moderator-snapshot-round">
+        {latestSnapshot?.round.active ? 'Voting' : 'Waiting'}
+      </p>
       {ack && <p role="alert">{ack.ok ? 'ok' : ack.error.code}</p>}
     </>
   )
@@ -381,6 +396,58 @@ describe('useSessionSocket', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Select deck' }))
 
     await screen.findByRole('alert')
+    expect(screen.getByRole('alert')).toHaveTextContent('CONNECTION_UNAVAILABLE')
+  })
+
+  it('applies successful start-round acknowledgements to the local snapshot state', async () => {
+    socketMock.timeout.mockReturnValue({
+      emit: vi.fn((_event, _command, callback) => {
+        callback(null, {
+          ok: true,
+          data: {
+            roomCode: 'ABCD12',
+            deck: PLANNING_DECKS.fibonacci,
+            story: {
+              id: 'ADR-21',
+              title: 'Estimate socket moderation flow',
+              locked: true,
+            },
+            participants: [
+              {
+                id: 'moderator-1',
+                displayName: 'Maxi',
+                role: 'moderator',
+                connected: true,
+                hasVoted: false,
+              },
+            ],
+            round: {
+              active: true,
+              revealed: false,
+              voteCount: 0,
+            },
+            updatedAt: '2026-07-02T12:02:00.000Z',
+          },
+        })
+      }),
+    })
+
+    renderWithSocketProvider(<ModeratorCommandHarness />)
+    fireEvent.click(screen.getByRole('button', { name: 'Start round' }))
+
+    await screen.findByRole('alert')
+    expect(socketMock.timeout).toHaveBeenCalledWith(5000)
+    expect(screen.getByRole('alert')).toHaveTextContent('ok')
+    expect(screen.getByTestId('moderator-snapshot-round')).toHaveTextContent('Voting')
+  })
+
+  it('uses the shared timeout fallback for start-round commands', async () => {
+    renderWithSocketProvider(<ModeratorCommandHarness />)
+    fireEvent.click(screen.getByRole('button', { name: 'Start round' }))
+
+    await waitFor(() => {
+      expect(socketMock.timeout).toHaveBeenCalledWith(5000)
+    })
     expect(screen.getByRole('alert')).toHaveTextContent('CONNECTION_UNAVAILABLE')
   })
 })

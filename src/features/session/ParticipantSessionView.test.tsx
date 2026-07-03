@@ -107,4 +107,40 @@ describe('ParticipantSessionView', () => {
     expect(screen.queryByRole('button', { name: 'Save story' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'T-shirt' })).not.toBeInTheDocument()
   })
+
+  it('shows active voting state from the server snapshot without moderator controls', () => {
+    render(
+      <MemoryRouter
+        initialEntries={[
+          {
+            pathname: '/session/ABCD12',
+            state: {
+              participantId: 'participant-2',
+              snapshot: {
+                ...snapshot,
+                story: {
+                  id: 'ADR-21',
+                  title: 'Estimate socket moderation flow',
+                  locked: true,
+                },
+                round: {
+                  active: true,
+                  revealed: false,
+                  voteCount: 0,
+                },
+              },
+            },
+          },
+        ]}
+      >
+        <Routes>
+          <Route path="/session/:roomCode" element={<ParticipantSessionView />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByText('Voting')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Start round' })).not.toBeInTheDocument()
+    expect(screen.queryByText(/moderator-token/i)).not.toBeInTheDocument()
+  })
 })

@@ -12,6 +12,7 @@ const socketState = vi.hoisted(() => ({
   latestSnapshot: null as typeof snapshot | null,
   updateStory: vi.fn(),
   selectDeck: vi.fn(),
+  startRound: vi.fn(),
 }))
 
 vi.mock('./useSessionSocket', () => ({
@@ -20,6 +21,7 @@ vi.mock('./useSessionSocket', () => ({
     createSession: vi.fn(),
     latestSnapshot: socketState.latestSnapshot,
     selectDeck: socketState.selectDeck,
+    startRound: socketState.startRound,
     updateStory: socketState.updateStory,
   }),
 }))
@@ -68,8 +70,10 @@ describe('ModeratorSessionView', () => {
     socketState.latestSnapshot = null
     socketState.updateStory.mockReset()
     socketState.selectDeck.mockReset()
+    socketState.startRound.mockReset()
     socketState.updateStory.mockResolvedValue(createSuccessAck(snapshot))
     socketState.selectDeck.mockResolvedValue(createSuccessAck(snapshot))
+    socketState.startRound.mockResolvedValue(createSuccessAck(snapshot))
   })
 
   it('shows the room code and empty story state from the returned snapshot', () => {
@@ -328,5 +332,127 @@ describe('ModeratorSessionView', () => {
     await waitFor(() => {
       expect(socketState.updateStory).toHaveBeenCalled()
     })
+  })
+
+  it('starts a round with the stored moderator token when a story exists', async () => {
+    window.sessionStorage.setItem(
+      moderatorTokenStorageKey('ABCD12'),
+      'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    )
+    socketState.latestSnapshot = {
+      ...snapshot,
+      story: {
+        id: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+        locked: false,
+      },
+    }
+
+    renderModeratorRoute({ snapshot })
+    fireEvent.click(screen.getByRole('button', { name: 'Start round' }))
+
+    await waitFor(() => {
+      expect(socketState.startRound).toHaveBeenCalledWith({
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      })
+    })
+    expect(screen.queryByText(/moderator-token/i)).not.toBeInTheDocument()
+  })
+
+  it('disables start round when no story exists or a round is already active', () => {
+    window.sessionStorage.setItem(
+      moderatorTokenStorageKey('ABCD12'),
+      'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    )
+
+    renderModeratorRoute({ snapshot })
+    expect(screen.getByRole('button', { name: 'Start round' })).toBeDisabled()
+  })
+
+  it('shows start-round pending state without optimistic active-round rendering', async () => {
+    window.sessionStorage.setItem(
+      moderatorTokenStorageKey('ABCD12'),
+      'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    )
+    socketState.latestSnapshot = {
+      ...snapshot,
+      story: {
+        id: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+        locked: false,
+      },
+    }
+    let resolveAck: ((value: ReturnType<typeof createSuccessAck>) => void) | undefined
+    socketState.startRound.mockReturnValue(
+      new Promise((resolve) => {
+        resolveAck = resolve
+      }),
+    )
+
+    renderModeratorRoute({ snapshot })
+    fireEvent.click(screen.getByRole('button', { name: 'Start round' }))
+
+    expect(screen.getByRole('button', { name: 'Starting round...' })).toBeDisabled()
+    expect(screen.getByText('Story and deck are ready to edit.')).toBeInTheDocument()
+    expect(screen.queryByText('Story and deck are locked during an active round.')).not.toBeInTheDocument()
+    resolveAck?.(createSuccessAck(snapshot) as never)
+    await waitFor(() => {
+      expect(socketState.startRound).toHaveBeenCalled()
+    })
+  })
+
+  it('shows readable start-round errors for server failures', async () => {
+    window.sessionStorage.setItem(
+      moderatorTokenStorageKey('ABCD12'),
+      'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    )
+    socketState.latestSnapshot = {
+      ...snapshot,
+      story: {
+        id: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+        locked: false,
+      },
+    }
+    socketState.startRound.mockResolvedValue(
+      createFailureAck({
+        code: ERROR_CODES.storyRequired,
+        message: 'Choose a current story before starting a voting round.',
+      }),
+    )
+
+    renderModeratorRoute({ snapshot })
+    fireEvent.click(screen.getByRole('button', { name: 'Start round' }))
+
+    await screen.findByRole('alert')
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Choose a current story before starting a voting round.',
+    )
+  })
+
+  it('shows active voting state and disables the start control when the server snapshot is active', () => {
+    window.sessionStorage.setItem(
+      moderatorTokenStorageKey('ABCD12'),
+      'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    )
+    socketState.latestSnapshot = {
+      ...snapshot,
+      story: {
+        id: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+        locked: true,
+      },
+      round: {
+        active: true,
+        revealed: false,
+        voteCount: 0,
+      },
+    }
+
+    renderModeratorRoute({ snapshot })
+
+    expect(screen.getByRole('button', { name: 'Round active' })).toBeDisabled()
+    expect(screen.getByText('Story and deck are locked during an active round.')).toBeInTheDocument()
   })
 })

@@ -24,6 +24,7 @@ import type {
   CreateSessionCommand,
   JoinSessionCommand,
   SelectDeckCommand,
+  StartRoundCommand,
   UpdateStoryCommand,
 } from '@shared/schemas/command-schemas'
 import {
@@ -53,6 +54,7 @@ export interface UseSessionSocketResult {
   joinSession: (command: JoinSessionCommand) => Promise<Ack<JoinSessionResult>>
   updateStory: (command: UpdateStoryCommand) => Promise<Ack<SessionSnapshot>>
   selectDeck: (command: SelectDeckCommand) => Promise<Ack<SessionSnapshot>>
+  startRound: (command: StartRoundCommand) => Promise<Ack<SessionSnapshot>>
 }
 
 const SessionSocketContext = createContext<UseSessionSocketResult | null>(null)
@@ -168,6 +170,12 @@ function useSessionSocketConnection(): UseSessionSocketResult {
     [emitValidatedCommand],
   )
 
+  const startRound = useCallback(
+    (command: StartRoundCommand) =>
+      emitValidatedCommand(CLIENT_EVENTS.roundStart, command, SessionSnapshotAckSchema, setLatestSnapshot),
+    [emitValidatedCommand],
+  )
+
   return {
     connectionStatus,
     latestSnapshot,
@@ -175,6 +183,7 @@ function useSessionSocketConnection(): UseSessionSocketResult {
     joinSession,
     updateStory,
     selectDeck,
+    startRound,
   }
 }
 
