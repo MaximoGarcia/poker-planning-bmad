@@ -4,7 +4,7 @@ baseline_commit: 8f4f99870a727f64cc739126d60dd75ea5c9953d
 
 # Story 2.5: Enforce Pre-Reveal Vote Privacy
 
-Status: review
+Status: done
 
 ## Story
 
@@ -53,6 +53,11 @@ So that estimation stays fair and unbiased during the voting round.
   - [x] `cmd.exe /c npm run typecheck`
   - [x] `cmd.exe /c npm run test`
   - [x] `cmd.exe /c npm run test:e2e`
+
+### Review Findings
+
+- [x] [Review][Patch] Allowlist deck fields in the socket snapshot mapper [server/socket/snapshot-mapper.ts:18]
+- [x] [Review][Patch] Derive sanitized snapshot voteCount from authoritative votes [server/socket/snapshot-mapper.ts:36]
 
 ## Dev Notes
 

@@ -15,7 +15,11 @@ export function toPreRevealSessionSnapshot(
 
   return {
     roomCode: session.roomCode,
-    deck: session.snapshot.deck,
+    deck: {
+      id: session.snapshot.deck.id,
+      label: session.snapshot.deck.label,
+      values: [...session.snapshot.deck.values],
+    },
     story: session.snapshot.story
       ? {
           id: session.snapshot.story.id,
@@ -33,7 +37,7 @@ export function toPreRevealSessionSnapshot(
     round: {
       active: session.snapshot.round.active,
       revealed: session.snapshot.round.revealed,
-      voteCount: session.snapshot.round.voteCount,
+      voteCount: session.votes.size,
     },
     updatedAt: session.snapshot.updatedAt,
   }

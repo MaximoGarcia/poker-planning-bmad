@@ -1,5 +1,5 @@
 # generated: 2026-06-19T17:11:20.0614856-03:00
-# last_updated: 2026-07-03T18:39:17+00:00
+# last_updated: 2026-07-03T18:54:43+00:00
 # project: adr-buddy
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-19T17:11:20.0614856-03:00
-last_updated: 2026-07-03T18:39:17+00:00
+last_updated: 2026-07-03T18:54:43+00:00
 project: adr-buddy
 project_key: NOKEY
 tracking_system: file-system
@@ -53,7 +53,7 @@ development_status:
   2-2-moderator-starts-a-voting-round: done
   2-3-participants-submit-and-change-hidden-votes: done
   2-4-moderator-votes-in-the-round: done
-  2-5-enforce-pre-reveal-vote-privacy: review
+  2-5-enforce-pre-reveal-vote-privacy: done
   epic-2-retrospective: optional
   epic-3: in-progress
   3-1-moderator-reveals-round-results: ready-for-dev

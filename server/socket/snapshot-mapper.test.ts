@@ -85,6 +85,10 @@ describe('toPreRevealSessionSnapshot', () => {
       ...session,
       snapshot: {
         ...session.snapshot,
+        deck: {
+          ...session.snapshot.deck,
+          hiddenMetadata: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        },
         moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
         participantToken: 'participant-token-abcdefghijklmnopqrstuvwxyz',
         votes: { 'participant-2': '8' },
@@ -116,6 +120,8 @@ describe('toPreRevealSessionSnapshot', () => {
     expect(snapshot).not.toHaveProperty('results')
     expect(snapshot).not.toHaveProperty('groupedResults')
     expect(snapshot).not.toHaveProperty('estimatedStories')
+    expect(snapshot.deck).toEqual(PLANNING_DECKS.fibonacci)
+    expect(snapshot.deck).not.toHaveProperty('hiddenMetadata')
     expect(snapshot.round).not.toHaveProperty('distribution')
     expect(snapshot.round.voteCount).toBe(3)
     expect(serialized).not.toContain('moderator-token')
