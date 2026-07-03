@@ -116,7 +116,9 @@ test('moderator updates the current story and deck for all participants', async 
   await participantContext.close()
 })
 
-test('moderator starts a voting round and participants see voting state', async ({ browser }) => {
+test('moderator starts a voting round and participant votes stay hidden before reveal', async ({
+  browser,
+}) => {
   const moderatorContext = await browser.newContext()
   const participantContext = await browser.newContext()
   const moderatorPage = await moderatorContext.newPage()
@@ -147,6 +149,25 @@ test('moderator starts a voting round and participants see voting state', async 
   await expect(moderatorPage.getByText('Story and deck are locked during an active round.')).toBeVisible()
   await expect(participantPage.getByText('Voting')).toBeVisible()
   await expect(participantPage.getByRole('button', { name: 'Start round' })).toHaveCount(0)
+
+  await participantPage.getByRole('button', { name: 'Submit vote 8' }).click()
+
+  await expect(participantPage.getByText('Vote submitted')).toBeVisible()
+  await expect(participantPage.getByText('Submitted', { exact: true })).toBeVisible()
+
+  const participantRow = moderatorPage
+    .getByRole('list', { name: 'Joined participants' })
+    .getByRole('listitem')
+    .filter({ hasText: 'Ana' })
+
+  await expect(participantRow).toContainText('Voted')
+  await expect(participantRow).not.toContainText('8')
+
+  await participantPage.getByRole('button', { name: 'Change vote to 5' }).click()
+
+  await expect(participantPage.getByText('Vote change submitted')).toBeVisible()
+  await expect(participantRow).toContainText('Voted')
+  await expect(participantRow).not.toContainText('5')
 
   await moderatorContext.close()
   await participantContext.close()

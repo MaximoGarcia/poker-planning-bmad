@@ -6,6 +6,7 @@ import {
   removeJoinedParticipant,
   selectDeck,
   startRound,
+  submitVote,
   updateStory,
   type CreateSessionDependencies,
   type JoinSessionDependencies,
@@ -27,6 +28,7 @@ import {
   JoinSessionCommandSchema,
   SelectDeckCommandSchema,
   StartRoundCommandSchema,
+  SubmitVoteCommandSchema,
   UpdateStoryCommandSchema,
 } from '../../src/shared/schemas/command-schemas.js'
 
@@ -262,6 +264,21 @@ export function registerSessionHandlers(
       })
     })
 
+    socket.on(CLIENT_EVENTS.voteSubmit, (payload, ack) => {
+      handleModeratorCommand({
+        ack,
+        payload,
+        schema: SubmitVoteCommandSchema,
+        validationMessage: 'Vote details could not be validated.',
+        unavailableMessage: 'Vote could not be submitted. Please try again.',
+        domainCommand: (command) =>
+          submitVote(command, {
+            store,
+            ...moderatorSessionDependencies,
+          }),
+      })
+    })
+
     socket.on('disconnect', () => {
       rateLimiter.reset(socket.id)
     })
@@ -271,6 +288,7 @@ export function registerSessionHandlers(
       payload,
       schema,
       validationMessage,
+      unavailableMessage = 'Moderator command could not be completed. Please try again.',
       domainCommand,
     }: {
       ack: unknown
@@ -281,6 +299,7 @@ export function registerSessionHandlers(
           | { success: false }
       }
       validationMessage: string
+      unavailableMessage?: string
       domainCommand: (command: TCommand) => ModeratorSessionCommandResult
     }) {
       if (typeof ack !== 'function') {
@@ -313,7 +332,7 @@ export function registerSessionHandlers(
         ack(
           createFailureAck({
             code: ERROR_CODES.connectionUnavailable,
-            message: 'Moderator command could not be completed. Please try again.',
+            message: unavailableMessage,
           }),
         )
       }

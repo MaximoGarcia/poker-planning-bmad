@@ -7,6 +7,7 @@ import {
   JoinSessionCommandSchema,
   SelectDeckCommandSchema,
   StartRoundCommandSchema,
+  SubmitVoteCommandSchema,
   UpdateStoryCommandSchema,
 } from './command-schemas'
 import { SessionSnapshotAckSchema } from './session-schemas'
@@ -103,6 +104,38 @@ describe('shared contracts and schemas', () => {
       StartRoundCommandSchema.safeParse({
         roomCode: 'abc',
         moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      }).success,
+    ).toBe(false)
+  })
+
+  it('validates participant vote commands with participant identity and token', () => {
+    expect(
+      SubmitVoteCommandSchema.parse({
+        roomCode: 'ABCD12',
+        participantId: 'participant-2',
+        participantToken: 'participant-token-abcdefghijklmnopqrstuvwxyz',
+        value: '8',
+      }),
+    ).toEqual({
+      roomCode: 'ABCD12',
+      participantId: 'participant-2',
+      participantToken: 'participant-token-abcdefghijklmnopqrstuvwxyz',
+      value: '8',
+    })
+
+    expect(
+      SubmitVoteCommandSchema.safeParse({
+        roomCode: 'ABCD12',
+        participantId: 'participant-2',
+        value: '8',
+      }).success,
+    ).toBe(false)
+    expect(
+      SubmitVoteCommandSchema.safeParse({
+        roomCode: 'abc',
+        participantId: 'participant-2',
+        participantToken: 'participant-token-abcdefghijklmnopqrstuvwxyz',
+        value: '8',
       }).success,
     ).toBe(false)
   })

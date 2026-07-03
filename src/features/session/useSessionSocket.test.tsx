@@ -124,6 +124,37 @@ function ModeratorCommandHarness() {
   )
 }
 
+function VoteCommandHarness() {
+  const { latestSnapshot, submitVote } = useSessionSocket()
+  const [ack, setAck] = useState<Ack<{ roomCode: string }> | null>(null)
+
+  async function handleSubmitVote() {
+    setAck(
+      await submitVote({
+        roomCode: 'ABCD12',
+        participantId: 'participant-2',
+        participantToken: 'participant-token-abcdefghijklmnopqrstuvwxyz',
+        value: '8',
+      }),
+    )
+  }
+
+  return (
+    <>
+      <button onClick={handleSubmitVote} type="button">
+        Submit vote
+      </button>
+      <p data-testid="vote-snapshot-status">
+        {latestSnapshot?.participants.find((participant) => participant.id === 'participant-2')
+          ?.hasVoted
+          ? 'Submitted'
+          : 'Not submitted'}
+      </p>
+      {ack && <p role="alert">{ack.ok ? 'ok' : ack.error.code}</p>}
+    </>
+  )
+}
+
 function renderWithSocketProvider(ui: ReactNode) {
   return render(<SessionSocketProvider>{ui}</SessionSocketProvider>)
 }
@@ -444,6 +475,77 @@ describe('useSessionSocket', () => {
   it('uses the shared timeout fallback for start-round commands', async () => {
     renderWithSocketProvider(<ModeratorCommandHarness />)
     fireEvent.click(screen.getByRole('button', { name: 'Start round' }))
+
+    await waitFor(() => {
+      expect(socketMock.timeout).toHaveBeenCalledWith(5000)
+    })
+    expect(screen.getByRole('alert')).toHaveTextContent('CONNECTION_UNAVAILABLE')
+  })
+
+  it('applies successful vote acknowledgements to the local snapshot state', async () => {
+    socketMock.timeout.mockReturnValue({
+      emit: vi.fn((_event, _command, callback) => {
+        callback(null, {
+          ok: true,
+          data: {
+            roomCode: 'ABCD12',
+            deck: PLANNING_DECKS.fibonacci,
+            story: {
+              id: 'ADR-21',
+              title: 'Estimate socket moderation flow',
+              locked: true,
+            },
+            participants: [
+              {
+                id: 'participant-2',
+                displayName: 'Ana',
+                role: 'participant',
+                connected: true,
+                hasVoted: true,
+              },
+            ],
+            round: {
+              active: true,
+              revealed: false,
+              voteCount: 1,
+            },
+            updatedAt: '2026-07-03T13:00:00.000Z',
+          },
+        })
+      }),
+    })
+
+    renderWithSocketProvider(<VoteCommandHarness />)
+    fireEvent.click(screen.getByRole('button', { name: 'Submit vote' }))
+
+    await screen.findByRole('alert')
+    expect(socketMock.timeout).toHaveBeenCalledWith(5000)
+    expect(screen.getByRole('alert')).toHaveTextContent('ok')
+    expect(screen.getByTestId('vote-snapshot-status')).toHaveTextContent('Submitted')
+  })
+
+  it('returns a stable failure when a vote acknowledgement is malformed', async () => {
+    socketMock.timeout.mockReturnValue({
+      emit: vi.fn((_event, _command, callback) => {
+        callback(null, {
+          ok: true,
+          data: {
+            roomCode: 'ABCD12',
+          },
+        })
+      }),
+    })
+
+    renderWithSocketProvider(<VoteCommandHarness />)
+    fireEvent.click(screen.getByRole('button', { name: 'Submit vote' }))
+
+    await screen.findByRole('alert')
+    expect(screen.getByRole('alert')).toHaveTextContent('CONNECTION_UNAVAILABLE')
+  })
+
+  it('uses the shared timeout fallback for vote commands', async () => {
+    renderWithSocketProvider(<VoteCommandHarness />)
+    fireEvent.click(screen.getByRole('button', { name: 'Submit vote' }))
 
     await waitFor(() => {
       expect(socketMock.timeout).toHaveBeenCalledWith(5000)

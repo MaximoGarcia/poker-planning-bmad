@@ -73,6 +73,7 @@ function createHarness(
     storyUpdateHandler: socketHandlers.get(CLIENT_EVENTS.storyUpdate),
     deckSelectHandler: socketHandlers.get(CLIENT_EVENTS.deckSelect),
     roundStartHandler: socketHandlers.get(CLIENT_EVENTS.roundStart),
+    voteSubmitHandler: socketHandlers.get(CLIENT_EVENTS.voteSubmit),
   }
 }
 
@@ -818,6 +819,153 @@ describe('registerSessionHandlers', () => {
         message: 'Moderator command could not be completed. Please try again.',
       },
     })
+    expect(roomEmitter.emit).not.toHaveBeenCalled()
+  })
+
+  it('acknowledges and broadcasts a sanitized snapshot after a valid participant vote', () => {
+    const {
+      roomEmitter,
+      sessionCreateHandler,
+      sessionJoinHandler,
+      storyUpdateHandler,
+      roundStartHandler,
+      voteSubmitHandler,
+    } = createHarness(undefined, undefined, undefined, {
+      now: () => new Date('2026-07-03T13:00:00.000Z'),
+    })
+    sessionCreateHandler?.({ moderatorName: 'Maxi' }, vi.fn())
+    sessionJoinHandler?.({ roomCode: 'ABCD12', displayName: 'Ana' }, vi.fn())
+    storyUpdateHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        storyId: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+      },
+      vi.fn(),
+    )
+    roundStartHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      },
+      vi.fn(),
+    )
+    roomEmitter.emit.mockClear()
+    const ack = vi.fn()
+
+    voteSubmitHandler?.(
+      {
+        roomCode: 'ABCD12',
+        participantId: 'participant-2',
+        participantToken: 'participant-token-abcdefghijklmnopqrstuvwxyz',
+        value: '8',
+      },
+      ack,
+    )
+
+    expect(ack).toHaveBeenCalledWith({
+      ok: true,
+      data: expect.objectContaining({
+        roomCode: 'ABCD12',
+        participants: expect.arrayContaining([
+          {
+            id: 'participant-2',
+            displayName: 'Ana',
+            role: 'participant',
+            connected: true,
+            hasVoted: true,
+          },
+        ]),
+        round: {
+          active: true,
+          revealed: false,
+          voteCount: 1,
+        },
+      }),
+    })
+    expect(roomEmitter.emit).toHaveBeenCalledWith(
+      SERVER_EVENTS.sessionSnapshot,
+      expect.objectContaining({
+        roomCode: 'ABCD12',
+        round: {
+          active: true,
+          revealed: false,
+          voteCount: 1,
+        },
+      }),
+    )
+    expect(JSON.stringify(roomEmitter.emit.mock.calls)).not.toContain('participant-token')
+    expect(ack.mock.invocationCallOrder[0]).toBeLessThan(
+      roomEmitter.emit.mock.invocationCallOrder[0],
+    )
+  })
+
+  it('returns validation failure for malformed vote payloads without broadcasting', () => {
+    const { roomEmitter, voteSubmitHandler } = createHarness()
+    const ack = vi.fn()
+
+    voteSubmitHandler?.({ roomCode: 'ABCD12', value: '8' }, ack)
+
+    expect(ack).toHaveBeenCalledWith({
+      ok: false,
+      error: {
+        code: ERROR_CODES.validationFailed,
+        message: 'Vote details could not be validated.',
+      },
+    })
+    expect(roomEmitter.emit).not.toHaveBeenCalled()
+  })
+
+  it('returns unauthorized vote failures without mutation or broadcast', () => {
+    const {
+      roomEmitter,
+      store,
+      sessionCreateHandler,
+      sessionJoinHandler,
+      storyUpdateHandler,
+      roundStartHandler,
+      voteSubmitHandler,
+    } = createHarness()
+    sessionCreateHandler?.({ moderatorName: 'Maxi' }, vi.fn())
+    sessionJoinHandler?.({ roomCode: 'ABCD12', displayName: 'Ana' }, vi.fn())
+    storyUpdateHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        storyId: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+      },
+      vi.fn(),
+    )
+    roundStartHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      },
+      vi.fn(),
+    )
+    roomEmitter.emit.mockClear()
+    const ack = vi.fn()
+
+    voteSubmitHandler?.(
+      {
+        roomCode: 'ABCD12',
+        participantId: 'participant-2',
+        participantToken: 'participant-token-bad-abcdefghijklmnopqrstuvwxyz',
+        value: '8',
+      },
+      ack,
+    )
+
+    expect(ack).toHaveBeenCalledWith({
+      ok: false,
+      error: {
+        code: ERROR_CODES.unauthorized,
+        message: 'Only the participant can submit their vote.',
+      },
+    })
+    expect(store.get('ABCD12')?.votes.size).toBe(0)
     expect(roomEmitter.emit).not.toHaveBeenCalled()
   })
 })

@@ -1,6 +1,9 @@
+import { useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
+import { ERROR_CODES } from '@shared/contracts/errors'
 import type { SessionSnapshot } from '@shared/contracts/snapshots'
 import { SessionSnapshotSchema } from '@shared/schemas/session-schemas'
+import { readParticipantToken } from './session-storage'
 import { useSessionSocket } from './useSessionSocket'
 
 interface ParticipantRouteState {
@@ -11,12 +14,31 @@ interface ParticipantRouteState {
 export function ParticipantSessionView() {
   const { roomCode = '' } = useParams()
   const location = useLocation()
-  const { latestSnapshot } = useSessionSocket()
+  const sessionSocket = useSessionSocket()
+  const [acceptedSnapshot, setAcceptedSnapshot] = useState<SessionSnapshot | null>(null)
+  const [pendingVoteValue, setPendingVoteValue] = useState<string | null>(null)
+  const [lastSubmittedValue, setLastSubmittedValue] = useState<string | null>(null)
+  const [voteStatusMessage, setVoteStatusMessage] = useState<string | null>(null)
+  const [voteError, setVoteError] = useState<string | null>(null)
   const routeState = participantStateFromRouteState(location.state)
-  const snapshot = selectSnapshot(roomCode, latestSnapshot, routeState.snapshot)
+  const snapshot = selectSnapshot(
+    roomCode,
+    sessionSocket.latestSnapshot,
+    acceptedSnapshot,
+    routeState.snapshot,
+  )
   const participant = snapshot?.participants.find(
     (candidate) => candidate.id === routeState.participantId && candidate.role === 'participant',
   )
+  const participantToken =
+    roomCode && participant ? readParticipantToken(roomCode, participant.id) : null
+
+  useEffect(() => {
+    if (participant?.hasVoted === false) {
+      setLastSubmittedValue(null)
+      setVoteStatusMessage(null)
+    }
+  }, [participant?.hasVoted])
 
   if (!roomCode || !snapshot || !participant) {
     return (
@@ -72,11 +94,34 @@ export function ParticipantSessionView() {
         </section>
         <section className="deck-options" aria-label="Deck options">
           <h2>{snapshot.deck.label} options</h2>
-          <ul>
+          <ul className="vote-card-grid">
             {snapshot.deck.values.map((value) => (
-              <li key={value}>{value}</li>
+              <li key={value}>
+                <button
+                  aria-label={voteButtonLabel({
+                    hasVoted: participant.hasVoted,
+                    isAvailable: canSubmitVote(snapshot, participantToken),
+                    isPending: pendingVoteValue === value,
+                    value,
+                  })}
+                  aria-pressed={lastSubmittedValue === value}
+                  className="vote-card-button"
+                  disabled={!canSubmitVote(snapshot, participantToken) || pendingVoteValue !== null}
+                  onClick={() => void handleVoteSubmit(value)}
+                  type="button"
+                >
+                  <span>{value}</span>
+                  {lastSubmittedValue === value ? <small>Selected</small> : null}
+                </button>
+              </li>
             ))}
           </ul>
+          {voteStatusMessage ? <p className="vote-status">{voteStatusMessage}</p> : null}
+          {voteError ? (
+            <p className="form-error" role="alert">
+              {voteError}
+            </p>
+          ) : null}
         </section>
         {!snapshot.story ? (
           <section className="empty-state" aria-labelledby="participant-active-story-title">
@@ -87,6 +132,35 @@ export function ParticipantSessionView() {
       </section>
     </main>
   )
+
+  async function handleVoteSubmit(value: string) {
+    if (!snapshot || !participantToken || !participant || !canSubmitVote(snapshot, participantToken)) {
+      return
+    }
+
+    const wasChangingVote = participant.hasVoted
+    setPendingVoteValue(value)
+    setVoteError(null)
+    setVoteStatusMessage(null)
+
+    const result = await sessionSocket.submitVote({
+      roomCode,
+      participantId: participant.id,
+      participantToken,
+      value,
+    })
+
+    setPendingVoteValue(null)
+
+    if (!result.ok) {
+      setVoteError(voteErrorMessageForCode(result.error.code))
+      return
+    }
+
+    setAcceptedSnapshot(result.data)
+    setLastSubmittedValue(value)
+    setVoteStatusMessage(wasChangingVote ? 'Vote change submitted' : 'Vote submitted')
+  }
 }
 
 function participantStateFromRouteState(state: unknown): {
@@ -105,10 +179,15 @@ function participantStateFromRouteState(state: unknown): {
 function selectSnapshot(
   roomCode: string,
   latestSnapshot: SessionSnapshot | null,
+  acceptedSnapshot: SessionSnapshot | null,
   routeSnapshot: SessionSnapshot | null,
 ): SessionSnapshot | null {
   if (latestSnapshot?.roomCode === roomCode) {
     return latestSnapshot
+  }
+
+  if (acceptedSnapshot?.roomCode === roomCode) {
+    return acceptedSnapshot
   }
 
   if (routeSnapshot?.roomCode === roomCode) {
@@ -128,4 +207,45 @@ function roundStateLabel(active: boolean, revealed: boolean): string {
   }
 
   return 'Waiting'
+}
+
+function canSubmitVote(snapshot: SessionSnapshot, participantToken: string | null): boolean {
+  return Boolean(participantToken && snapshot.round.active && !snapshot.round.revealed)
+}
+
+function voteButtonLabel({
+  hasVoted,
+  isAvailable,
+  isPending,
+  value,
+}: {
+  hasVoted: boolean
+  isAvailable: boolean
+  isPending: boolean
+  value: string
+}): string {
+  if (isPending) {
+    return `Submitting vote ${value}...`
+  }
+
+  if (!isAvailable) {
+    return `Voting unavailable for ${value}`
+  }
+
+  return hasVoted ? `Change vote to ${value}` : `Submit vote ${value}`
+}
+
+function voteErrorMessageForCode(code: string): string {
+  switch (code) {
+    case ERROR_CODES.roundNotActive:
+      return 'Voting is not active right now.'
+    case ERROR_CODES.voteLocked:
+      return 'Votes are locked for this round.'
+    case ERROR_CODES.unauthorized:
+      return 'Your participant session is not authorized to vote.'
+    case ERROR_CODES.validationFailed:
+      return 'That card is not available in the active deck.'
+    default:
+      return 'Vote could not be submitted. Please try again.'
+  }
 }

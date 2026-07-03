@@ -11,6 +11,7 @@ export const RoomCodeSchema = z
 export const DisplayNameSchema = z.string().trim().min(1).max(DISPLAY_NAME_MAX_LENGTH)
 
 export const PlanningDeckIdSchema = z.enum(PLANNING_DECK_ID_VALUES)
+const CapabilityTokenSchema = z.string().trim().min(32).max(256).regex(/^[A-Za-z0-9_-]+$/)
 
 export const CreateSessionCommandSchema = z
   .object({
@@ -29,7 +30,7 @@ export const JoinSessionCommandSchema = z
 export const UpdateStoryCommandSchema = z
   .object({
     roomCode: RoomCodeSchema,
-    moderatorToken: z.string().trim().min(32).max(256).regex(/^[A-Za-z0-9_-]+$/),
+    moderatorToken: CapabilityTokenSchema,
     storyId: z.string().trim().min(1).max(120),
     title: z.string().trim().min(1).max(240),
   })
@@ -38,7 +39,7 @@ export const UpdateStoryCommandSchema = z
 export const SelectDeckCommandSchema = z
   .object({
     roomCode: RoomCodeSchema,
-    moderatorToken: z.string().trim().min(32).max(256).regex(/^[A-Za-z0-9_-]+$/),
+    moderatorToken: CapabilityTokenSchema,
     deckId: PlanningDeckIdSchema,
   })
   .strict()
@@ -46,13 +47,15 @@ export const SelectDeckCommandSchema = z
 export const StartRoundCommandSchema = z
   .object({
     roomCode: RoomCodeSchema,
-    moderatorToken: z.string().trim().min(32).max(256).regex(/^[A-Za-z0-9_-]+$/),
+    moderatorToken: CapabilityTokenSchema,
   })
   .strict()
 
 export const SubmitVoteCommandSchema = z
   .object({
     roomCode: RoomCodeSchema,
+    participantId: z.string().trim().min(1).max(120),
+    participantToken: CapabilityTokenSchema,
     value: z.string().trim().min(1).max(40),
   })
   .strict()

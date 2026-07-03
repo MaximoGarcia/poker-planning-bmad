@@ -7,6 +7,7 @@ import {
   type JoinSessionCommand,
   type SelectDeckCommand,
   type StartRoundCommand,
+  type SubmitVoteCommand,
   type UpdateStoryCommand,
 } from '../../src/shared/schemas/command-schemas.js'
 import type {
@@ -182,6 +183,73 @@ export function startRound(
   store.set({
     ...session,
     votes: new Map(),
+    snapshot,
+  })
+
+  return {
+    ok: true,
+    data: snapshot,
+  }
+}
+
+export function submitVote(
+  command: SubmitVoteCommand,
+  { store, now = () => new Date() }: ModeratorSessionCommandDependencies,
+): ModeratorSessionCommandResult {
+  const session = store.get(command.roomCode)
+
+  if (!session) {
+    return invalidRoomCodeResult()
+  }
+
+  const participant = session.snapshot.participants.find(
+    (candidate) => candidate.id === command.participantId,
+  )
+  const participantToken = session.participantTokens.get(command.participantId)
+
+  if (
+    !participant ||
+    participant.role !== 'participant' ||
+    participantToken !== command.participantToken
+  ) {
+    return participantUnauthorizedResult()
+  }
+
+  if (!session.snapshot.round.active) {
+    return roundNotActiveResult()
+  }
+
+  if (session.snapshot.round.revealed) {
+    return voteLockedResult()
+  }
+
+  if (!session.snapshot.deck.values.includes(command.value)) {
+    return invalidVoteValueResult()
+  }
+
+  const votes = new Map(session.votes)
+  votes.set(command.participantId, command.value)
+
+  const snapshot = {
+    ...session.snapshot,
+    participants: session.snapshot.participants.map((candidate) =>
+      candidate.id === command.participantId
+        ? {
+            ...candidate,
+            hasVoted: true,
+          }
+        : candidate,
+    ),
+    round: {
+      ...session.snapshot.round,
+      voteCount: votes.size,
+    },
+    updatedAt: now().toISOString(),
+  }
+
+  store.set({
+    ...session,
+    votes,
     snapshot,
   })
 
@@ -375,6 +443,46 @@ function roundUnauthorizedResult(): DomainFailureResult {
     error: {
       code: ERROR_CODES.unauthorized,
       message: 'Only the moderator can start a voting round.',
+    },
+  }
+}
+
+function participantUnauthorizedResult(): DomainFailureResult {
+  return {
+    ok: false,
+    error: {
+      code: ERROR_CODES.unauthorized,
+      message: 'Only the participant can submit their vote.',
+    },
+  }
+}
+
+function roundNotActiveResult(): DomainFailureResult {
+  return {
+    ok: false,
+    error: {
+      code: ERROR_CODES.roundNotActive,
+      message: 'Voting is not active for this session.',
+    },
+  }
+}
+
+function voteLockedResult(): DomainFailureResult {
+  return {
+    ok: false,
+    error: {
+      code: ERROR_CODES.voteLocked,
+      message: 'Votes are locked for this round.',
+    },
+  }
+}
+
+function invalidVoteValueResult(): DomainFailureResult {
+  return {
+    ok: false,
+    error: {
+      code: ERROR_CODES.validationFailed,
+      message: 'Vote value is not part of the active deck.',
     },
   }
 }
