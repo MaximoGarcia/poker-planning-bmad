@@ -8,6 +8,7 @@ export const ERROR_CODES = {
   unauthorized: 'UNAUTHORIZED',
   storyRequired: 'STORY_REQUIRED',
   roundNotActive: 'ROUND_NOT_ACTIVE',
+  resultsNotRevealed: 'RESULTS_NOT_REVEALED',
   voteLocked: 'VOTE_LOCKED',
   storyLocked: 'STORY_LOCKED',
   notImplemented: 'NOT_IMPLEMENTED',

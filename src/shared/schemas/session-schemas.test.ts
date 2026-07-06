@@ -62,6 +62,36 @@ describe('session schemas', () => {
     ).toBe(false)
   })
 
+  it('validates optional moderator-only estimated stories', () => {
+    const moderatorSnapshot = {
+      ...snapshot,
+      estimatedStories: [
+        {
+          storyId: 'ADR-21',
+          title: 'Estimate socket moderation flow',
+          deck: PLANNING_DECKS.fibonacci,
+          finalEstimate: '8',
+        },
+      ],
+    }
+
+    expect(SessionSnapshotSchema.parse(moderatorSnapshot)).toEqual(moderatorSnapshot)
+    expect(
+      SessionSnapshotSchema.safeParse({
+        ...moderatorSnapshot,
+        estimatedStories: [
+          {
+            storyId: 'ADR-21',
+            title: 'Estimate socket moderation flow',
+            deck: PLANNING_DECKS.fibonacci,
+            finalEstimate: '8',
+            extra: true,
+          },
+        ],
+      }).success,
+    ).toBe(false)
+  })
+
   it('validates join acknowledgements with participant tokens', () => {
     const participantSnapshot = {
       ...snapshot,

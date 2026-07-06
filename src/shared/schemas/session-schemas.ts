@@ -43,6 +43,19 @@ export const RevealedResultsSnapshotSchema = z
   })
   .strict()
 
+export const EstimatedStorySnapshotSchema = z
+  .object({
+    storyId: z.string().min(1),
+    title: z.string().min(1),
+    deck: z.object({
+      id: PlanningDeckIdSchema,
+      label: z.string().min(1),
+      values: z.array(z.string().min(1)).readonly(),
+    }),
+    finalEstimate: z.string().min(1),
+  })
+  .strict()
+
 export const SessionSnapshotSchema = z
   .object({
     roomCode: RoomCodeSchema,
@@ -55,6 +68,7 @@ export const SessionSnapshotSchema = z
     participants: z.array(ParticipantSnapshotSchema),
     round: RoundSnapshotSchema,
     results: RevealedResultsSnapshotSchema.nullable().default(null),
+    estimatedStories: z.array(EstimatedStorySnapshotSchema).optional(),
     updatedAt: z.string().datetime(),
   })
   .strict()
@@ -120,6 +134,7 @@ export const SessionSnapshotAckSchema = SessionSnapshotSchema
 export type ParticipantSnapshotData = z.infer<typeof ParticipantSnapshotSchema>
 export type RevealedVoteSnapshotData = z.infer<typeof RevealedVoteSnapshotSchema>
 export type RevealedResultsSnapshotData = z.infer<typeof RevealedResultsSnapshotSchema>
+export type EstimatedStorySnapshotData = z.infer<typeof EstimatedStorySnapshotSchema>
 export type SessionSnapshotData = z.infer<typeof SessionSnapshotSchema>
 export type CreateSessionResultData = z.infer<typeof CreateSessionResultSchema>
 export type JoinSessionResultData = z.infer<typeof JoinSessionResultSchema>

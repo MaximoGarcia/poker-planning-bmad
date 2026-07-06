@@ -5,6 +5,7 @@ import { PLANNING_DECKS } from '../domain/decks'
 import {
   CreateSessionCommandSchema,
   JoinSessionCommandSchema,
+  RecordEstimateCommandSchema,
   SelectDeckCommandSchema,
   RevealRoundCommandSchema,
   StartRoundCommandSchema,
@@ -231,6 +232,43 @@ describe('shared contracts and schemas', () => {
     ).toBe(false)
   })
 
+  it('validates final estimate commands with strict moderator-only payloads', () => {
+    expect(
+      RecordEstimateCommandSchema.parse({
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        value: '13',
+      }),
+    ).toEqual({
+      roomCode: 'ABCD12',
+      moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      value: '13',
+    })
+
+    expect(
+      RecordEstimateCommandSchema.safeParse({
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        estimate: '13',
+      }).success,
+    ).toBe(false)
+    expect(
+      RecordEstimateCommandSchema.safeParse({
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        value: 'x'.repeat(41),
+      }).success,
+    ).toBe(false)
+    expect(
+      RecordEstimateCommandSchema.safeParse({
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        value: '13',
+        extra: true,
+      }).success,
+    ).toBe(false)
+  })
+
   it('validates snapshot acknowledgements for moderator commands', () => {
     const snapshot = SessionSnapshotAckSchema.parse({
       roomCode: 'ABCD12',
@@ -302,6 +340,14 @@ describe('shared contracts and schemas', () => {
           },
         ],
       },
+      estimatedStories: [
+        {
+          storyId: 'ADR-21',
+          title: 'Estimate socket moderation flow',
+          deck: PLANNING_DECKS.fibonacci,
+          finalEstimate: '8',
+        },
+      ],
       updatedAt: '2026-07-03T13:00:00.000Z',
     })
 
@@ -313,6 +359,7 @@ describe('shared contracts and schemas', () => {
         value: '8',
       },
     ])
+    expect(snapshot.estimatedStories?.[0]?.finalEstimate).toBe('8')
     expect(snapshot.participants[1]).not.toHaveProperty('selectedCard')
   })
 })

@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { DEFAULT_DECK_ID, PLANNING_DECK_ID_VALUES } from '../domain/decks.js'
 
 export const DISPLAY_NAME_MAX_LENGTH = 80
+export const VOTE_VALUE_MAX_LENGTH = 40
 
 export const RoomCodeSchema = z
   .string()
@@ -63,7 +64,7 @@ const SubmitParticipantVoteCommandSchema = z
     roomCode: RoomCodeSchema,
     participantId: z.string().trim().min(1).max(120),
     participantToken: CapabilityTokenSchema,
-    value: z.string().trim().min(1).max(40),
+    value: z.string().trim().min(1).max(VOTE_VALUE_MAX_LENGTH),
   })
   .strict()
 
@@ -71,7 +72,7 @@ const SubmitModeratorVoteCommandSchema = z
   .object({
     roomCode: RoomCodeSchema,
     moderatorToken: CapabilityTokenSchema,
-    value: z.string().trim().min(1).max(40),
+    value: z.string().trim().min(1).max(VOTE_VALUE_MAX_LENGTH),
   })
   .strict()
 
@@ -80,6 +81,14 @@ export const SubmitVoteCommandSchema = z.union([
   SubmitModeratorVoteCommandSchema,
 ])
 
+export const RecordEstimateCommandSchema = z
+  .object({
+    roomCode: RoomCodeSchema,
+    moderatorToken: CapabilityTokenSchema,
+    value: z.string().trim().min(1).max(VOTE_VALUE_MAX_LENGTH),
+  })
+  .strict()
+
 export type CreateSessionCommand = z.infer<typeof CreateSessionCommandSchema>
 export type JoinSessionCommand = z.infer<typeof JoinSessionCommandSchema>
 export type UpdateStoryCommand = z.infer<typeof UpdateStoryCommandSchema>
@@ -87,3 +96,4 @@ export type SelectDeckCommand = z.infer<typeof SelectDeckCommandSchema>
 export type StartRoundCommand = z.infer<typeof StartRoundCommandSchema>
 export type RevealRoundCommand = z.infer<typeof RevealRoundCommandSchema>
 export type SubmitVoteCommand = z.infer<typeof SubmitVoteCommandSchema>
+export type RecordEstimateCommand = z.infer<typeof RecordEstimateCommandSchema>

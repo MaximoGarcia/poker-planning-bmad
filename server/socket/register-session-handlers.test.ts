@@ -75,6 +75,7 @@ function createHarness(
     roundStartHandler: socketHandlers.get(CLIENT_EVENTS.roundStart),
     roundRevealHandler: socketHandlers.get(CLIENT_EVENTS.roundReveal),
     voteSubmitHandler: socketHandlers.get(CLIENT_EVENTS.voteSubmit),
+    estimateRecordHandler: socketHandlers.get(CLIENT_EVENTS.estimateRecord),
   }
 }
 
@@ -780,6 +781,97 @@ describe('registerSessionHandlers', () => {
     expect(ack.mock.invocationCallOrder[0]).toBeLessThan(
       roomEmitter.emit.mock.invocationCallOrder[0],
     )
+  })
+
+  it('records a final estimate with a moderator-safe ack and participant-safe room snapshot', () => {
+    const {
+      roomEmitter,
+      sessionCreateHandler,
+      storyUpdateHandler,
+      roundStartHandler,
+      roundRevealHandler,
+      estimateRecordHandler,
+    } = createHarness(undefined, undefined, undefined, {
+      now: () => new Date('2026-07-04T10:00:00.000Z'),
+    })
+    sessionCreateHandler?.({ moderatorName: 'Maxi' }, vi.fn())
+    storyUpdateHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        storyId: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+      },
+      vi.fn(),
+    )
+    roundStartHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      },
+      vi.fn(),
+    )
+    roundRevealHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      },
+      vi.fn(),
+    )
+    roomEmitter.emit.mockClear()
+    const ack = vi.fn()
+
+    estimateRecordHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        value: '8',
+      },
+      ack,
+    )
+
+    expect(ack).toHaveBeenCalledWith({
+      ok: true,
+      data: expect.objectContaining({
+        estimatedStories: [
+          {
+            storyId: 'ADR-21',
+            title: 'Estimate socket moderation flow',
+            deck: expect.objectContaining({ id: 'fibonacci' }),
+            finalEstimate: '8',
+          },
+        ],
+      }),
+    })
+    expect(roomEmitter.emit).toHaveBeenCalledWith(
+      SERVER_EVENTS.sessionSnapshot,
+      expect.not.objectContaining({
+        estimatedStories: expect.anything(),
+      }),
+    )
+  })
+
+  it('validates estimate payloads before calling the domain command', () => {
+    const { roomEmitter, estimateRecordHandler } = createHarness()
+    const ack = vi.fn()
+
+    estimateRecordHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        estimate: '8',
+      },
+      ack,
+    )
+
+    expect(ack).toHaveBeenCalledWith({
+      ok: false,
+      error: {
+        code: ERROR_CODES.validationFailed,
+        message: 'Final estimate details could not be validated.',
+      },
+    })
+    expect(roomEmitter.emit).not.toHaveBeenCalled()
   })
 
   it('returns unauthorized for participant round-start commands without broadcasting', () => {

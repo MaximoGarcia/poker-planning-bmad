@@ -4,6 +4,7 @@ import { ERROR_CODES } from '../../src/shared/contracts/errors.js'
 import {
   createSession,
   joinSession,
+  recordEstimate,
   revealRound,
   selectDeck,
   startRound,
@@ -1451,6 +1452,164 @@ describe('revealRound', () => {
       },
     })
     expect(store.get('ABCD12')).toEqual(before)
+  })
+})
+
+describe('recordEstimate', () => {
+  it('records a valid final estimate after reveal and updates the timestamp', () => {
+    const { store } = createActiveVotingSession({ revealed: true })
+
+    const result = recordEstimate(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        value: '8',
+      },
+      {
+        store,
+        now: () => new Date('2026-07-04T10:00:00.000Z'),
+      },
+    )
+
+    expect(result).toEqual({
+      ok: true,
+      data: expect.objectContaining({
+        updatedAt: '2026-07-04T10:00:00.000Z',
+      }),
+    })
+    expect(store.get('ABCD12')?.estimatedStories).toEqual([
+      {
+        storyId: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+        deck: PLANNING_DECKS.fibonacci,
+        finalEstimate: '8',
+      },
+    ])
+  })
+
+  it('rejects invalid deck values without changing an existing estimate', () => {
+    const { store } = createActiveVotingSession({ revealed: true })
+    recordEstimate(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        value: '8',
+      },
+      { store },
+    )
+    const before = store.get('ABCD12')
+
+    const result = recordEstimate(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        value: 'custom',
+      },
+      { store },
+    )
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        code: ERROR_CODES.validationFailed,
+        message: 'Final estimate must be one of the active deck cards.',
+      },
+    })
+    expect(store.get('ABCD12')).toEqual(before)
+  })
+
+  it('rejects pre-reveal and unauthorized attempts with stable errors', () => {
+    const { store } = createActiveVotingSession()
+
+    expect(
+      recordEstimate(
+        {
+          roomCode: 'ABCD12',
+          moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+          value: '8',
+        },
+        { store },
+      ),
+    ).toEqual({
+      ok: false,
+      error: {
+        code: ERROR_CODES.resultsNotRevealed,
+        message: 'Reveal results before recording a final estimate.',
+      },
+    })
+    expect(
+      recordEstimate(
+        {
+          roomCode: 'ABCD12',
+          moderatorToken: 'participant-token-abcdefghijklmnopqrstuvwxyz',
+          value: '8',
+        },
+        { store },
+      ),
+    ).toEqual({
+      ok: false,
+      error: {
+        code: ERROR_CODES.unauthorized,
+        message: 'Only the moderator can record a final estimate.',
+      },
+    })
+  })
+
+  it('upserts by story id and preserves estimates for other stories', () => {
+    const { store } = createActiveVotingSession({ revealed: true })
+
+    recordEstimate(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        value: '8',
+      },
+      { store },
+    )
+    recordEstimate(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        value: '13',
+      },
+      { store },
+    )
+    const session = store.get('ABCD12')
+
+    if (!session) {
+      throw new Error('Expected session to exist')
+    }
+
+    store.set({
+      ...session,
+      snapshot: {
+        ...session.snapshot,
+        story: {
+          id: 'ADR-22',
+          title: 'Second estimated story',
+          locked: true,
+        },
+      },
+    })
+    recordEstimate(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        value: '5',
+      },
+      { store },
+    )
+
+    expect(store.get('ABCD12')?.estimatedStories).toEqual([
+      expect.objectContaining({
+        storyId: 'ADR-21',
+        finalEstimate: '13',
+      }),
+      expect.objectContaining({
+        storyId: 'ADR-22',
+        finalEstimate: '5',
+      }),
+    ])
   })
 })
 

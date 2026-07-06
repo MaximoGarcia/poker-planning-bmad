@@ -70,7 +70,8 @@ function JoinHarness() {
 }
 
 function ModeratorCommandHarness() {
-  const { latestSnapshot, revealRound, selectDeck, startRound, updateStory } = useSessionSocket()
+  const { latestSnapshot, recordEstimate, revealRound, selectDeck, startRound, updateStory } =
+    useSessionSocket()
   const [ack, setAck] = useState<Ack<{ roomCode: string }> | null>(null)
 
   async function handleStoryUpdate() {
@@ -112,6 +113,16 @@ function ModeratorCommandHarness() {
     )
   }
 
+  async function handleRecordEstimate() {
+    setAck(
+      await recordEstimate({
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        value: '8',
+      }),
+    )
+  }
+
   return (
     <>
       <button onClick={handleStoryUpdate} type="button">
@@ -126,6 +137,9 @@ function ModeratorCommandHarness() {
       <button onClick={handleRevealRound} type="button">
         Reveal round
       </button>
+      <button onClick={handleRecordEstimate} type="button">
+        Record estimate
+      </button>
       <p data-testid="moderator-snapshot-story">{latestSnapshot?.story?.id ?? 'no story'}</p>
       <p data-testid="moderator-snapshot-deck">{latestSnapshot?.deck.label ?? 'no deck'}</p>
       <p data-testid="moderator-snapshot-round">
@@ -134,6 +148,10 @@ function ModeratorCommandHarness() {
       <p data-testid="moderator-snapshot-results">
         {latestSnapshot?.results?.votes.map((vote) => `${vote.displayName}:${vote.value}`).join(',') ??
           'no results'}
+      </p>
+      <p data-testid="moderator-snapshot-estimate">
+        {latestSnapshot?.estimatedStories?.map((story) => story.finalEstimate).join(',') ??
+          'no estimate'}
       </p>
       {ack && <p role="alert">{ack.ok ? 'ok' : ack.error.code}</p>}
     </>
@@ -573,6 +591,66 @@ describe('useSessionSocket', () => {
 
     await screen.findByRole('alert')
     expect(screen.getByRole('alert')).toHaveTextContent('CONNECTION_UNAVAILABLE')
+  })
+
+  it('emits final estimate commands and applies successful acknowledgements', async () => {
+    const emit = vi.fn((_event, _command, callback) => {
+      callback(null, {
+        ok: true,
+        data: {
+          roomCode: 'ABCD12',
+          deck: PLANNING_DECKS.fibonacci,
+          story: {
+            id: 'ADR-21',
+            title: 'Estimate socket moderation flow',
+            locked: true,
+          },
+          participants: [
+            {
+              id: 'moderator-1',
+              displayName: 'Maxi',
+              role: 'moderator',
+              connected: true,
+              hasVoted: false,
+            },
+          ],
+          round: {
+            active: true,
+            revealed: true,
+            voteCount: 0,
+          },
+          results: {
+            votes: [],
+          },
+          estimatedStories: [
+            {
+              storyId: 'ADR-21',
+              title: 'Estimate socket moderation flow',
+              deck: PLANNING_DECKS.fibonacci,
+              finalEstimate: '8',
+            },
+          ],
+          updatedAt: '2026-07-04T10:00:00.000Z',
+        },
+      })
+    })
+    socketMock.timeout.mockReturnValue({ emit })
+
+    renderWithSocketProvider(<ModeratorCommandHarness />)
+    fireEvent.click(screen.getByRole('button', { name: 'Record estimate' }))
+
+    await screen.findByRole('alert')
+    expect(emit).toHaveBeenCalledWith(
+      CLIENT_EVENTS.estimateRecord,
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        value: '8',
+      },
+      expect.any(Function),
+    )
+    expect(screen.getByRole('alert')).toHaveTextContent('ok')
+    expect(screen.getByTestId('moderator-snapshot-estimate')).toHaveTextContent('8')
   })
 
   it('applies successful vote acknowledgements to the local snapshot state', async () => {

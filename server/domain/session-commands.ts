@@ -5,6 +5,7 @@ import {
   DISPLAY_NAME_MAX_LENGTH,
   type CreateSessionCommand,
   type JoinSessionCommand,
+  type RecordEstimateCommand,
   type RevealRoundCommand,
   type SelectDeckCommand,
   type StartRoundCommand,
@@ -323,6 +324,68 @@ export function submitVote(
   }
 }
 
+export function recordEstimate(
+  command: RecordEstimateCommand,
+  { store, now = () => new Date() }: ModeratorSessionCommandDependencies,
+): ModeratorSessionCommandResult {
+  const session = store.get(command.roomCode)
+
+  if (!session) {
+    return invalidRoomCodeResult()
+  }
+
+  if (session.moderatorToken !== command.moderatorToken) {
+    return recordEstimateUnauthorizedResult()
+  }
+
+  if (!session.snapshot.story) {
+    return storyRequiredResult()
+  }
+
+  if (!session.snapshot.round.active || !session.snapshot.round.revealed) {
+    return resultsNotRevealedResult()
+  }
+
+  if (!session.snapshot.deck.values.includes(command.value)) {
+    return invalidEstimateValueResult()
+  }
+
+  const estimatedStory = {
+    storyId: session.snapshot.story.id,
+    title: session.snapshot.story.title,
+    deck: {
+      id: session.snapshot.deck.id,
+      label: session.snapshot.deck.label,
+      values: [...session.snapshot.deck.values],
+    },
+    finalEstimate: command.value,
+  }
+  const existingIndex = session.estimatedStories.findIndex(
+    (candidate) => candidate.storyId === estimatedStory.storyId,
+  )
+  const estimatedStories =
+    existingIndex >= 0
+      ? session.estimatedStories.map((candidate, index) =>
+          index === existingIndex ? estimatedStory : candidate,
+        )
+      : [...session.estimatedStories, estimatedStory]
+  const snapshot = {
+    ...session.snapshot,
+    updatedAt: now().toISOString(),
+  }
+
+  store.set({
+    ...session,
+    estimatedStories,
+    snapshot,
+  })
+
+  return {
+    ok: true,
+    data: snapshot,
+  }
+}
+
 function isModeratorVoteCommand(
   command: SubmitVoteCommand,
 ): command is Extract<SubmitVoteCommand, { moderatorToken: string }> {
@@ -611,6 +674,36 @@ function invalidVoteValueResult(): DomainFailureResult {
     error: {
       code: ERROR_CODES.validationFailed,
       message: 'Vote value is not part of the active deck.',
+    },
+  }
+}
+
+function invalidEstimateValueResult(): DomainFailureResult {
+  return {
+    ok: false,
+    error: {
+      code: ERROR_CODES.validationFailed,
+      message: 'Final estimate must be one of the active deck cards.',
+    },
+  }
+}
+
+function recordEstimateUnauthorizedResult(): DomainFailureResult {
+  return {
+    ok: false,
+    error: {
+      code: ERROR_CODES.unauthorized,
+      message: 'Only the moderator can record a final estimate.',
+    },
+  }
+}
+
+function resultsNotRevealedResult(): DomainFailureResult {
+  return {
+    ok: false,
+    error: {
+      code: ERROR_CODES.resultsNotRevealed,
+      message: 'Reveal results before recording a final estimate.',
     },
   }
 }

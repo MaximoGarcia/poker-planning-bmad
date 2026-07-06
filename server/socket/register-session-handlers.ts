@@ -3,6 +3,7 @@ import {
   createSession,
   createSessionStore,
   joinSession,
+  recordEstimate,
   revealRound,
   removeJoinedParticipant,
   selectDeck,
@@ -27,6 +28,7 @@ import type { SessionIdentity } from '../../src/shared/domain/session-types.js'
 import {
   CreateSessionCommandSchema,
   JoinSessionCommandSchema,
+  RecordEstimateCommandSchema,
   RevealRoundCommandSchema,
   SelectDeckCommandSchema,
   StartRoundCommandSchema,
@@ -232,7 +234,7 @@ export function registerSessionHandlers(
       })
 
       ack(createSuccessAck({ ...domainResult.data, snapshot }))
-      io.to(domainResult.data.roomCode).emit(SERVER_EVENTS.sessionSnapshot, snapshot)
+      emitSessionSnapshots(domainResult.data.roomCode)
     })
 
     socket.on(CLIENT_EVENTS.storyUpdate, (payload, ack) => {
@@ -306,6 +308,21 @@ export function registerSessionHandlers(
       })
     })
 
+    socket.on(CLIENT_EVENTS.estimateRecord, (payload, ack) => {
+      handleModeratorCommand({
+        ack,
+        payload,
+        schema: RecordEstimateCommandSchema,
+        validationMessage: 'Final estimate details could not be validated.',
+        unavailableMessage: 'Final estimate could not be recorded. Please try again.',
+        domainCommand: (command) =>
+          recordEstimate(command, {
+            store,
+            ...moderatorSessionDependencies,
+          }),
+      })
+    })
+
     socket.on('disconnect', () => {
       rateLimiter.reset(socket.id)
     })
@@ -357,7 +374,7 @@ export function registerSessionHandlers(
         const snapshot = sanitizedSnapshot(result.data.roomCode, viewer)
 
         ack(createSuccessAck(snapshot))
-        io.to(result.data.roomCode).emit(SERVER_EVENTS.sessionSnapshot, snapshot)
+        emitSessionSnapshots(result.data.roomCode)
       } catch {
         ack(
           createFailureAck({
@@ -376,6 +393,36 @@ export function registerSessionHandlers(
       }
 
       return toPreRevealSessionSnapshot(session, viewer)
+    }
+
+    function emitSessionSnapshots(roomCode: string) {
+      const socketRegistry = io.sockets?.sockets
+      const roomSocketIds = io.sockets?.adapter.rooms.get(roomCode)
+
+      if (!socketRegistry || !roomSocketIds) {
+        io.to(roomCode).emit(
+          SERVER_EVENTS.sessionSnapshot,
+          sanitizedSnapshot(roomCode, { participantId: '', role: 'participant' }),
+        )
+        return
+      }
+
+      for (const socketId of roomSocketIds) {
+        const targetSocket = socketRegistry.get(socketId) as SessionSocket | undefined
+        const identity = targetSocket?.data.identity
+
+        if (!identity || identity.roomCode !== roomCode) {
+          continue
+        }
+
+        targetSocket.emit(
+          SERVER_EVENTS.sessionSnapshot,
+          sanitizedSnapshot(roomCode, {
+            participantId: identity.participantId,
+            role: identity.role,
+          }),
+        )
+      }
     }
   })
 }

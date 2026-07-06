@@ -182,12 +182,14 @@ test('moderator starts a voting round and participant plus moderator votes stay 
   await participantContext.close()
 })
 
-test('moderator reveals results to voters and non-voters across live session pages', async ({ browser }) => {
+test('moderator reveals grouped results to voters and non-voters across live session pages', async ({ browser }) => {
   const moderatorContext = await browser.newContext()
   const voterContext = await browser.newContext()
+  const outlierContext = await browser.newContext()
   const nonVoterContext = await browser.newContext()
   const moderatorPage = await moderatorContext.newPage()
   const voterPage = await voterContext.newPage()
+  const outlierPage = await outlierContext.newPage()
   const nonVoterPage = await nonVoterContext.newPage()
 
   await moderatorPage.goto('/')
@@ -204,6 +206,12 @@ test('moderator reveals results to voters and non-voters across live session pag
   await voterPage.getByRole('button', { name: 'Join session' }).click()
   await expect(voterPage).toHaveURL(new RegExp(`/session/${roomCode}$`))
 
+  await outlierPage.goto('/')
+  await outlierPage.getByLabel('Room code').fill(roomCode)
+  await outlierPage.getByLabel('Display name').fill('Priya')
+  await outlierPage.getByRole('button', { name: 'Join session' }).click()
+  await expect(outlierPage).toHaveURL(new RegExp(`/session/${roomCode}$`))
+
   await nonVoterPage.goto('/')
   await nonVoterPage.getByLabel('Room code').fill(roomCode)
   await nonVoterPage.getByLabel('Display name').fill('Lee')
@@ -214,13 +222,18 @@ test('moderator reveals results to voters and non-voters across live session pag
   await moderatorPage.getByLabel('Brief description').fill('Reveal active round results')
   await moderatorPage.getByRole('button', { name: 'Save story' }).click()
   await expect(voterPage.getByText('ADR-31')).toBeVisible()
+  await expect(outlierPage.getByText('ADR-31')).toBeVisible()
   await expect(nonVoterPage.getByText('ADR-31')).toBeVisible()
 
   await moderatorPage.getByRole('button', { name: 'Start round' }).click()
   await expect(voterPage.getByText('Voting')).toBeVisible()
 
+  await moderatorPage.getByRole('button', { name: 'Submit moderator vote 8' }).click()
+  await expect(moderatorPage.getByText('Vote submitted')).toBeVisible()
   await voterPage.getByRole('button', { name: 'Submit vote 8' }).click()
   await expect(voterPage.getByText('Vote submitted')).toBeVisible()
+  await outlierPage.getByRole('button', { name: 'Submit vote 5' }).click()
+  await expect(outlierPage.getByText('Vote submitted')).toBeVisible()
 
   const nonVoterRow = moderatorPage
     .getByRole('list', { name: 'Joined participants' })
@@ -230,17 +243,38 @@ test('moderator reveals results to voters and non-voters across live session pag
 
   await moderatorPage.getByRole('button', { name: 'Reveal results' }).click()
 
-  await expect(moderatorPage.getByText('Ana: 8')).toBeVisible()
-  await expect(voterPage.getByText('Ana: 8')).toBeVisible()
-  await expect(nonVoterPage.getByText('Ana: 8')).toBeVisible()
+  await expect(moderatorPage.getByLabel('Majority: 2 votes for 8 by Maxi, Ana')).toBeVisible()
+  await expect(moderatorPage.getByLabel('Outlier: 1 vote for 5 by Priya')).toBeVisible()
+  await expect(voterPage.getByLabel('Majority: 2 votes for 8 by Maxi, Ana')).toBeVisible()
+  await expect(voterPage.getByLabel('Outlier: 1 vote for 5 by Priya')).toBeVisible()
+  await expect(outlierPage.getByLabel('Majority: 2 votes for 8 by Maxi, Ana')).toBeVisible()
+  await expect(outlierPage.getByLabel('Outlier: 1 vote for 5 by Priya')).toBeVisible()
+  await expect(nonVoterPage.getByLabel('Majority: 2 votes for 8 by Maxi, Ana')).toBeVisible()
+  await expect(nonVoterPage.getByLabel('Outlier: 1 vote for 5 by Priya')).toBeVisible()
   await expect(voterPage.getByText('Lee - Not voted')).toBeVisible()
+  await expect(outlierPage.getByText('Lee - Not voted')).toBeVisible()
   await expect(nonVoterPage.getByText('Lee - Not voted')).toBeVisible()
   await expect(voterPage.getByText('Revealed', { exact: true })).toBeVisible()
+  await expect(outlierPage.getByText('Revealed', { exact: true })).toBeVisible()
   await expect(nonVoterPage.getByText('Revealed', { exact: true })).toBeVisible()
   await expect(voterPage.getByRole('button', { name: 'Voting unavailable for 13' })).toBeDisabled()
+  await expect(outlierPage.getByRole('button', { name: 'Voting unavailable for 8' })).toBeDisabled()
   await expect(nonVoterPage.getByRole('button', { name: 'Voting unavailable for 8' })).toBeDisabled()
+  await expect(moderatorPage.getByRole('heading', { name: 'Final estimate' })).toBeVisible()
+  await expect(voterPage.getByText(/final estimate/i)).toHaveCount(0)
+
+  await moderatorPage.getByRole('button', { name: 'Record final estimate 8' }).click()
+
+  await expect(moderatorPage.getByText('Recorded estimate: 8')).toBeVisible()
+  await expect(
+    moderatorPage.getByRole('button', { name: 'Recorded final estimate 8' }),
+  ).toHaveAttribute('aria-pressed', 'true')
+  await expect(voterPage.getByText('Recorded estimate: 8')).toHaveCount(0)
+  await expect(outlierPage.getByText('Recorded estimate: 8')).toHaveCount(0)
+  await expect(nonVoterPage.getByText('Recorded estimate: 8')).toHaveCount(0)
 
   await moderatorContext.close()
   await voterContext.close()
+  await outlierContext.close()
   await nonVoterContext.close()
 })

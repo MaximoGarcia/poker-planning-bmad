@@ -92,6 +92,39 @@ describe('ParticipantSessionView', () => {
     expect(screen.queryByText(/final estimate/i)).not.toBeInTheDocument()
   })
 
+  it('does not render estimated stories from participant-visible state', () => {
+    render(
+      <MemoryRouter
+        initialEntries={[
+          {
+            pathname: '/session/ABCD12',
+            state: {
+              participantId: 'participant-2',
+              snapshot: {
+                ...snapshot,
+                estimatedStories: [
+                  {
+                    storyId: 'ADR-21',
+                    title: 'Estimate socket moderation flow',
+                    deck: PLANNING_DECKS.fibonacci,
+                    finalEstimate: '8',
+                  },
+                ],
+              },
+            },
+          },
+        ]}
+      >
+        <Routes>
+          <Route path="/session/:roomCode" element={<ParticipantSessionView />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    expect(screen.queryByText(/final estimate/i)).not.toBeInTheDocument()
+    expect(screen.queryByText('Recorded estimate: 8')).not.toBeInTheDocument()
+  })
+
   it('renders the shared story identifier and description without exposing edit controls', () => {
     render(
       <MemoryRouter
@@ -467,7 +500,7 @@ describe('ParticipantSessionView', () => {
     expect(screen.queryByRole('button', { name: 'Reveal results' })).not.toBeInTheDocument()
     expect(screen.getByText('Revealed')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Voting unavailable for 8' })).toBeDisabled()
-    expect(screen.getByText('Ana: 8')).toBeInTheDocument()
+    expect(screen.getByLabelText('Majority: 1 vote for 8 by Ana')).toBeInTheDocument()
   })
 
   it('shows revealed values only after reveal and keeps non-voters readable without cards', () => {
@@ -502,7 +535,7 @@ describe('ParticipantSessionView', () => {
       },
     })
 
-    expect(screen.queryByText('Ana: 8')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Majority: 1 vote for 8 by Ana')).not.toBeInTheDocument()
 
     socketState.latestSnapshot = {
       ...snapshot,
@@ -545,7 +578,7 @@ describe('ParticipantSessionView', () => {
 
     renderParticipantRoute({ snapshot })
 
-    expect(screen.getByText('Ana: 8')).toBeInTheDocument()
+    expect(screen.getByLabelText('Majority: 1 vote for 8 by Ana')).toBeInTheDocument()
     expect(screen.getByText('Lee - Not voted')).toBeInTheDocument()
     expect(screen.queryByText('Lee:')).not.toBeInTheDocument()
   })

@@ -1,6 +1,10 @@
+---
+baseline_commit: dde150de9ac052c0361d65bf6123ea870a9cce9d
+---
+
 # Story 3.2: Users Read Grouped Vote Results
 
-Status: ready-for-dev
+Status: done
 
 Completion Note: Ultimate context engine analysis completed - comprehensive developer guide created.
 
@@ -21,51 +25,55 @@ so that consensus and outliers are obvious without manual counting.
 
 ## Tasks / Subtasks
 
-- [ ] Confirm dependency readiness and shape from Story 3.1. (AC: 1-6)
-  - [ ] Verify Story 3.1 is implemented before starting this story, or implement this story against the exact Story 3.1 contract if both are completed together.
-  - [ ] Confirm `SessionSnapshot` has `results: RevealedResultsSnapshot | null`, with `results === null` before reveal and `results.votes` after reveal.
-  - [ ] Confirm each revealed vote has stable identity and value fields equivalent to `{ participantId, displayName, role, value }`.
-  - [ ] Do not infer hidden vote values from `participants`, `round.voteCount`, local selected state, or socket events before reveal.
-- [ ] Add deterministic result grouping logic. (AC: 1-4, 6)
-  - [ ] Add a pure helper under `src/features/results` such as `group-revealed-votes.ts`, or under `src/shared/domain/result-aggregation.ts` if both client and server need it.
-  - [ ] Input should be the active `PlanningDeck` and the revealed votes from `snapshot.results.votes`.
-  - [ ] Validate group values against `snapshot.deck.values`; unsupported values must not render as valid groups. Prefer filtering plus a defensive test rather than throwing in the UI path.
-  - [ ] Preserve deck order as the secondary ordering so ties are stable and predictable.
-  - [ ] Sort groups by vote count descending first so majority groups are easiest to identify.
-  - [ ] Mark all groups tied for highest count as majority when count is greater than zero.
-  - [ ] Mark groups with lower counts as outliers when there is more than one selected-card group.
-  - [ ] Return user display names inside each group sorted by the revealed vote order or by display name; choose one deterministic rule and test it.
-- [ ] Create reusable grouped results UI. (AC: 1-6)
-  - [ ] Create `src/features/results/VoteGroupList.tsx` or `ResultsSummary.tsx` using the grouping helper.
-  - [ ] Render nothing or an explicit empty revealed state when `snapshot.results` is `null`; never render partial pre-reveal distributions.
-  - [ ] For each card group, show the card value, count, majority/outlier status text, and the display names that selected that card.
-  - [ ] Include screen-reader-readable labels such as "Majority: 3 votes for 5 by Alex, Sam, Priya" rather than relying on color or position.
-  - [ ] Use semantic lists or regions with stable React keys based on card value and participant ids, not array indices.
-  - [ ] Keep the component presentational: it should not emit socket commands, mutate snapshots, or own authoritative state.
-- [ ] Replace the flat post-reveal display from Story 3.1 in Moderator and Participant views. (AC: 1-6)
-  - [ ] Update `src/features/session/ModeratorSessionView.tsx` to render the grouped results component when `snapshot.round.revealed` and `snapshot.results` are available.
-  - [ ] Update `src/features/session/ParticipantSessionView.tsx` to render the same grouped results component after reveal.
-  - [ ] Preserve Moderator controls: Story/Deck edit, Start Round, Reveal, and participant presence must keep their existing enablement and error behavior.
-  - [ ] Preserve Participant controls: Participants must not receive reveal, reset, advance, or final-estimate controls.
-  - [ ] Preserve non-voter visibility through the existing participant list/status; do not assign non-voters a fake card group.
-- [ ] Style results for responsive readability. (AC: 5, 6)
-  - [ ] Add styles in `src/app/styles.css` unless the codebase has already introduced scoped CSS for results by the time this story is implemented.
-  - [ ] Use stable layout dimensions or wrapping rules so long display names, `Coffee`, and T-shirt labels do not overlap at mobile widths.
-  - [ ] Use visual emphasis for majority groups, but pair it with text labels or accessible names so meaning is not color-only.
-  - [ ] Keep the app's current quiet work-tool visual language; do not add decorative charting libraries or marketing-style cards.
-- [ ] Add automated coverage. (AC: 1-6)
-  - [ ] Grouping helper tests: count sorting, stable tie ordering by deck order, multiple majority tie, outlier identification, unsupported value filtering, Fibonacci `Coffee`, and T-shirt values.
-  - [ ] Results component tests: majority label, outlier label, users listed per group, accessible labels present, empty/null pre-reveal state does not expose groups.
-  - [ ] Moderator view tests: grouped results render after reveal and do not break existing Moderator controls.
-  - [ ] Participant view tests: grouped results render after reveal and no Moderator-only controls are exposed.
-  - [ ] Snapshot/schema regression tests if Story 3.1 result types are adjusted while implementing this story.
-  - [ ] E2E coverage with at least two browser contexts: multiple users submit different votes, Moderator reveals, both Moderator and Participant see the same grouped distribution and user names.
-- [ ] Run verification.
-  - [ ] `cmd.exe /c npm run typecheck`
-  - [ ] `cmd.exe /c npm run test`
-  - [ ] `cmd.exe /c npm run build`
-  - [ ] `cmd.exe /c npm run lint`
-  - [ ] `cmd.exe /c npm run test:e2e`
+- [x] Confirm dependency readiness and shape from Story 3.1. (AC: 1-6)
+  - [x] Verify Story 3.1 is implemented before starting this story, or implement this story against the exact Story 3.1 contract if both are completed together.
+  - [x] Confirm `SessionSnapshot` has `results: RevealedResultsSnapshot | null`, with `results === null` before reveal and `results.votes` after reveal.
+  - [x] Confirm each revealed vote has stable identity and value fields equivalent to `{ participantId, displayName, role, value }`.
+  - [x] Do not infer hidden vote values from `participants`, `round.voteCount`, local selected state, or socket events before reveal.
+- [x] Add deterministic result grouping logic. (AC: 1-4, 6)
+  - [x] Add a pure helper under `src/features/results` such as `group-revealed-votes.ts`, or under `src/shared/domain/result-aggregation.ts` if both client and server need it.
+  - [x] Input should be the active `PlanningDeck` and the revealed votes from `snapshot.results.votes`.
+  - [x] Validate group values against `snapshot.deck.values`; unsupported values must not render as valid groups. Prefer filtering plus a defensive test rather than throwing in the UI path.
+  - [x] Preserve deck order as the secondary ordering so ties are stable and predictable.
+  - [x] Sort groups by vote count descending first so majority groups are easiest to identify.
+  - [x] Mark all groups tied for highest count as majority when count is greater than zero.
+  - [x] Mark groups with lower counts as outliers when there is more than one selected-card group.
+  - [x] Return user display names inside each group sorted by the revealed vote order or by display name; choose one deterministic rule and test it.
+- [x] Create reusable grouped results UI. (AC: 1-6)
+  - [x] Create `src/features/results/VoteGroupList.tsx` or `ResultsSummary.tsx` using the grouping helper.
+  - [x] Render nothing or an explicit empty revealed state when `snapshot.results` is `null`; never render partial pre-reveal distributions.
+  - [x] For each card group, show the card value, count, majority/outlier status text, and the display names that selected that card.
+  - [x] Include screen-reader-readable labels such as "Majority: 3 votes for 5 by Alex, Sam, Priya" rather than relying on color or position.
+  - [x] Use semantic lists or regions with stable React keys based on card value and participant ids, not array indices.
+  - [x] Keep the component presentational: it should not emit socket commands, mutate snapshots, or own authoritative state.
+- [x] Replace the flat post-reveal display from Story 3.1 in Moderator and Participant views. (AC: 1-6)
+  - [x] Update `src/features/session/ModeratorSessionView.tsx` to render the grouped results component when `snapshot.round.revealed` and `snapshot.results` are available.
+  - [x] Update `src/features/session/ParticipantSessionView.tsx` to render the same grouped results component after reveal.
+  - [x] Preserve Moderator controls: Story/Deck edit, Start Round, Reveal, and participant presence must keep their existing enablement and error behavior.
+  - [x] Preserve Participant controls: Participants must not receive reveal, reset, advance, or final-estimate controls.
+  - [x] Preserve non-voter visibility through the existing participant list/status; do not assign non-voters a fake card group.
+- [x] Style results for responsive readability. (AC: 5, 6)
+  - [x] Add styles in `src/app/styles.css` unless the codebase has already introduced scoped CSS for results by the time this story is implemented.
+  - [x] Use stable layout dimensions or wrapping rules so long display names, `Coffee`, and T-shirt labels do not overlap at mobile widths.
+  - [x] Use visual emphasis for majority groups, but pair it with text labels or accessible names so meaning is not color-only.
+  - [x] Keep the app's current quiet work-tool visual language; do not add decorative charting libraries or marketing-style cards.
+- [x] Add automated coverage. (AC: 1-6)
+  - [x] Grouping helper tests: count sorting, stable tie ordering by deck order, multiple majority tie, outlier identification, unsupported value filtering, Fibonacci `Coffee`, and T-shirt values.
+  - [x] Results component tests: majority label, outlier label, users listed per group, accessible labels present, empty/null pre-reveal state does not expose groups.
+  - [x] Moderator view tests: grouped results render after reveal and do not break existing Moderator controls.
+  - [x] Participant view tests: grouped results render after reveal and no Moderator-only controls are exposed.
+  - [x] Snapshot/schema regression tests if Story 3.1 result types are adjusted while implementing this story.
+  - [x] E2E coverage with at least two browser contexts: multiple users submit different votes, Moderator reveals, both Moderator and Participant see the same grouped distribution and user names.
+- [x] Run verification.
+  - [x] `cmd.exe /c npm run typecheck`
+  - [x] `cmd.exe /c npm run test`
+  - [x] `cmd.exe /c npm run build`
+  - [x] `cmd.exe /c npm run lint`
+  - [x] `cmd.exe /c npm run test:e2e`
+
+### Review Findings
+
+- [x] [Review][Patch] Empty revealed state is misleading when all submitted votes are unsupported [src/features/results/VoteGroupList.tsx:25]
 
 ## Dev Notes
 
@@ -216,22 +224,40 @@ cmd.exe /c npm run test:e2e
 
 ### Agent Model Used
 
-TBD
+GPT-5 Codex
 
 ### Debug Log References
 
-TBD
+- 2026-07-03: Confirmed Story 3.1 snapshot contract exists in `src/shared/contracts/snapshots.ts` and strict schema support exists in `src/shared/schemas/session-schemas.ts`.
+- 2026-07-03: Used red-green-refactor for `groupRevealedVotes` and `VoteGroupList`; initial focused tests failed for missing implementation, then passed after implementation.
+- 2026-07-03: Full verification passed: `cmd.exe /c npm run typecheck`, `cmd.exe /c npm run test`, `cmd.exe /c npm run build`, `cmd.exe /c npm run lint`, `cmd.exe /c npm run test:e2e`.
 
 ### Completion Notes
 
-TBD
+- Implemented deterministic revealed-vote grouping under `src/features/results`, using active deck values as the valid source, count-descending sort, deck-order tie break, revealed-vote-order voters, majority labels, and outlier labels.
+- Added reusable `VoteGroupList` and replaced flat post-reveal rendering in Moderator and Participant views while preserving command controls, participant-only permissions, and non-voter visibility as a separate status list.
+- Added responsive result styles with explicit text wrapping for card values and voter names, plus accessible labels that describe majority/outlier meaning without relying on color.
+- Added unit, component, view, CSS, and E2E coverage for grouped results across Fibonacci, T-shirt, unsupported values, null pre-reveal state, majority/outlier labels, and live multi-context reveal.
 
 ### File List
 
-TBD
+- `_bmad-output/implementation-artifacts/3-2-users-read-grouped-vote-results.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `src/app/styles.css`
+- `src/app/styles.test.ts`
+- `src/features/results/VoteGroupList.test.tsx`
+- `src/features/results/VoteGroupList.tsx`
+- `src/features/results/group-revealed-votes.test.ts`
+- `src/features/results/group-revealed-votes.ts`
+- `src/features/session/ModeratorSessionView.test.tsx`
+- `src/features/session/ModeratorSessionView.tsx`
+- `src/features/session/ParticipantSessionView.test.tsx`
+- `src/features/session/ParticipantSessionView.tsx`
+- `tests/e2e/create-session.spec.ts`
 
 ## Change Log
 
 | Date | Version | Description | Author |
 | --- | --- | --- | --- |
 | 2026-07-03 | 0.1 | Initial story draft from Epic 3 requirements, architecture, current source, previous story context, and current library documentation. | Scrum Master |
+| 2026-07-03 | 1.0 | Implemented grouped revealed results, responsive accessible UI, view integration, and automated verification. | Dev Agent |

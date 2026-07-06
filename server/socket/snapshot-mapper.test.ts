@@ -49,6 +49,7 @@ describe('toPreRevealSessionSnapshot', () => {
         voteCount: 3,
       },
       results: null,
+      estimatedStories: [],
       updatedAt: '2026-07-03T13:00:00.000Z',
     })
     expect(snapshot).not.toHaveProperty('votes')
@@ -95,7 +96,14 @@ describe('toPreRevealSessionSnapshot', () => {
         votes: { 'participant-2': '8' },
         results: { '8': 1 },
         groupedResults: [{ value: '8', count: 1 }],
-        estimatedStories: [{ id: 'ADR-20', estimate: '8' }],
+        estimatedStories: [
+          {
+            storyId: 'ADR-20',
+            title: 'Previous estimated story',
+            deck: PLANNING_DECKS.fibonacci,
+            finalEstimate: '8',
+          },
+        ],
         participants: session.snapshot.participants.map((participant) => ({
           ...participant,
           selectedCard: session.votes.get(participant.id) ?? null,
@@ -106,7 +114,14 @@ describe('toPreRevealSessionSnapshot', () => {
           distribution: { '8': 1, '13': 1 },
         },
       },
-      estimatedStories: [{ id: 'ADR-20', estimate: '8' }],
+      estimatedStories: [
+        {
+          storyId: 'ADR-20',
+          title: 'Previous estimated story',
+          deck: PLANNING_DECKS.fibonacci,
+          finalEstimate: '8',
+        },
+      ],
     } as unknown as SessionState
 
     const snapshot = toPreRevealSessionSnapshot(unsafeSession, {
@@ -210,6 +225,40 @@ describe('toPreRevealSessionSnapshot', () => {
       expect.objectContaining({ participantId: 'participant-4' }),
     )
     expect(snapshot).not.toHaveProperty('groupedResults')
+  })
+
+  it('includes estimated stories only for moderator viewers', () => {
+    const session = {
+      ...createSessionState(),
+      estimatedStories: [
+        {
+          storyId: 'ADR-21',
+          title: 'Estimate socket moderation flow',
+          deck: PLANNING_DECKS.fibonacci,
+          finalEstimate: '8',
+        },
+      ],
+    }
+
+    expect(
+      toPreRevealSessionSnapshot(session, {
+        role: 'moderator',
+        participantId: 'moderator-1',
+      }).estimatedStories,
+    ).toEqual([
+      {
+        storyId: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+        deck: PLANNING_DECKS.fibonacci,
+        finalEstimate: '8',
+      },
+    ])
+    expect(
+      toPreRevealSessionSnapshot(session, {
+        role: 'participant',
+        participantId: 'participant-2',
+      }),
+    ).not.toHaveProperty('estimatedStories')
   })
 })
 

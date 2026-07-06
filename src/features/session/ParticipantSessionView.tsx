@@ -3,6 +3,7 @@ import { Link, useLocation, useParams } from 'react-router-dom'
 import { ERROR_CODES } from '@shared/contracts/errors'
 import type { SessionSnapshot } from '@shared/contracts/snapshots'
 import { SessionSnapshotSchema } from '@shared/schemas/session-schemas'
+import { VoteGroupList } from '../results/VoteGroupList'
 import { readParticipantToken } from './session-storage'
 import { useSessionSocket } from './useSessionSocket'
 
@@ -120,7 +121,7 @@ export function ParticipantSessionView() {
             </p>
           ) : null}
         </section>
-        <RevealedResults snapshot={snapshot} />
+        <VoteGroupList headingLevel={2} snapshot={snapshot} />
         {!snapshot.story ? (
           <section className="empty-state" aria-labelledby="participant-active-story-title">
             <h2 id="participant-active-story-title">No active story yet</h2>
@@ -259,43 +260,4 @@ function voteErrorMessageForCode(code: string): string {
     default:
       return 'Vote could not be submitted. Please try again.'
   }
-}
-
-function RevealedResults({ snapshot }: { snapshot: SessionSnapshot }) {
-  if (!snapshot.round.revealed || !snapshot.results) {
-    return null
-  }
-
-  const nonVoters = snapshot.participants.filter(
-    (participant) =>
-      participant.role === 'participant' &&
-      !participant.hasVoted &&
-      !snapshot.results?.votes.some((vote) => vote.participantId === participant.id),
-  )
-
-  return (
-    <section className="revealed-results" aria-labelledby="revealed-results-title">
-      <h2 id="revealed-results-title">Revealed votes</h2>
-      {snapshot.results.votes.length === 0 ? (
-        <p>No votes were submitted.</p>
-      ) : (
-        <ul aria-label="Revealed votes">
-          {snapshot.results.votes.map((vote) => (
-            <li key={vote.participantId}>
-              {vote.displayName}: {vote.value}
-            </li>
-          ))}
-        </ul>
-      )}
-      {nonVoters.length > 0 ? (
-        <ul aria-label="Participants without votes">
-          {nonVoters.map((participant) => (
-            <li key={participant.id}>
-              {participant.displayName} - Not voted
-            </li>
-          ))}
-        </ul>
-      ) : null}
-    </section>
-  )
 }

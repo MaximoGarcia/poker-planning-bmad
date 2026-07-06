@@ -1,4 +1,7 @@
-import type { SessionSnapshot } from '../../src/shared/contracts/snapshots.js'
+import type {
+  EstimatedStorySnapshot,
+  SessionSnapshot,
+} from '../../src/shared/contracts/snapshots.js'
 
 export interface SessionState {
   roomCode: string
@@ -7,7 +10,7 @@ export interface SessionState {
   participantTokens: Map<string, string>
   snapshot: SessionSnapshot
   votes: Map<string, string>
-  estimatedStories: []
+  estimatedStories: EstimatedStorySnapshot[]
 }
 
 export interface SessionStore {

@@ -11,9 +11,7 @@ export function toPreRevealSessionSnapshot(
   session: SessionState,
   viewer: SnapshotViewer,
 ): SessionSnapshot {
-  void viewer
-
-  return {
+  const snapshot: SessionSnapshot = {
     roomCode: session.roomCode,
     deck: {
       id: session.snapshot.deck.id,
@@ -52,4 +50,19 @@ export function toPreRevealSessionSnapshot(
       : null,
     updatedAt: session.snapshot.updatedAt,
   }
+
+  if (viewer.role === 'moderator') {
+    snapshot.estimatedStories = session.estimatedStories.map((estimatedStory) => ({
+      storyId: estimatedStory.storyId,
+      title: estimatedStory.title,
+      deck: {
+        id: estimatedStory.deck.id,
+        label: estimatedStory.deck.label,
+        values: [...estimatedStory.deck.values],
+      },
+      finalEstimate: estimatedStory.finalEstimate,
+    }))
+  }
+
+  return snapshot
 }

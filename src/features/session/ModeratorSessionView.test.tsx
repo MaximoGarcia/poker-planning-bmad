@@ -15,6 +15,7 @@ const socketState = vi.hoisted(() => ({
   startRound: vi.fn(),
   submitVote: vi.fn(),
   revealRound: vi.fn(),
+  recordEstimate: vi.fn(),
 }))
 
 vi.mock('./useSessionSocket', () => ({
@@ -23,6 +24,7 @@ vi.mock('./useSessionSocket', () => ({
     createSession: vi.fn(),
     latestSnapshot: socketState.latestSnapshot,
     revealRound: socketState.revealRound,
+    recordEstimate: socketState.recordEstimate,
     selectDeck: socketState.selectDeck,
     startRound: socketState.startRound,
     submitVote: socketState.submitVote,
@@ -77,11 +79,13 @@ describe('ModeratorSessionView', () => {
     socketState.startRound.mockReset()
     socketState.submitVote.mockReset()
     socketState.revealRound.mockReset()
+    socketState.recordEstimate.mockReset()
     socketState.updateStory.mockResolvedValue(createSuccessAck(snapshot))
     socketState.selectDeck.mockResolvedValue(createSuccessAck(snapshot))
     socketState.startRound.mockResolvedValue(createSuccessAck(snapshot))
     socketState.submitVote.mockResolvedValue(createSuccessAck(snapshot))
     socketState.revealRound.mockResolvedValue(createSuccessAck(snapshot))
+    socketState.recordEstimate.mockResolvedValue(createSuccessAck(snapshot))
   })
 
   it('shows the room code and empty story state from the returned snapshot', () => {
@@ -760,7 +764,7 @@ describe('ModeratorSessionView', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Reveal results' }))
 
     expect(screen.getByRole('button', { name: 'Revealing results...' })).toBeDisabled()
-    expect(screen.queryByText('Ana: 8')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Majority: 1 vote for 8 by Ana')).not.toBeInTheDocument()
     resolveAck?.(
       createSuccessAck({
         ...socketState.latestSnapshot,
@@ -789,7 +793,7 @@ describe('ModeratorSessionView', () => {
         moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
       })
     })
-    expect(await screen.findByText('Ana: 8')).toBeInTheDocument()
+    expect(await screen.findByLabelText('Majority: 1 vote for 8 by Ana')).toBeInTheDocument()
   })
 
   it('shows readable reveal errors and renders non-voters in presence without card values', async () => {
@@ -839,7 +843,7 @@ describe('ModeratorSessionView', () => {
     expect(row).not.toHaveTextContent('8')
   })
 
-  it('renders a flat revealed vote list and hides reveal controls once revealed', () => {
+  it('renders grouped revealed vote results and hides reveal controls once revealed', () => {
     window.sessionStorage.setItem(
       moderatorTokenStorageKey('ABCD12'),
       'moderator-token-abcdefghijklmnopqrstuvwxyz',
@@ -881,6 +885,140 @@ describe('ModeratorSessionView', () => {
     renderModeratorRoute({ snapshot })
 
     expect(screen.queryByRole('button', { name: 'Reveal results' })).not.toBeInTheDocument()
-    expect(screen.getByText('Ana: 8')).toBeInTheDocument()
+    expect(screen.getByLabelText('Majority: 1 vote for 8 by Ana')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Final estimate' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Record final estimate 8' })).toBeInTheDocument()
+  })
+
+  it('records a final estimate only after a successful server acknowledgement', async () => {
+    window.sessionStorage.setItem(
+      moderatorTokenStorageKey('ABCD12'),
+      'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    )
+    const revealedSnapshot = {
+      ...snapshot,
+      story: {
+        id: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+        locked: true,
+      },
+      round: {
+        active: true,
+        revealed: true,
+        voteCount: 0,
+      },
+      results: {
+        votes: [],
+      },
+    }
+    const acknowledgedSnapshot = {
+      ...revealedSnapshot,
+      estimatedStories: [
+        {
+          storyId: 'ADR-21',
+          title: 'Estimate socket moderation flow',
+          deck: PLANNING_DECKS.fibonacci,
+          finalEstimate: '8',
+        },
+      ],
+      updatedAt: '2026-07-04T10:00:00.000Z',
+    }
+    socketState.latestSnapshot = revealedSnapshot
+    socketState.recordEstimate.mockResolvedValue(createSuccessAck(acknowledgedSnapshot))
+
+    renderModeratorRoute({ snapshot })
+    fireEvent.click(screen.getByRole('button', { name: 'Record final estimate 8' }))
+
+    expect(screen.queryByText('Recorded estimate: 8')).not.toBeInTheDocument()
+
+    await waitFor(() => {
+      expect(socketState.recordEstimate).toHaveBeenCalledWith({
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        value: '8',
+      })
+    })
+    expect(await screen.findByText('Recorded estimate: 8')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Recorded final estimate 8' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+  })
+
+  it('disables final estimate controls while the command is pending', async () => {
+    window.sessionStorage.setItem(
+      moderatorTokenStorageKey('ABCD12'),
+      'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    )
+    socketState.latestSnapshot = {
+      ...snapshot,
+      story: {
+        id: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+        locked: true,
+      },
+      round: {
+        active: true,
+        revealed: true,
+        voteCount: 0,
+      },
+      results: {
+        votes: [],
+      },
+    }
+    let resolveAck: (value: ReturnType<typeof createSuccessAck>) => void = () => undefined
+    socketState.recordEstimate.mockReturnValue(
+      new Promise((resolve) => {
+        resolveAck = resolve
+      }),
+    )
+
+    renderModeratorRoute({ snapshot })
+    fireEvent.click(screen.getByRole('button', { name: 'Record final estimate 5' }))
+
+    expect(screen.getByRole('button', { name: 'Recording final estimate 5...' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Record final estimate 8' })).toBeDisabled()
+
+    resolveAck(createSuccessAck(socketState.latestSnapshot))
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Record final estimate 5' })).not.toBeDisabled()
+    })
+  })
+
+  it('maps final estimate command failures to readable messages', async () => {
+    window.sessionStorage.setItem(
+      moderatorTokenStorageKey('ABCD12'),
+      'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    )
+    socketState.latestSnapshot = {
+      ...snapshot,
+      story: {
+        id: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+        locked: true,
+      },
+      round: {
+        active: true,
+        revealed: true,
+        voteCount: 0,
+      },
+      results: {
+        votes: [],
+      },
+    }
+    socketState.recordEstimate.mockResolvedValue(
+      createFailureAck({
+        code: ERROR_CODES.validationFailed,
+        message: 'Final estimate must be one of the active deck cards.',
+      }),
+    )
+
+    renderModeratorRoute({ snapshot })
+    fireEvent.click(screen.getByRole('button', { name: 'Record final estimate 8' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Choose a final estimate from the active deck.',
+    )
   })
 })

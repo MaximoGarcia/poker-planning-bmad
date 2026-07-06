@@ -4,6 +4,7 @@ import { ERROR_CODES } from '@shared/contracts/errors'
 import { PLANNING_DECKS, PLANNING_DECK_ID_VALUES, type PlanningDeckId } from '@shared/domain/decks'
 import type { SessionSnapshot } from '@shared/contracts/snapshots'
 import { SessionSnapshotSchema } from '@shared/schemas/session-schemas'
+import { VoteGroupList } from '../results/VoteGroupList'
 import { readModeratorToken } from './session-storage'
 import { useSessionSocket } from './useSessionSocket'
 
@@ -123,19 +124,25 @@ function StoryDeckEditor({
   const [pendingRoundStart, setPendingRoundStart] = useState(false)
   const [pendingReveal, setPendingReveal] = useState(false)
   const [pendingVoteValue, setPendingVoteValue] = useState<string | null>(null)
+  const [pendingEstimateValue, setPendingEstimateValue] = useState<string | null>(null)
   const [lastSubmittedValue, setLastSubmittedValue] = useState<string | null>(null)
   const [voteStatusMessage, setVoteStatusMessage] = useState<string | null>(null)
   const [voteError, setVoteError] = useState<string | null>(null)
+  const [estimateError, setEstimateError] = useState<string | null>(null)
   const [commandError, setCommandError] = useState<string | null>(null)
   const commandPending =
     pendingStoryUpdate ||
     Boolean(pendingDeckId) ||
     pendingRoundStart ||
     pendingReveal ||
-    Boolean(pendingVoteValue)
+    Boolean(pendingVoteValue) ||
+    Boolean(pendingEstimateValue)
   const moderator = sessionSnapshot.participants.find((participant) => participant.role === 'moderator')
   const visibleLastSubmittedValue = moderator?.hasVoted ? lastSubmittedValue : null
   const visibleVoteStatusMessage = moderator?.hasVoted ? voteStatusMessage : null
+  const currentEstimatedStory = sessionSnapshot.estimatedStories?.find(
+    (estimatedStory) => estimatedStory.storyId === sessionSnapshot.story?.id,
+  )
 
   async function handleStorySubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -247,6 +254,30 @@ function StoryDeckEditor({
 
     if (!result.ok) {
       setCommandError(revealErrorMessageForCode(result.error.code))
+      return
+    }
+
+    onAcceptedSnapshot(result.data)
+  }
+
+  async function handleEstimateRecord(value: string) {
+    if (!moderatorToken || !canRecordFinalEstimate(sessionSnapshot, moderatorToken)) {
+      return
+    }
+
+    setPendingEstimateValue(value)
+    setEstimateError(null)
+
+    const result = await sessionSocket.recordEstimate({
+      roomCode,
+      moderatorToken,
+      value,
+    })
+
+    setPendingEstimateValue(null)
+
+    if (!result.ok) {
+      setEstimateError(estimateErrorMessageForCode(result.error.code))
       return
     }
 
@@ -388,7 +419,51 @@ function StoryDeckEditor({
           {voteError}
         </p>
       ) : null}
-      <RevealedResults snapshot={sessionSnapshot} />
+      <VoteGroupList headingLevel={3} snapshot={sessionSnapshot} />
+      {sessionSnapshot.round.revealed && sessionSnapshot.story ? (
+        <section className="final-estimate-section" aria-labelledby="final-estimate-title">
+          <h3 id="final-estimate-title">Final estimate</h3>
+          <ul aria-label="Final estimate options" className="vote-card-grid" role="group">
+            {sessionSnapshot.deck.values.map((value) => {
+              const isPending = pendingEstimateValue === value
+              const isRecorded = currentEstimatedStory?.finalEstimate === value
+
+              return (
+                <li key={value}>
+                  <button
+                    aria-label={finalEstimateButtonLabel({
+                      isAvailable: canRecordFinalEstimate(sessionSnapshot, moderatorToken),
+                      isPending,
+                      isRecorded,
+                      value,
+                    })}
+                    aria-pressed={isRecorded}
+                    className="vote-card-button"
+                    disabled={
+                      !canRecordFinalEstimate(sessionSnapshot, moderatorToken) ||
+                      pendingEstimateValue !== null
+                    }
+                    onClick={() => void handleEstimateRecord(value)}
+                    type="button"
+                  >
+                    <span>{value}</span>
+                    {isPending ? <small>Recording</small> : null}
+                    {isRecorded && !isPending ? <small>Recorded</small> : null}
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+          {currentEstimatedStory ? (
+            <p className="vote-status">Recorded estimate: {currentEstimatedStory.finalEstimate}</p>
+          ) : null}
+          {estimateError ? (
+            <p className="form-error" role="alert">
+              {estimateError}
+            </p>
+          ) : null}
+        </section>
+      ) : null}
       <p>
         {sessionSnapshot.round.active
           ? 'Story and deck are locked during an active round.'
@@ -404,6 +479,10 @@ function canSubmitModeratorVote(snapshot: SessionSnapshot, moderatorToken: strin
 
 function canRevealRound(snapshot: SessionSnapshot, moderatorToken: string | null): boolean {
   return Boolean(moderatorToken && snapshot.round.active && !snapshot.round.revealed)
+}
+
+function canRecordFinalEstimate(snapshot: SessionSnapshot, moderatorToken: string | null): boolean {
+  return Boolean(moderatorToken && snapshot.round.revealed && snapshot.story)
 }
 
 function moderatorVoteButtonLabel({
@@ -426,6 +505,28 @@ function moderatorVoteButtonLabel({
   }
 
   return hasVoted ? `Change moderator vote to ${value}` : `Submit moderator vote ${value}`
+}
+
+function finalEstimateButtonLabel({
+  isAvailable,
+  isPending,
+  isRecorded,
+  value,
+}: {
+  isAvailable: boolean
+  isPending: boolean
+  isRecorded: boolean
+  value: string
+}): string {
+  if (isPending) {
+    return `Recording final estimate ${value}...`
+  }
+
+  if (!isAvailable) {
+    return `Final estimate unavailable for ${value}`
+  }
+
+  return isRecorded ? `Recorded final estimate ${value}` : `Record final estimate ${value}`
 }
 
 function errorMessageForCode(code: string): string {
@@ -469,27 +570,17 @@ function revealErrorMessageForCode(code: string): string {
   }
 }
 
-function RevealedResults({ snapshot }: { snapshot: SessionSnapshot }) {
-  if (!snapshot.round.revealed || !snapshot.results) {
-    return null
+function estimateErrorMessageForCode(code: string): string {
+  switch (code) {
+    case ERROR_CODES.resultsNotRevealed:
+      return 'Reveal results before recording a final estimate.'
+    case ERROR_CODES.unauthorized:
+      return 'Only the moderator can record a final estimate.'
+    case ERROR_CODES.validationFailed:
+      return 'Choose a final estimate from the active deck.'
+    default:
+      return 'Final estimate could not be recorded. Please try again.'
   }
-
-  return (
-    <section className="revealed-results" aria-labelledby="revealed-results-title">
-      <h3 id="revealed-results-title">Revealed votes</h3>
-      {snapshot.results.votes.length === 0 ? (
-        <p>No votes were submitted.</p>
-      ) : (
-        <ul aria-label="Revealed votes">
-          {snapshot.results.votes.map((vote) => (
-            <li key={vote.participantId}>
-              {vote.displayName}: {vote.value}
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  )
 }
 
 function snapshotFromRouteState(state: unknown): SessionSnapshot | null {

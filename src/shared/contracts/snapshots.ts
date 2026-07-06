@@ -32,6 +32,13 @@ export interface RevealedResultsSnapshot {
   votes: RevealedVoteSnapshot[]
 }
 
+export interface EstimatedStorySnapshot {
+  storyId: string
+  title: string
+  deck: PlanningDeck
+  finalEstimate: string
+}
+
 export interface SessionSnapshot {
   roomCode: string
   deck: PlanningDeck
@@ -39,5 +46,6 @@ export interface SessionSnapshot {
   participants: ParticipantSnapshot[]
   round: RoundSnapshot
   results: RevealedResultsSnapshot | null
+  estimatedStories?: EstimatedStorySnapshot[]
   updatedAt: string
 }
