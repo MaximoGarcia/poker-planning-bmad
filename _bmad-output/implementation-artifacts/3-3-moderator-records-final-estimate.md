@@ -5,7 +5,7 @@ created_at: 2026-07-06T16:08:10+00:00
 
 # Story 3.3: Moderator Records Final Estimate
 
-Status: review
+Status: done
 
 Completion Note: Ultimate context engine analysis completed - comprehensive developer guide created.
 
@@ -78,6 +78,11 @@ so that the Session records the team's decision for the current Story.
   - [x] `cmd.exe /c npm run build`
   - [x] `cmd.exe /c npm run lint`
   - [x] `cmd.exe /c npm run test:e2e`
+
+### Review Findings
+
+- [x] [Review][Patch] Moderator command acknowledgements can expose moderator-only estimated stories to sockets without a matching room identity [server/socket/register-session-handlers.ts:373]
+- [x] [Review][Patch] Participant-shaped or missing-token estimate attempts return validation errors instead of `UNAUTHORIZED` [server/socket/register-session-handlers.ts:353]
 
 ## Dev Notes
 
@@ -202,6 +207,7 @@ GPT-5 Codex
 - Updated socket snapshot emission to avoid sending moderator-only estimated stories to participant viewers.
 - Added moderator final-estimate deck buttons after reveal with ack-based pending/recorded state and readable error messages; participant UI remains free of estimate controls and data.
 - Added schema, domain, socket, snapshot mapper, hook, moderator view, participant view, and E2E coverage for final estimate recording.
+- Addressed code review findings by preventing unidentified or wrong-room sockets from receiving moderator-shaped acknowledgement snapshots and returning `UNAUTHORIZED` for participant-shaped estimate attempts.
 
 ### File List
 
@@ -231,3 +237,4 @@ GPT-5 Codex
 ### Change Log
 
 - 2026-07-06: Implemented Story 3.3 final estimate recording and moved story to review.
+- 2026-07-06: Addressed code review findings, completed verification, and moved story to done.

@@ -851,6 +851,85 @@ describe('registerSessionHandlers', () => {
     )
   })
 
+  it('does not include moderator-only estimated stories in acknowledgements for unidentified sockets', () => {
+    const {
+      socket,
+      sessionCreateHandler,
+      storyUpdateHandler,
+      roundStartHandler,
+      roundRevealHandler,
+      estimateRecordHandler,
+    } = createHarness(undefined, undefined, undefined, {
+      now: () => new Date('2026-07-04T10:00:00.000Z'),
+    })
+    sessionCreateHandler?.({ moderatorName: 'Maxi' }, vi.fn())
+    storyUpdateHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        storyId: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+      },
+      vi.fn(),
+    )
+    roundStartHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      },
+      vi.fn(),
+    )
+    roundRevealHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      },
+      vi.fn(),
+    )
+    socket.data.identity = undefined
+    const ack = vi.fn()
+
+    estimateRecordHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        value: '8',
+      },
+      ack,
+    )
+
+    expect(ack).toHaveBeenCalledWith({
+      ok: true,
+      data: expect.not.objectContaining({
+        estimatedStories: expect.anything(),
+      }),
+    })
+  })
+
+  it('returns unauthorized for participant-shaped estimate commands', () => {
+    const { roomEmitter, estimateRecordHandler } = createHarness()
+    const ack = vi.fn()
+
+    estimateRecordHandler?.(
+      {
+        roomCode: 'ABCD12',
+        participantId: 'participant-2',
+        participantToken: 'participant-token-abcdefghijklmnopqrstuvwxyz',
+        value: '8',
+      },
+      ack,
+    )
+
+    expect(ack).toHaveBeenCalledWith({
+      ok: false,
+      error: {
+        code: ERROR_CODES.unauthorized,
+        message: 'Only the moderator can record a final estimate.',
+      },
+    })
+    expect(roomEmitter.emit).not.toHaveBeenCalled()
+  })
+
   it('validates estimate payloads before calling the domain command', () => {
     const { roomEmitter, estimateRecordHandler } = createHarness()
     const ack = vi.fn()

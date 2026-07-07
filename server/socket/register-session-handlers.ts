@@ -309,6 +309,20 @@ export function registerSessionHandlers(
     })
 
     socket.on(CLIENT_EVENTS.estimateRecord, (payload, ack) => {
+      if (typeof ack !== 'function') {
+        return
+      }
+
+      if (isEstimateAttemptWithoutModeratorToken(payload)) {
+        ack(
+          createFailureAck({
+            code: ERROR_CODES.unauthorized,
+            message: 'Only the moderator can record a final estimate.',
+          }),
+        )
+        return
+      }
+
       handleModeratorCommand({
         ack,
         payload,
@@ -370,7 +384,7 @@ export function registerSessionHandlers(
           return
         }
 
-        const viewer = socket.data.identity ?? inferSnapshotViewer(parsedCommand.data)
+        const viewer = snapshotViewerForAck(result.data.roomCode, parsedCommand.data)
         const snapshot = sanitizedSnapshot(result.data.roomCode, viewer)
 
         ack(createSuccessAck(snapshot))
@@ -424,10 +438,24 @@ export function registerSessionHandlers(
         )
       }
     }
+
+    function snapshotViewerForAck(roomCode: string, command: unknown): SnapshotViewer {
+      if (socket.data.identity?.roomCode === roomCode) {
+        return {
+          participantId: socket.data.identity.participantId,
+          role: socket.data.identity.role,
+        }
+      }
+
+      return inferSnapshotViewer(command, { allowModeratorFallback: false })
+    }
   })
 }
 
-function inferSnapshotViewer(command: unknown): SnapshotViewer {
+function inferSnapshotViewer(
+  command: unknown,
+  { allowModeratorFallback = true }: { allowModeratorFallback?: boolean } = {},
+): SnapshotViewer {
   if (
     command &&
     typeof command === 'object' &&
@@ -440,8 +468,23 @@ function inferSnapshotViewer(command: unknown): SnapshotViewer {
     }
   }
 
+  if (!allowModeratorFallback) {
+    return {
+      participantId: '',
+      role: 'participant',
+    }
+  }
+
   return {
     participantId: 'moderator',
     role: 'moderator',
   }
+}
+
+function isEstimateAttemptWithoutModeratorToken(payload: unknown): boolean {
+  if (!payload || typeof payload !== 'object') {
+    return false
+  }
+
+  return 'value' in payload && !('moderatorToken' in payload)
 }
