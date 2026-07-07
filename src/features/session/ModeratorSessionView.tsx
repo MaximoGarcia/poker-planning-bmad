@@ -123,8 +123,10 @@ function StoryDeckEditor({
   const [pendingDeckId, setPendingDeckId] = useState<PlanningDeckId | null>(null)
   const [pendingRoundStart, setPendingRoundStart] = useState(false)
   const [pendingReveal, setPendingReveal] = useState(false)
+  const [pendingReset, setPendingReset] = useState(false)
   const [pendingVoteValue, setPendingVoteValue] = useState<string | null>(null)
   const [pendingEstimateValue, setPendingEstimateValue] = useState<string | null>(null)
+  const [pendingAdvance, setPendingAdvance] = useState(false)
   const [lastSubmittedValue, setLastSubmittedValue] = useState<string | null>(null)
   const [voteStatusMessage, setVoteStatusMessage] = useState<string | null>(null)
   const [voteError, setVoteError] = useState<string | null>(null)
@@ -135,14 +137,39 @@ function StoryDeckEditor({
     Boolean(pendingDeckId) ||
     pendingRoundStart ||
     pendingReveal ||
+    pendingReset ||
     Boolean(pendingVoteValue) ||
-    Boolean(pendingEstimateValue)
+    Boolean(pendingEstimateValue) ||
+    pendingAdvance
   const moderator = sessionSnapshot.participants.find((participant) => participant.role === 'moderator')
   const visibleLastSubmittedValue = moderator?.hasVoted ? lastSubmittedValue : null
   const visibleVoteStatusMessage = moderator?.hasVoted ? voteStatusMessage : null
   const currentEstimatedStory = sessionSnapshot.estimatedStories?.find(
     (estimatedStory) => estimatedStory.storyId === sessionSnapshot.story?.id,
   )
+
+  async function handleResetRound() {
+    if (!moderatorToken || !canResetRound(sessionSnapshot, moderatorToken)) {
+      return
+    }
+
+    setPendingReset(true)
+    setCommandError(null)
+
+    const result = await sessionSocket.resetRound({
+      roomCode,
+      moderatorToken,
+    })
+
+    setPendingReset(false)
+
+    if (!result.ok) {
+      setCommandError(resetErrorMessageForCode(result.error.code))
+      return
+    }
+
+    onAcceptedSnapshot(result.data)
+  }
 
   async function handleStorySubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -284,6 +311,30 @@ function StoryDeckEditor({
     onAcceptedSnapshot(result.data)
   }
 
+  async function handleAdvanceStory() {
+    if (!moderatorToken || !canAdvanceStory(sessionSnapshot, moderatorToken)) {
+      return
+    }
+
+    setPendingAdvance(true)
+    setCommandError(null)
+    setEstimateError(null)
+
+    const result = await sessionSocket.advanceStory({
+      roomCode,
+      moderatorToken,
+    })
+
+    setPendingAdvance(false)
+
+    if (!result.ok) {
+      setCommandError(advanceErrorMessageForCode(result.error.code))
+      return
+    }
+
+    onAcceptedSnapshot(result.data)
+  }
+
   return (
     <section className="session-summary" aria-labelledby="story-controls-title">
       <div className="section-heading">
@@ -356,13 +407,33 @@ function StoryDeckEditor({
           : 'Start round'}
       </button>
       {sessionSnapshot.round.active && !sessionSnapshot.round.revealed ? (
+        <>
+          <button
+            className="primary-action"
+            disabled={!canRevealRound(sessionSnapshot, moderatorToken) || commandPending}
+            onClick={() => void handleRevealRound()}
+            type="button"
+          >
+            {pendingReveal ? 'Revealing results...' : 'Reveal results'}
+          </button>
+          <button
+            className="secondary-action"
+            disabled={!canResetRound(sessionSnapshot, moderatorToken) || commandPending}
+            onClick={() => void handleResetRound()}
+            type="button"
+          >
+            {pendingReset ? 'Resetting round...' : 'Reset round'}
+          </button>
+        </>
+      ) : null}
+      {sessionSnapshot.round.revealed ? (
         <button
-          className="primary-action"
-          disabled={!canRevealRound(sessionSnapshot, moderatorToken) || commandPending}
-          onClick={() => void handleRevealRound()}
+          className="secondary-action"
+          disabled={!canResetRound(sessionSnapshot, moderatorToken) || commandPending}
+          onClick={() => void handleResetRound()}
           type="button"
         >
-          {pendingReveal ? 'Revealing results...' : 'Reveal results'}
+          {pendingReset ? 'Resetting round...' : 'Reset round'}
         </button>
       ) : null}
       {commandError ? <p role="alert">{commandError}</p> : null}
@@ -462,6 +533,14 @@ function StoryDeckEditor({
               {estimateError}
             </p>
           ) : null}
+          <button
+            className="primary-action"
+            disabled={!canAdvanceStory(sessionSnapshot, moderatorToken) || commandPending}
+            onClick={() => void handleAdvanceStory()}
+            type="button"
+          >
+            {pendingAdvance ? 'Advancing story...' : 'Advance to next story'}
+          </button>
         </section>
       ) : null}
       <p>
@@ -483,6 +562,19 @@ function canRevealRound(snapshot: SessionSnapshot, moderatorToken: string | null
 
 function canRecordFinalEstimate(snapshot: SessionSnapshot, moderatorToken: string | null): boolean {
   return Boolean(moderatorToken && snapshot.round.revealed && snapshot.story)
+}
+
+function canResetRound(snapshot: SessionSnapshot, moderatorToken: string | null): boolean {
+  return Boolean(moderatorToken && snapshot.round.active)
+}
+
+function canAdvanceStory(snapshot: SessionSnapshot, moderatorToken: string | null): boolean {
+  return Boolean(
+    moderatorToken &&
+      snapshot.round.revealed &&
+      snapshot.story &&
+      snapshot.estimatedStories?.some((estimatedStory) => estimatedStory.storyId === snapshot.story?.id),
+  )
 }
 
 function moderatorVoteButtonLabel({
@@ -580,6 +672,30 @@ function estimateErrorMessageForCode(code: string): string {
       return 'Choose a final estimate from the active deck.'
     default:
       return 'Final estimate could not be recorded. Please try again.'
+  }
+}
+
+function resetErrorMessageForCode(code: string): string {
+  switch (code) {
+    case ERROR_CODES.roundNotActive:
+      return 'Voting is not active right now.'
+    case ERROR_CODES.unauthorized:
+      return 'Only the moderator can reset the round.'
+    default:
+      return 'Round could not be reset. Please try again.'
+  }
+}
+
+function advanceErrorMessageForCode(code: string): string {
+  switch (code) {
+    case ERROR_CODES.finalEstimateRequired:
+      return 'Record a final estimate before advancing to the next story.'
+    case ERROR_CODES.unauthorized:
+      return 'Only the moderator can advance to the next story.'
+    case ERROR_CODES.storyRequired:
+      return 'Choose a current story before advancing.'
+    default:
+      return 'Story could not be advanced. Please try again.'
   }
 }
 

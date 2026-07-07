@@ -23,7 +23,9 @@ import type { SessionSnapshot } from '@shared/contracts/snapshots'
 import type {
   CreateSessionCommand,
   JoinSessionCommand,
+  AdvanceStoryCommand,
   RecordEstimateCommand,
+  RoundResetCommand,
   RevealRoundCommand,
   SelectDeckCommand,
   StartRoundCommand,
@@ -59,8 +61,10 @@ export interface UseSessionSocketResult {
   selectDeck: (command: SelectDeckCommand) => Promise<Ack<SessionSnapshot>>
   startRound: (command: StartRoundCommand) => Promise<Ack<SessionSnapshot>>
   revealRound: (command: RevealRoundCommand) => Promise<Ack<SessionSnapshot>>
+  resetRound: (command: RoundResetCommand) => Promise<Ack<SessionSnapshot>>
   submitVote: (command: SubmitVoteCommand) => Promise<Ack<SessionSnapshot>>
   recordEstimate: (command: RecordEstimateCommand) => Promise<Ack<SessionSnapshot>>
+  advanceStory: (command: AdvanceStoryCommand) => Promise<Ack<SessionSnapshot>>
 }
 
 const SessionSocketContext = createContext<UseSessionSocketResult | null>(null)
@@ -194,9 +198,21 @@ function useSessionSocketConnection(): UseSessionSocketResult {
     [emitValidatedCommand],
   )
 
+  const resetRound = useCallback(
+    (command: RoundResetCommand) =>
+      emitValidatedCommand(CLIENT_EVENTS.roundReset, command, SessionSnapshotAckSchema, setLatestSnapshot),
+    [emitValidatedCommand],
+  )
+
   const recordEstimate = useCallback(
     (command: RecordEstimateCommand) =>
       emitValidatedCommand(CLIENT_EVENTS.estimateRecord, command, SessionSnapshotAckSchema, setLatestSnapshot),
+    [emitValidatedCommand],
+  )
+
+  const advanceStory = useCallback(
+    (command: AdvanceStoryCommand) =>
+      emitValidatedCommand(CLIENT_EVENTS.storyAdvance, command, SessionSnapshotAckSchema, setLatestSnapshot),
     [emitValidatedCommand],
   )
 
@@ -209,8 +225,10 @@ function useSessionSocketConnection(): UseSessionSocketResult {
     selectDeck,
     startRound,
     revealRound,
+    resetRound,
     submitVote,
     recordEstimate,
+    advanceStory,
   }
 }
 

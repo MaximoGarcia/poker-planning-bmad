@@ -4,10 +4,12 @@ import {
   createSessionStore,
   joinSession,
   recordEstimate,
+  resetRound,
   revealRound,
   removeJoinedParticipant,
   selectDeck,
   startRound,
+  advanceStory,
   submitVote,
   updateStory,
   type CreateSessionDependencies,
@@ -28,7 +30,9 @@ import type { SessionIdentity } from '../../src/shared/domain/session-types.js'
 import {
   CreateSessionCommandSchema,
   JoinSessionCommandSchema,
+  AdvanceStoryCommandSchema,
   RecordEstimateCommandSchema,
+  RoundResetCommandSchema,
   RevealRoundCommandSchema,
   SelectDeckCommandSchema,
   StartRoundCommandSchema,
@@ -293,6 +297,35 @@ export function registerSessionHandlers(
       })
     })
 
+    socket.on(CLIENT_EVENTS.roundReset, (payload, ack) => {
+      if (typeof ack !== 'function') {
+        return
+      }
+
+      if (isModeratorCommandAttemptWithoutModeratorToken(payload)) {
+        ack(
+          createFailureAck({
+            code: ERROR_CODES.unauthorized,
+            message: 'Only the moderator can reset a voting round.',
+          }),
+        )
+        return
+      }
+
+      handleModeratorCommand({
+        ack,
+        payload,
+        schema: RoundResetCommandSchema,
+        validationMessage: 'Round reset details could not be validated.',
+        unavailableMessage: 'Round reset could not be completed. Please try again.',
+        domainCommand: (command) =>
+          resetRound(command, {
+            store,
+            ...moderatorSessionDependencies,
+          }),
+      })
+    })
+
     socket.on(CLIENT_EVENTS.voteSubmit, (payload, ack) => {
       handleModeratorCommand({
         ack,
@@ -331,6 +364,35 @@ export function registerSessionHandlers(
         unavailableMessage: 'Final estimate could not be recorded. Please try again.',
         domainCommand: (command) =>
           recordEstimate(command, {
+            store,
+            ...moderatorSessionDependencies,
+          }),
+      })
+    })
+
+    socket.on(CLIENT_EVENTS.storyAdvance, (payload, ack) => {
+      if (typeof ack !== 'function') {
+        return
+      }
+
+      if (isModeratorCommandAttemptWithoutModeratorToken(payload)) {
+        ack(
+          createFailureAck({
+            code: ERROR_CODES.unauthorized,
+            message: 'Only the moderator can advance to the next story.',
+          }),
+        )
+        return
+      }
+
+      handleModeratorCommand({
+        ack,
+        payload,
+        schema: AdvanceStoryCommandSchema,
+        validationMessage: 'Story advance details could not be validated.',
+        unavailableMessage: 'Story advance could not be completed. Please try again.',
+        domainCommand: (command) =>
+          advanceStory(command, {
             store,
             ...moderatorSessionDependencies,
           }),
@@ -487,4 +549,12 @@ function isEstimateAttemptWithoutModeratorToken(payload: unknown): boolean {
   }
 
   return 'value' in payload && !('moderatorToken' in payload)
+}
+
+function isModeratorCommandAttemptWithoutModeratorToken(payload: unknown): boolean {
+  if (!payload || typeof payload !== 'object') {
+    return false
+  }
+
+  return 'roomCode' in payload && !('moderatorToken' in payload)
 }

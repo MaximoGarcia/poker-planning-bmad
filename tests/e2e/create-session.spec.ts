@@ -278,3 +278,68 @@ test('moderator reveals grouped results to voters and non-voters across live ses
   await outlierContext.close()
   await nonVoterContext.close()
 })
+
+test('moderator can reset a revealed round and later advance after recording a final estimate', async ({
+  browser,
+}) => {
+  const moderatorContext = await browser.newContext()
+  const participantContext = await browser.newContext()
+  const moderatorPage = await moderatorContext.newPage()
+  const participantPage = await participantContext.newPage()
+
+  await moderatorPage.goto('/')
+  await moderatorPage.getByLabel('Moderator name').fill('Maxi')
+  await moderatorPage.getByRole('button', { name: 'Create session' }).click()
+  await expect(moderatorPage).toHaveURL(/\/session\/[A-Z0-9]{4,12}\/moderator$/)
+
+  const roomCodeMatch = moderatorPage.url().match(/\/session\/([A-Z0-9]{4,12})\/moderator$/)
+  const roomCode = roomCodeMatch?.[1] ?? ''
+
+  await participantPage.goto('/')
+  await participantPage.getByLabel('Room code').fill(roomCode)
+  await participantPage.getByLabel('Display name').fill('Ana')
+  await participantPage.getByRole('button', { name: 'Join session' }).click()
+  await expect(participantPage).toHaveURL(new RegExp(`/session/${roomCode}$`))
+
+  await moderatorPage.getByLabel('Story identifier').fill('ADR-34')
+  await moderatorPage.getByLabel('Brief description').fill('Reset and advance the session flow')
+  await moderatorPage.getByRole('button', { name: 'Save story' }).click()
+
+  await moderatorPage.getByRole('button', { name: 'Start round' }).click()
+  await moderatorPage.getByRole('button', { name: 'Submit moderator vote 8' }).click()
+  await participantPage.getByRole('button', { name: 'Submit vote 5' }).click()
+  await moderatorPage.getByRole('button', { name: 'Reveal results' }).click()
+
+  await expect(moderatorPage.getByLabel('Majority: 1 vote for 5 by Ana')).toBeVisible()
+  await expect(participantPage.getByLabel('Majority: 1 vote for 5 by Ana')).toBeVisible()
+
+  await moderatorPage.getByRole('button', { name: 'Reset round' }).click()
+
+  await expect(moderatorPage.getByText('Story and deck are ready to edit.')).toBeVisible()
+  await expect(participantPage.getByText('Waiting')).toBeVisible()
+  await expect(moderatorPage.getByLabel('Story identifier')).toHaveValue('ADR-34')
+  await expect(moderatorPage.getByText('Deck: Fibonacci')).toBeVisible()
+  await expect(moderatorPage.getByLabel('Majority: 1 vote for 5 by Ana')).toHaveCount(0)
+  await expect(participantPage.getByLabel('Majority: 1 vote for 5 by Ana')).toHaveCount(0)
+  await expect(participantPage.getByText('Selected')).toHaveCount(0)
+
+  await moderatorPage.getByRole('button', { name: 'Start round' }).click()
+  await moderatorPage.getByRole('button', { name: 'Submit moderator vote 13' }).click()
+  await participantPage.getByRole('button', { name: 'Submit vote 8' }).click()
+  await moderatorPage.getByRole('button', { name: 'Reveal results' }).click()
+  await moderatorPage.getByRole('button', { name: 'Record final estimate 8' }).click()
+
+  await expect(moderatorPage.getByText('Recorded estimate: 8')).toBeVisible()
+  await expect(participantPage.getByText('Recorded estimate: 8')).toHaveCount(0)
+
+  await moderatorPage.getByRole('button', { name: 'Advance to next story' }).click()
+
+  await expect(moderatorPage.getByText('No active story yet')).toBeVisible()
+  await expect(participantPage.getByRole('heading', { name: 'No active story yet' })).toBeVisible()
+  await expect(moderatorPage.getByText('Deck: Fibonacci')).toBeVisible()
+  await expect(participantPage.getByRole('heading', { name: 'Fibonacci options' })).toBeVisible()
+  await expect(participantPage.getByText('Recorded estimate: 8')).toHaveCount(0)
+
+  await moderatorContext.close()
+  await participantContext.close()
+})

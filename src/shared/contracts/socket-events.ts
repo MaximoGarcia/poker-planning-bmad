@@ -1,6 +1,8 @@
 import type {
   CreateSessionCommand,
   JoinSessionCommand,
+  AdvanceStoryCommand,
+  RoundResetCommand,
   SelectDeckCommand,
   StartRoundCommand,
   RevealRoundCommand,
@@ -56,9 +58,9 @@ export interface ClientToServerEventPayloads {
   'round:start': StartRoundCommand
   'vote:submit': SubmitVoteCommand
   'round:reveal': RevealRoundCommand
-  'round:reset': { roomCode: string }
+  'round:reset': RoundResetCommand
   'estimate:record': RecordEstimateCommand
-  'story:advance': { roomCode: string; storyId?: string }
+  'story:advance': AdvanceStoryCommand
   'session:leave': { roomCode: string }
 }
 

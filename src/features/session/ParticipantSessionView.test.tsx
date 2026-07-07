@@ -90,6 +90,8 @@ describe('ParticipantSessionView', () => {
     expect(screen.queryByRole('button', { name: /copy room code/i })).not.toBeInTheDocument()
     expect(screen.queryByText(/moderator token/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/final estimate/i)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Reset round' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Advance to next story' })).not.toBeInTheDocument()
   })
 
   it('does not render estimated stories from participant-visible state', () => {
@@ -581,6 +583,52 @@ describe('ParticipantSessionView', () => {
     expect(screen.getByLabelText('Majority: 1 vote for 8 by Ana')).toBeInTheDocument()
     expect(screen.getByText('Lee - Not voted')).toBeInTheDocument()
     expect(screen.queryByText('Lee:')).not.toBeInTheDocument()
+  })
+
+  it('returns to the waiting state after a reset snapshot and hides revealed values', () => {
+    renderParticipantRoute({
+      snapshot: {
+        ...snapshot,
+        story: {
+          id: 'ADR-21',
+          title: 'Estimate socket moderation flow',
+          locked: false,
+        },
+        participants: snapshot.participants.map((participant) =>
+          participant.id === 'participant-2' ? { ...participant, hasVoted: false } : participant,
+        ),
+        round: {
+          active: false,
+          revealed: false,
+          voteCount: 0,
+        },
+        results: null,
+      },
+    })
+
+    expect(screen.getByText('Waiting')).toBeInTheDocument()
+    expect(screen.queryByLabelText(/Majority:/)).not.toBeInTheDocument()
+    expect(screen.getByText('Not submitted')).toBeInTheDocument()
+  })
+
+  it('shows the empty-story state after an advance snapshot while preserving the deck', () => {
+    renderParticipantRoute({
+      snapshot: {
+        ...snapshot,
+        deck: PLANNING_DECKS.tshirt,
+        story: null,
+        round: {
+          active: false,
+          revealed: false,
+          voteCount: 0,
+        },
+        results: null,
+      },
+    })
+
+    expect(screen.getByRole('heading', { name: 'No active story yet' })).toBeInTheDocument()
+    expect(screen.getByText('T-shirt')).toBeInTheDocument()
+    expect(screen.queryByText(/Recorded estimate:/)).not.toBeInTheDocument()
   })
 })
 

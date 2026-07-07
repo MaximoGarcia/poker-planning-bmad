@@ -3,9 +3,11 @@ import { ERROR_CODES } from '../contracts/errors'
 import { CLIENT_EVENTS, SERVER_EVENTS } from '../contracts/socket-events'
 import { PLANNING_DECKS } from '../domain/decks'
 import {
+  AdvanceStoryCommandSchema,
   CreateSessionCommandSchema,
   JoinSessionCommandSchema,
   RecordEstimateCommandSchema,
+  RoundResetCommandSchema,
   SelectDeckCommandSchema,
   RevealRoundCommandSchema,
   StartRoundCommandSchema,
@@ -30,6 +32,7 @@ describe('shared contracts and schemas', () => {
     expect(ERROR_CODES.validationFailed).toBe('VALIDATION_FAILED')
     expect(ERROR_CODES.rateLimited).toBe('RATE_LIMITED')
     expect(ERROR_CODES.storyRequired).toBe('STORY_REQUIRED')
+    expect(ERROR_CODES.finalEstimateRequired).toBe('FINAL_ESTIMATE_REQUIRED')
   })
 
   it('exports stable session event names', () => {
@@ -140,6 +143,42 @@ describe('shared contracts and schemas', () => {
     ).toBe(false)
     expect(
       RevealRoundCommandSchema.safeParse({
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        extra: true,
+      }).success,
+    ).toBe(false)
+  })
+
+  it('validates moderator round-reset and story-advance commands with strict payloads', () => {
+    expect(
+      RoundResetCommandSchema.parse({
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      }),
+    ).toEqual({
+      roomCode: 'ABCD12',
+      moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    })
+
+    expect(
+      AdvanceStoryCommandSchema.parse({
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      }),
+    ).toEqual({
+      roomCode: 'ABCD12',
+      moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    })
+
+    expect(
+      RoundResetCommandSchema.safeParse({
+        roomCode: 'ABCD12',
+        participantToken: 'participant-token-abcdefghijklmnopqrstuvwxyz',
+      }).success,
+    ).toBe(false)
+    expect(
+      AdvanceStoryCommandSchema.safeParse({
         roomCode: 'ABCD12',
         moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
         extra: true,

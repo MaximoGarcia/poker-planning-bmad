@@ -9,6 +9,7 @@ export const ERROR_CODES = {
   storyRequired: 'STORY_REQUIRED',
   roundNotActive: 'ROUND_NOT_ACTIVE',
   resultsNotRevealed: 'RESULTS_NOT_REVEALED',
+  finalEstimateRequired: 'FINAL_ESTIMATE_REQUIRED',
   voteLocked: 'VOTE_LOCKED',
   storyLocked: 'STORY_LOCKED',
   notImplemented: 'NOT_IMPLEMENTED',

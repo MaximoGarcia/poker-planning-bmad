@@ -16,6 +16,8 @@ const socketState = vi.hoisted(() => ({
   submitVote: vi.fn(),
   revealRound: vi.fn(),
   recordEstimate: vi.fn(),
+  resetRound: vi.fn(),
+  advanceStory: vi.fn(),
 }))
 
 vi.mock('./useSessionSocket', () => ({
@@ -23,12 +25,14 @@ vi.mock('./useSessionSocket', () => ({
     connectionStatus: 'connected',
     createSession: vi.fn(),
     latestSnapshot: socketState.latestSnapshot,
+    resetRound: socketState.resetRound,
     revealRound: socketState.revealRound,
     recordEstimate: socketState.recordEstimate,
     selectDeck: socketState.selectDeck,
     startRound: socketState.startRound,
     submitVote: socketState.submitVote,
     updateStory: socketState.updateStory,
+    advanceStory: socketState.advanceStory,
   }),
 }))
 
@@ -80,12 +84,16 @@ describe('ModeratorSessionView', () => {
     socketState.submitVote.mockReset()
     socketState.revealRound.mockReset()
     socketState.recordEstimate.mockReset()
+    socketState.resetRound.mockReset()
+    socketState.advanceStory.mockReset()
     socketState.updateStory.mockResolvedValue(createSuccessAck(snapshot))
     socketState.selectDeck.mockResolvedValue(createSuccessAck(snapshot))
     socketState.startRound.mockResolvedValue(createSuccessAck(snapshot))
     socketState.submitVote.mockResolvedValue(createSuccessAck(snapshot))
     socketState.revealRound.mockResolvedValue(createSuccessAck(snapshot))
     socketState.recordEstimate.mockResolvedValue(createSuccessAck(snapshot))
+    socketState.resetRound.mockResolvedValue(createSuccessAck(snapshot))
+    socketState.advanceStory.mockResolvedValue(createSuccessAck(snapshot))
   })
 
   it('shows the room code and empty story state from the returned snapshot', () => {
@@ -843,6 +851,86 @@ describe('ModeratorSessionView', () => {
     expect(row).not.toHaveTextContent('8')
   })
 
+  it('shows reset control during active or revealed rounds and waits for the server snapshot', async () => {
+    window.sessionStorage.setItem(
+      moderatorTokenStorageKey('ABCD12'),
+      'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    )
+    socketState.latestSnapshot = {
+      ...snapshot,
+      story: {
+        id: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+        locked: true,
+      },
+      participants: [
+        {
+          ...snapshot.participants[0],
+          hasVoted: true,
+        },
+      ],
+      round: {
+        active: true,
+        revealed: true,
+        voteCount: 1,
+      },
+      results: {
+        votes: [
+          {
+            participantId: 'participant-1',
+            displayName: 'Maxi',
+            role: 'moderator' as const,
+            value: '8',
+          },
+        ],
+      },
+    }
+    let resolveAck: ((value: ReturnType<typeof createSuccessAck>) => void) | undefined
+    socketState.resetRound.mockReturnValue(
+      new Promise((resolve) => {
+        resolveAck = resolve
+      }),
+    )
+
+    renderModeratorRoute({ snapshot })
+    fireEvent.click(screen.getByRole('button', { name: 'Reset round' }))
+
+    expect(screen.getByRole('button', { name: 'Resetting round...' })).toBeDisabled()
+    expect(screen.getByLabelText('Majority: 1 vote for 8 by Maxi')).toBeInTheDocument()
+    resolveAck?.(
+      createSuccessAck({
+        ...socketState.latestSnapshot,
+        story: {
+          id: 'ADR-21',
+          title: 'Estimate socket moderation flow',
+          locked: false,
+        },
+        participants: [
+          {
+            ...snapshot.participants[0],
+            hasVoted: false,
+          },
+        ],
+        round: {
+          active: false,
+          revealed: false,
+          voteCount: 0,
+        },
+        results: null,
+        updatedAt: '2026-07-05T10:00:00.000Z',
+      }) as never,
+    )
+
+    await waitFor(() => {
+      expect(socketState.resetRound).toHaveBeenCalledWith({
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      })
+    })
+    expect(screen.queryByLabelText('Majority: 1 vote for 8 by Maxi')).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Final estimate' })).not.toBeInTheDocument()
+  })
+
   it('renders grouped revealed vote results and hides reveal controls once revealed', () => {
     window.sessionStorage.setItem(
       moderatorTokenStorageKey('ABCD12'),
@@ -1020,5 +1108,95 @@ describe('ModeratorSessionView', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Choose a final estimate from the active deck.',
     )
+  })
+
+  it('shows advance control only when a final estimate exists and clears the active story after success', async () => {
+    window.sessionStorage.setItem(
+      moderatorTokenStorageKey('ABCD12'),
+      'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    )
+    socketState.latestSnapshot = {
+      ...snapshot,
+      story: {
+        id: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+        locked: true,
+      },
+      round: {
+        active: true,
+        revealed: true,
+        voteCount: 1,
+      },
+      results: {
+        votes: [
+          {
+            participantId: 'participant-1',
+            displayName: 'Maxi',
+            role: 'moderator' as const,
+            value: '8',
+          },
+        ],
+      },
+      estimatedStories: [
+        {
+          storyId: 'ADR-21',
+          title: 'Estimate socket moderation flow',
+          deck: PLANNING_DECKS.fibonacci,
+          finalEstimate: '8',
+        },
+      ],
+    }
+    socketState.advanceStory.mockResolvedValue(
+      createSuccessAck({
+        ...socketState.latestSnapshot,
+        story: null,
+        round: {
+          active: false,
+          revealed: false,
+          voteCount: 0,
+        },
+        results: null,
+        updatedAt: '2026-07-05T10:05:00.000Z',
+      }),
+    )
+
+    renderModeratorRoute({ snapshot })
+    fireEvent.click(screen.getByRole('button', { name: 'Advance to next story' }))
+
+    await waitFor(() => {
+      expect(socketState.advanceStory).toHaveBeenCalledWith({
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      })
+    })
+    expect(await screen.findByText('No active story yet')).toBeInTheDocument()
+    expect(screen.getByText('Deck: Fibonacci')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Advance to next story' })).not.toBeInTheDocument()
+  })
+
+  it('keeps advance disabled until the current story has a recorded final estimate', async () => {
+    window.sessionStorage.setItem(
+      moderatorTokenStorageKey('ABCD12'),
+      'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    )
+    socketState.latestSnapshot = {
+      ...snapshot,
+      story: {
+        id: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+        locked: true,
+      },
+      round: {
+        active: true,
+        revealed: true,
+        voteCount: 1,
+      },
+      results: {
+        votes: [],
+      },
+      estimatedStories: [],
+    }
+    renderModeratorRoute({ snapshot })
+    expect(screen.getByRole('button', { name: 'Advance to next story' })).toBeDisabled()
   })
 })

@@ -4,8 +4,10 @@ import { ERROR_CODES, type ErrorCode } from '../../src/shared/contracts/errors.j
 import {
   DISPLAY_NAME_MAX_LENGTH,
   type CreateSessionCommand,
+  type AdvanceStoryCommand,
   type JoinSessionCommand,
   type RecordEstimateCommand,
+  type RoundResetCommand,
   type RevealRoundCommand,
   type SelectDeckCommand,
   type StartRoundCommand,
@@ -253,6 +255,101 @@ export function revealRound(
 
   store.set({
     ...session,
+    snapshot,
+  })
+
+  return {
+    ok: true,
+    data: snapshot,
+  }
+}
+
+export function resetRound(
+  command: RoundResetCommand,
+  { store, now = () => new Date() }: ModeratorSessionCommandDependencies,
+): ModeratorSessionCommandResult {
+  const session = store.get(command.roomCode)
+
+  if (!session) {
+    return invalidRoomCodeResult()
+  }
+
+  if (session.moderatorToken !== command.moderatorToken) {
+    return roundResetUnauthorizedResult()
+  }
+
+  if (!session.snapshot.round.active) {
+    return roundNotActiveResult()
+  }
+
+  const snapshot = {
+    ...session.snapshot,
+    story: session.snapshot.story
+      ? {
+          ...session.snapshot.story,
+          locked: false,
+        }
+      : null,
+    participants: session.snapshot.participants.map((participant) => ({
+      ...participant,
+      hasVoted: false,
+    })),
+    round: inactiveRoundSnapshot(),
+    results: null,
+    updatedAt: now().toISOString(),
+  }
+
+  store.set({
+    ...session,
+    votes: new Map(),
+    snapshot,
+  })
+
+  return {
+    ok: true,
+    data: snapshot,
+  }
+}
+
+export function advanceStory(
+  command: AdvanceStoryCommand,
+  { store, now = () => new Date() }: ModeratorSessionCommandDependencies,
+): ModeratorSessionCommandResult {
+  const session = store.get(command.roomCode)
+
+  if (!session) {
+    return invalidRoomCodeResult()
+  }
+
+  if (session.moderatorToken !== command.moderatorToken) {
+    return advanceStoryUnauthorizedResult()
+  }
+
+  const currentStory = session.snapshot.story
+
+  if (!currentStory) {
+    return storyRequiredResult()
+  }
+
+  if (!session.estimatedStories.some((estimatedStory) => estimatedStory.storyId === currentStory.id)) {
+    return finalEstimateRequiredResult()
+  }
+
+  const snapshot = {
+    ...session.snapshot,
+    story: null,
+    participants: session.snapshot.participants.map((participant) => ({
+      ...participant,
+      hasVoted: false,
+    })),
+    round: inactiveRoundSnapshot(),
+    results: null,
+    updatedAt: now().toISOString(),
+  }
+
+  store.set({
+    ...session,
+    votes: new Map(),
     snapshot,
   })
 
@@ -618,6 +715,26 @@ function roundUnauthorizedResult(): DomainFailureResult {
   }
 }
 
+function roundResetUnauthorizedResult(): DomainFailureResult {
+  return {
+    ok: false,
+    error: {
+      code: ERROR_CODES.unauthorized,
+      message: 'Only the moderator can reset a voting round.',
+    },
+  }
+}
+
+function advanceStoryUnauthorizedResult(): DomainFailureResult {
+  return {
+    ok: false,
+    error: {
+      code: ERROR_CODES.unauthorized,
+      message: 'Only the moderator can advance to the next story.',
+    },
+  }
+}
+
 function revealUnauthorizedResult(): DomainFailureResult {
   return {
     ok: false,
@@ -708,6 +825,16 @@ function resultsNotRevealedResult(): DomainFailureResult {
   }
 }
 
+function finalEstimateRequiredResult(): DomainFailureResult {
+  return {
+    ok: false,
+    error: {
+      code: ERROR_CODES.finalEstimateRequired,
+      message: 'Record a final estimate before advancing to the next story.',
+    },
+  }
+}
+
 function storyRequiredResult(): DomainFailureResult {
   return {
     ok: false,
@@ -725,5 +852,13 @@ function storyLockedResult(): DomainFailureResult {
       code: ERROR_CODES.storyLocked,
       message: 'The current story and deck cannot change during an active round.',
     },
+  }
+}
+
+function inactiveRoundSnapshot() {
+  return {
+    active: false,
+    revealed: false,
+    voteCount: 0,
   }
 }

@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { PLANNING_DECKS } from '../../src/shared/domain/decks.js'
 import { ERROR_CODES } from '../../src/shared/contracts/errors.js'
 import {
+  advanceStory,
   createSession,
   joinSession,
   recordEstimate,
+  resetRound,
   revealRound,
   selectDeck,
   startRound,
@@ -1613,6 +1615,169 @@ describe('recordEstimate', () => {
   })
 })
 
+describe('resetRound', () => {
+  it('clears votes and results, unlocks the story, and preserves deck plus estimate history', () => {
+    const { store } = createEstimatedRevealedSession()
+
+    const result = resetRound(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      },
+      {
+        store,
+        now: () => new Date('2026-07-05T10:00:00.000Z'),
+      },
+    )
+
+    expect(result).toEqual({
+      ok: true,
+      data: expect.objectContaining({
+        story: {
+          id: 'ADR-21',
+          title: 'Estimate socket moderation flow',
+          locked: false,
+        },
+        round: {
+          active: false,
+          revealed: false,
+          voteCount: 0,
+        },
+        results: null,
+        updatedAt: '2026-07-05T10:00:00.000Z',
+      }),
+    })
+    expect(store.get('ABCD12')?.votes.size).toBe(0)
+    expect(store.get('ABCD12')?.snapshot.participants.every((participant) => !participant.hasVoted)).toBe(true)
+    expect(store.get('ABCD12')?.snapshot.deck).toBe(PLANNING_DECKS.fibonacci)
+    expect(store.get('ABCD12')?.estimatedStories).toEqual([
+      expect.objectContaining({
+        storyId: 'ADR-21',
+        finalEstimate: '8',
+      }),
+    ])
+  })
+
+  it('returns stable failures for inactive rounds and unauthorized attempts without mutation', () => {
+    const { store } = createEstimatedRevealedSession()
+    resetRound(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      },
+      { store },
+    )
+    const before = store.get('ABCD12')
+
+    expect(
+      resetRound(
+        {
+          roomCode: 'ABCD12',
+          moderatorToken: 'participant-token-abcdefghijklmnopqrstuvwxyz',
+        },
+        { store },
+      ),
+    ).toEqual({
+      ok: false,
+      error: {
+        code: ERROR_CODES.unauthorized,
+        message: 'Only the moderator can reset a voting round.',
+      },
+    })
+    expect(
+      resetRound(
+        {
+          roomCode: 'ABCD12',
+          moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        },
+        { store },
+      ),
+    ).toEqual({
+      ok: false,
+      error: {
+        code: ERROR_CODES.roundNotActive,
+        message: 'Voting is not active for this session.',
+      },
+    })
+    expect(store.get('ABCD12')).toEqual(before)
+  })
+})
+
+describe('advanceStory', () => {
+  it('clears the active story and round while preserving deck and estimated stories', () => {
+    const { store } = createEstimatedRevealedSession()
+
+    const result = advanceStory(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      },
+      {
+        store,
+        now: () => new Date('2026-07-05T10:05:00.000Z'),
+      },
+    )
+
+    expect(result).toEqual({
+      ok: true,
+      data: expect.objectContaining({
+        story: null,
+        round: {
+          active: false,
+          revealed: false,
+          voteCount: 0,
+        },
+        results: null,
+        updatedAt: '2026-07-05T10:05:00.000Z',
+      }),
+    })
+    expect(store.get('ABCD12')?.snapshot.deck).toBe(PLANNING_DECKS.fibonacci)
+    expect(store.get('ABCD12')?.estimatedStories).toEqual([
+      expect.objectContaining({
+        storyId: 'ADR-21',
+        finalEstimate: '8',
+      }),
+    ])
+  })
+
+  it('requires a recorded estimate and rejects participant or bad-token attempts without mutation', () => {
+    const { store } = createActiveVotingSession({ revealed: true })
+    const before = store.get('ABCD12')
+
+    expect(
+      advanceStory(
+        {
+          roomCode: 'ABCD12',
+          moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        },
+        { store },
+      ),
+    ).toEqual({
+      ok: false,
+      error: {
+        code: ERROR_CODES.finalEstimateRequired,
+        message: 'Record a final estimate before advancing to the next story.',
+      },
+    })
+    expect(
+      advanceStory(
+        {
+          roomCode: 'ABCD12',
+          moderatorToken: 'participant-token-abcdefghijklmnopqrstuvwxyz',
+        },
+        { store },
+      ),
+    ).toEqual({
+      ok: false,
+      error: {
+        code: ERROR_CODES.unauthorized,
+        message: 'Only the moderator can advance to the next story.',
+      },
+    })
+    expect(store.get('ABCD12')).toEqual(before)
+  })
+})
+
 function createActiveVotingSession({
   active = true,
   revealed = false,
@@ -1671,6 +1836,44 @@ function createActiveVotingSession({
       },
     },
   })
+
+  return { store }
+}
+
+function createEstimatedRevealedSession() {
+  const { store } = createActiveVotingSession()
+  submitVote(
+    {
+      roomCode: 'ABCD12',
+      participantId: 'participant-2',
+      participantToken: 'participant-token-abcdefghijklmnopqrstuvwxyz',
+      value: '8',
+    },
+    { store },
+  )
+  submitVote(
+    {
+      roomCode: 'ABCD12',
+      moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      value: '13',
+    },
+    { store },
+  )
+  revealRound(
+    {
+      roomCode: 'ABCD12',
+      moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    },
+    { store },
+  )
+  recordEstimate(
+    {
+      roomCode: 'ABCD12',
+      moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      value: '8',
+    },
+    { store },
+  )
 
   return { store }
 }

@@ -74,8 +74,10 @@ function createHarness(
     deckSelectHandler: socketHandlers.get(CLIENT_EVENTS.deckSelect),
     roundStartHandler: socketHandlers.get(CLIENT_EVENTS.roundStart),
     roundRevealHandler: socketHandlers.get(CLIENT_EVENTS.roundReveal),
+    roundResetHandler: socketHandlers.get(CLIENT_EVENTS.roundReset),
     voteSubmitHandler: socketHandlers.get(CLIENT_EVENTS.voteSubmit),
     estimateRecordHandler: socketHandlers.get(CLIENT_EVENTS.estimateRecord),
+    storyAdvanceHandler: socketHandlers.get(CLIENT_EVENTS.storyAdvance),
   }
 }
 
@@ -1548,6 +1550,269 @@ describe('registerSessionHandlers', () => {
       error: {
         code: ERROR_CODES.invalidRoomCode,
         message: 'Room code is invalid or inactive.',
+      },
+    })
+    expect(roomEmitter.emit).not.toHaveBeenCalled()
+  })
+
+  it('acknowledges reset before broadcasting and clears revealed results', () => {
+    const {
+      roomEmitter,
+      sessionCreateHandler,
+      storyUpdateHandler,
+      roundStartHandler,
+      roundRevealHandler,
+      estimateRecordHandler,
+      roundResetHandler,
+    } = createHarness(undefined, undefined, undefined, {
+      now: () => new Date('2026-07-05T10:00:00.000Z'),
+    })
+    sessionCreateHandler?.({ moderatorName: 'Maxi' }, vi.fn())
+    storyUpdateHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        storyId: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+      },
+      vi.fn(),
+    )
+    roundStartHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      },
+      vi.fn(),
+    )
+    roundRevealHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      },
+      vi.fn(),
+    )
+    estimateRecordHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        value: '8',
+      },
+      vi.fn(),
+    )
+    roomEmitter.emit.mockClear()
+    const ack = vi.fn()
+
+    roundResetHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      },
+      ack,
+    )
+
+    expect(ack).toHaveBeenCalledWith({
+      ok: true,
+      data: expect.objectContaining({
+        story: {
+          id: 'ADR-21',
+          title: 'Estimate socket moderation flow',
+          locked: false,
+        },
+        round: {
+          active: false,
+          revealed: false,
+          voteCount: 0,
+        },
+        results: null,
+        estimatedStories: [
+          expect.objectContaining({
+            storyId: 'ADR-21',
+            finalEstimate: '8',
+          }),
+        ],
+      }),
+    })
+    expect(roomEmitter.emit).toHaveBeenCalledWith(
+      SERVER_EVENTS.sessionSnapshot,
+      expect.not.objectContaining({
+        estimatedStories: expect.anything(),
+      }),
+    )
+    expect(ack.mock.invocationCallOrder[0]).toBeLessThan(
+      roomEmitter.emit.mock.invocationCallOrder[0],
+    )
+  })
+
+  it('returns unauthorized for participant-shaped reset commands', () => {
+    const { roomEmitter, roundResetHandler } = createHarness()
+    const ack = vi.fn()
+
+    roundResetHandler?.(
+      {
+        roomCode: 'ABCD12',
+        participantId: 'participant-2',
+        participantToken: 'participant-token-abcdefghijklmnopqrstuvwxyz',
+      },
+      ack,
+    )
+
+    expect(ack).toHaveBeenCalledWith({
+      ok: false,
+      error: {
+        code: ERROR_CODES.unauthorized,
+        message: 'Only the moderator can reset a voting round.',
+      },
+    })
+    expect(roomEmitter.emit).not.toHaveBeenCalled()
+  })
+
+  it('acknowledges story advance before broadcasting and preserves moderator-only estimated stories in the ack', () => {
+    const {
+      roomEmitter,
+      sessionCreateHandler,
+      storyUpdateHandler,
+      roundStartHandler,
+      roundRevealHandler,
+      estimateRecordHandler,
+      storyAdvanceHandler,
+    } = createHarness(undefined, undefined, undefined, {
+      now: () => new Date('2026-07-05T10:05:00.000Z'),
+    })
+    sessionCreateHandler?.({ moderatorName: 'Maxi' }, vi.fn())
+    storyUpdateHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        storyId: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+      },
+      vi.fn(),
+    )
+    roundStartHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      },
+      vi.fn(),
+    )
+    roundRevealHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      },
+      vi.fn(),
+    )
+    estimateRecordHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        value: '8',
+      },
+      vi.fn(),
+    )
+    roomEmitter.emit.mockClear()
+    const ack = vi.fn()
+
+    storyAdvanceHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      },
+      ack,
+    )
+
+    expect(ack).toHaveBeenCalledWith({
+      ok: true,
+      data: expect.objectContaining({
+        story: null,
+        round: {
+          active: false,
+          revealed: false,
+          voteCount: 0,
+        },
+        estimatedStories: [
+          expect.objectContaining({
+            storyId: 'ADR-21',
+            finalEstimate: '8',
+          }),
+        ],
+      }),
+    })
+    expect(roomEmitter.emit).toHaveBeenCalledWith(
+      SERVER_EVENTS.sessionSnapshot,
+      expect.not.objectContaining({
+        estimatedStories: expect.anything(),
+      }),
+    )
+    expect(ack.mock.invocationCallOrder[0]).toBeLessThan(
+      roomEmitter.emit.mock.invocationCallOrder[0],
+    )
+  })
+
+  it('returns FINAL_ESTIMATE_REQUIRED and unauthorized failures for invalid advance attempts', () => {
+    const {
+      roomEmitter,
+      sessionCreateHandler,
+      storyUpdateHandler,
+      roundStartHandler,
+      roundRevealHandler,
+      storyAdvanceHandler,
+    } = createHarness()
+    sessionCreateHandler?.({ moderatorName: 'Maxi' }, vi.fn())
+    storyUpdateHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        storyId: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+      },
+      vi.fn(),
+    )
+    roundStartHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      },
+      vi.fn(),
+    )
+    roundRevealHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      },
+      vi.fn(),
+    )
+    roomEmitter.emit.mockClear()
+    const ack = vi.fn()
+
+    storyAdvanceHandler?.(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      },
+      ack,
+    )
+    expect(ack).toHaveBeenLastCalledWith({
+      ok: false,
+      error: {
+        code: ERROR_CODES.finalEstimateRequired,
+        message: 'Record a final estimate before advancing to the next story.',
+      },
+    })
+
+    storyAdvanceHandler?.(
+      {
+        roomCode: 'ABCD12',
+        participantId: 'participant-2',
+        participantToken: 'participant-token-abcdefghijklmnopqrstuvwxyz',
+      },
+      ack,
+    )
+    expect(ack).toHaveBeenLastCalledWith({
+      ok: false,
+      error: {
+        code: ERROR_CODES.unauthorized,
+        message: 'Only the moderator can advance to the next story.',
       },
     })
     expect(roomEmitter.emit).not.toHaveBeenCalled()

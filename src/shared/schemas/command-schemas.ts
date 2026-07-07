@@ -59,6 +59,20 @@ export const RevealRoundCommandSchema = z
   })
   .strict()
 
+export const RoundResetCommandSchema = z
+  .object({
+    roomCode: RoomCodeSchema,
+    moderatorToken: CapabilityTokenSchema,
+  })
+  .strict()
+
+export const AdvanceStoryCommandSchema = z
+  .object({
+    roomCode: RoomCodeSchema,
+    moderatorToken: CapabilityTokenSchema,
+  })
+  .strict()
+
 const SubmitParticipantVoteCommandSchema = z
   .object({
     roomCode: RoomCodeSchema,
@@ -95,5 +109,7 @@ export type UpdateStoryCommand = z.infer<typeof UpdateStoryCommandSchema>
 export type SelectDeckCommand = z.infer<typeof SelectDeckCommandSchema>
 export type StartRoundCommand = z.infer<typeof StartRoundCommandSchema>
 export type RevealRoundCommand = z.infer<typeof RevealRoundCommandSchema>
+export type RoundResetCommand = z.infer<typeof RoundResetCommandSchema>
+export type AdvanceStoryCommand = z.infer<typeof AdvanceStoryCommandSchema>
 export type SubmitVoteCommand = z.infer<typeof SubmitVoteCommandSchema>
 export type RecordEstimateCommand = z.infer<typeof RecordEstimateCommandSchema>
