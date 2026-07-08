@@ -125,6 +125,8 @@ describe('ParticipantSessionView', () => {
 
     expect(screen.queryByText(/final estimate/i)).not.toBeInTheDocument()
     expect(screen.queryByText('Recorded estimate: 8')).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Estimated stories' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('list', { name: 'Estimated stories list' })).not.toBeInTheDocument()
   })
 
   it('renders the shared story identifier and description without exposing edit controls', () => {

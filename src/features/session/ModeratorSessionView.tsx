@@ -4,6 +4,7 @@ import { ERROR_CODES } from '@shared/contracts/errors'
 import { PLANNING_DECKS, PLANNING_DECK_ID_VALUES, type PlanningDeckId } from '@shared/domain/decks'
 import type { SessionSnapshot } from '@shared/contracts/snapshots'
 import { SessionSnapshotSchema } from '@shared/schemas/session-schemas'
+import { EstimatedStoriesList } from '../results/EstimatedStoriesList'
 import { VoteGroupList } from '../results/VoteGroupList'
 import { readModeratorToken } from './session-storage'
 import { useSessionSocket } from './useSessionSocket'
@@ -494,6 +495,7 @@ function StoryDeckEditor({
         </p>
       ) : null}
       <VoteGroupList headingLevel={3} snapshot={sessionSnapshot} />
+      <EstimatedStoriesList headingLevel={3} snapshot={sessionSnapshot} />
       {sessionSnapshot.round.revealed && sessionSnapshot.story ? (
         <section className="final-estimate-section" aria-labelledby="final-estimate-title">
           <h3 id="final-estimate-title">Final estimate</h3>

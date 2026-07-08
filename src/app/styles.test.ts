@@ -19,4 +19,11 @@ describe('app styles', () => {
     expect(valueRule).toContain('overflow-wrap: anywhere')
     expect(voterRule).toContain('overflow-wrap: anywhere')
   })
+
+  it('allows estimated story identifiers and descriptions to wrap inside narrow containers', () => {
+    const styles = readFileSync('src/app/styles.css', 'utf8')
+    const estimatedFieldRule = styles.match(/\.estimated-story-field dd\s*\{[^}]+\}/)?.[0] ?? ''
+
+    expect(estimatedFieldRule).toContain('overflow-wrap: anywhere')
+  })
 })

@@ -5,7 +5,7 @@ created_at: 2026-07-08T11:55:05.4566858-03:00
 
 # Story 3.5: Moderator Views Live Estimated Stories
 
-Status: ready-for-dev
+Status: done
 
 Completion Note: Ultimate context engine analysis completed - comprehensive developer guide created.
 
@@ -25,43 +25,47 @@ so that I can refer back to recorded estimates without a separate notes workarou
 
 ## Tasks / Subtasks
 
-- [ ] Build the moderator-only estimated-history component in `src/features/results`. (AC: 1, 2, 5)
-  - [ ] Create `src/features/results/EstimatedStoriesList.tsx` to render `sessionSnapshot.estimatedStories ?? []` from the shared snapshot contract instead of introducing local duplicate state.
-  - [ ] Render every entry with all required fields: story identifier, brief description, deck label, and final estimate.
-  - [ ] Use stable data-backed React keys such as `estimatedStory.storyId`; do not key by array index or generated values.
-  - [ ] Keep the component understandable without color alone by rendering explicit field labels or headers in visible text.
-  - [ ] Handle the empty state with a small moderator-facing message such as "No estimates recorded yet." rather than hiding the section entirely; this keeps the history affordance discoverable during a live meeting.
+- [x] Build the moderator-only estimated-history component in `src/features/results`. (AC: 1, 2, 5)
+  - [x] Create `src/features/results/EstimatedStoriesList.tsx` to render `sessionSnapshot.estimatedStories ?? []` from the shared snapshot contract instead of introducing local duplicate state.
+  - [x] Render every entry with all required fields: story identifier, brief description, deck label, and final estimate.
+  - [x] Use stable data-backed React keys such as `estimatedStory.storyId`; do not key by array index or generated values.
+  - [x] Keep the component understandable without color alone by rendering explicit field labels or headers in visible text.
+  - [x] Handle the empty state with a small moderator-facing message such as "No estimates recorded yet." rather than hiding the section entirely; this keeps the history affordance discoverable during a live meeting.
 
-- [ ] Integrate the list into the moderator session flow without breaking existing controls. (AC: 1, 2, 5)
-  - [ ] Update `src/features/session/ModeratorSessionView.tsx` to render `EstimatedStoriesList` in the main moderator layout, not inside the reveal-only or final-estimate-only subsection.
-  - [ ] Ensure the list remains visible after `recordEstimate` acknowledgement and still remains visible after `advanceStory` clears the active story.
-  - [ ] Preserve the existing `currentEstimatedStory` lookup that drives the "Recorded estimate" state for the current story; the new list is additive, not a replacement for the per-story final-estimate controls.
-  - [ ] Keep the existing server-authoritative pattern: render list updates from acknowledged snapshots and follow-up `session:snapshot` events only, with no optimistic local history mutations.
+- [x] Integrate the list into the moderator session flow without breaking existing controls. (AC: 1, 2, 5)
+  - [x] Update `src/features/session/ModeratorSessionView.tsx` to render `EstimatedStoriesList` in the main moderator layout, not inside the reveal-only or final-estimate-only subsection.
+  - [x] Ensure the list remains visible after `recordEstimate` acknowledgement and still remains visible after `advanceStory` clears the active story.
+  - [x] Preserve the existing `currentEstimatedStory` lookup that drives the "Recorded estimate" state for the current story; the new list is additive, not a replacement for the per-story final-estimate controls.
+  - [x] Keep the existing server-authoritative pattern: render list updates from acknowledged snapshots and follow-up `session:snapshot` events only, with no optimistic local history mutations.
 
-- [ ] Add responsive and accessible presentation styles in the existing app stylesheet. (AC: 2, 5)
-  - [ ] Extend `src/app/styles.css` with a dedicated estimated-stories section that visually fits the current session/results cards instead of introducing a disconnected design language.
-  - [ ] Ensure long story identifiers and descriptions wrap safely on narrow widths using the same defensive overflow patterns already used for room codes and revealed-vote names.
-  - [ ] Preserve keyboard accessibility and readable text labels; do not rely on hover-only disclosure, icon-only labels, or color-only status cues.
-  - [ ] If a table-like layout is introduced, keep semantic headers/cells intact; if a card/list layout is used, keep field labels explicit in text. Prefer whichever option best preserves the repo's existing card/list UI patterns while staying readable on mobile.
+- [x] Add responsive and accessible presentation styles in the existing app stylesheet. (AC: 2, 5)
+  - [x] Extend `src/app/styles.css` with a dedicated estimated-stories section that visually fits the current session/results cards instead of introducing a disconnected design language.
+  - [x] Ensure long story identifiers and descriptions wrap safely on narrow widths using the same defensive overflow patterns already used for room codes and revealed-vote names.
+  - [x] Preserve keyboard accessibility and readable text labels; do not rely on hover-only disclosure, icon-only labels, or color-only status cues.
+  - [x] If a table-like layout is introduced, keep semantic headers/cells intact; if a card/list layout is used, keep field labels explicit in text. Prefer whichever option best preserves the repo's existing card/list UI patterns while staying readable on mobile.
 
-- [ ] Keep participant-visible state strictly unchanged. (AC: 3, 4)
-  - [ ] Do not add estimated-history UI to `src/features/session/ParticipantSessionView.tsx`.
-  - [ ] Do not widen participant snapshot contracts, socket payloads, or sanitized snapshot output; participant snapshots must continue omitting `estimatedStories`.
-  - [ ] Do not add persistence, export, analytics, or replay features. The story only surfaces existing live-session-only moderator data.
+- [x] Keep participant-visible state strictly unchanged. (AC: 3, 4)
+  - [x] Do not add estimated-history UI to `src/features/session/ParticipantSessionView.tsx`.
+  - [x] Do not widen participant snapshot contracts, socket payloads, or sanitized snapshot output; participant snapshots must continue omitting `estimatedStories`.
+  - [x] Do not add persistence, export, analytics, or replay features. The story only surfaces existing live-session-only moderator data.
 
-- [ ] Add focused automated coverage for list rendering, privacy, and responsive behavior. (AC: 1-5)
-  - [ ] Add `src/features/results/EstimatedStoriesList.test.tsx` for empty state, single-entry rendering, multiple-entry rendering, and readable field labels.
-  - [ ] Extend `src/features/session/ModeratorSessionView.test.tsx` to verify the list appears after a recorded estimate, renders multiple entries, and remains visible after `advanceStory` clears the active story.
-  - [ ] Keep or extend `src/features/session/ParticipantSessionView.test.tsx` assertions that participant routes never render estimated history even if malformed route state includes `estimatedStories`.
-  - [ ] Extend `src/app/styles.test.ts` or add equivalent style assertions for overflow wrapping in the new estimated-history selectors if new classes are introduced.
-  - [ ] Extend `tests/e2e/create-session.spec.ts` so an end-to-end moderator flow proves the estimated list appears after recording an estimate, remains moderator-only, and survives advancing to the next story within the same live session.
+- [x] Add focused automated coverage for list rendering, privacy, and responsive behavior. (AC: 1-5)
+  - [x] Add `src/features/results/EstimatedStoriesList.test.tsx` for empty state, single-entry rendering, multiple-entry rendering, and readable field labels.
+  - [x] Extend `src/features/session/ModeratorSessionView.test.tsx` to verify the list appears after a recorded estimate, renders multiple entries, and remains visible after `advanceStory` clears the active story.
+  - [x] Keep or extend `src/features/session/ParticipantSessionView.test.tsx` assertions that participant routes never render estimated history even if malformed route state includes `estimatedStories`.
+  - [x] Extend `src/app/styles.test.ts` or add equivalent style assertions for overflow wrapping in the new estimated-history selectors if new classes are introduced.
+  - [x] Extend `tests/e2e/create-session.spec.ts` so an end-to-end moderator flow proves the estimated list appears after recording an estimate, remains moderator-only, and survives advancing to the next story within the same live session.
 
-- [ ] Run verification. (AC: 1-5)
-  - [ ] `cmd.exe /c npm run typecheck`
-  - [ ] `cmd.exe /c npm run test`
-  - [ ] `cmd.exe /c npm run build`
-  - [ ] `cmd.exe /c npm run lint`
-  - [ ] `cmd.exe /c npm run test:e2e`
+- [x] Run verification. (AC: 1-5)
+  - [x] `cmd.exe /c npm run typecheck`
+  - [x] `cmd.exe /c npm run test`
+  - [x] `cmd.exe /c npm run build`
+  - [x] `cmd.exe /c npm run lint`
+  - [x] `cmd.exe /c npm run test:e2e`
+
+### Review Findings
+
+- [x] [Review][Patch] Remove duplicated moderator estimated-stories test [src/features/session/ModeratorSessionView.test.tsx:1188]
 
 ## Dev Notes
 
@@ -203,8 +207,23 @@ GPT-5 Codex
 - Selected next backlog story automatically from `sprint-status.yaml`: `3-5-moderator-views-live-estimated-stories`.
 - Confirmed the backend and shared snapshot contract already expose moderator-only estimated-story data; Story 3.5 is primarily a presentation and regression-coverage story.
 - Added explicit guardrails so the estimated-history list survives story advancement, stays out of participant views, remains responsive, and avoids duplicate client state.
+- Implemented `EstimatedStoriesList` as a dedicated results-layer component that reads directly from moderator snapshots and keeps visible text labels for identifier, description, deck, and final estimate fields.
+- Integrated the live estimated-stories history into the moderator session layout without changing participant UI or widening participant-visible snapshot behavior.
+- Verified the story with `cmd.exe /c npm run typecheck`, `cmd.exe /c npm run test`, `cmd.exe /c npm run build`, `cmd.exe /c npm run lint`, and `cmd.exe /c npm run test:e2e`.
 
 ### File List
 
+- src/features/results/EstimatedStoriesList.tsx
+- src/features/results/EstimatedStoriesList.test.tsx
+- src/features/session/ModeratorSessionView.tsx
+- src/features/session/ModeratorSessionView.test.tsx
+- src/features/session/ParticipantSessionView.test.tsx
+- src/app/styles.css
+- src/app/styles.test.ts
+- tests/e2e/create-session.spec.ts
 - _bmad-output/implementation-artifacts/3-5-moderator-views-live-estimated-stories.md
 - _bmad-output/implementation-artifacts/sprint-status.yaml
+
+### Change Log
+
+- 2026-07-08: Added moderator-only estimated stories history UI, responsive styling, focused unit coverage, moderator/participant regression checks, and end-to-end verification for live-session persistence.

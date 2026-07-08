@@ -343,3 +343,73 @@ test('moderator can reset a revealed round and later advance after recording a f
   await moderatorContext.close()
   await participantContext.close()
 })
+
+test('moderator sees a live estimated stories list that remains moderator-only during the session', async ({
+  browser,
+}) => {
+  const moderatorContext = await browser.newContext()
+  const participantContext = await browser.newContext()
+  const moderatorPage = await moderatorContext.newPage()
+  const participantPage = await participantContext.newPage()
+
+  await moderatorPage.goto('/')
+  await moderatorPage.getByLabel('Moderator name').fill('Maxi')
+  await moderatorPage.getByRole('button', { name: 'Create session' }).click()
+  await expect(moderatorPage).toHaveURL(/\/session\/[A-Z0-9]{4,12}\/moderator$/)
+
+  const roomCodeMatch = moderatorPage.url().match(/\/session\/([A-Z0-9]{4,12})\/moderator$/)
+  const roomCode = roomCodeMatch?.[1] ?? ''
+
+  await participantPage.goto('/')
+  await participantPage.getByLabel('Room code').fill(roomCode)
+  await participantPage.getByLabel('Display name').fill('Ana')
+  await participantPage.getByRole('button', { name: 'Join session' }).click()
+  await expect(participantPage).toHaveURL(new RegExp(`/session/${roomCode}$`))
+
+  await expect(moderatorPage.getByRole('heading', { name: 'Estimated stories' })).toBeVisible()
+  await expect(moderatorPage.getByText('No estimates recorded yet.')).toBeVisible()
+  await expect(participantPage.getByRole('heading', { name: 'Estimated stories' })).toHaveCount(0)
+
+  await moderatorPage.getByLabel('Story identifier').fill('ADR-21')
+  await moderatorPage.getByLabel('Brief description').fill('Estimate socket moderation flow')
+  await moderatorPage.getByRole('button', { name: 'Save story' }).click()
+  await moderatorPage.getByRole('button', { name: 'Start round' }).click()
+  await moderatorPage.getByRole('button', { name: 'Submit moderator vote 8' }).click()
+  await participantPage.getByRole('button', { name: 'Submit vote 5' }).click()
+  await moderatorPage.getByRole('button', { name: 'Reveal results' }).click()
+  await moderatorPage.getByRole('button', { name: 'Record final estimate 8' }).click()
+
+  const estimatedStoriesList = moderatorPage.getByRole('list', { name: 'Estimated stories list' })
+  await expect(estimatedStoriesList).toBeVisible()
+  await expect(estimatedStoriesList).toContainText('ADR-21')
+  await expect(estimatedStoriesList).toContainText('Estimate socket moderation flow')
+  await expect(estimatedStoriesList).toContainText('Fibonacci')
+  await expect(estimatedStoriesList).toContainText('8')
+  await expect(participantPage.getByRole('heading', { name: 'Estimated stories' })).toHaveCount(0)
+
+  await moderatorPage.getByRole('button', { name: 'Advance to next story' }).click()
+
+  await expect(moderatorPage.getByText('No active story yet')).toBeVisible()
+  await expect(estimatedStoriesList).toContainText('ADR-21')
+
+  await moderatorPage.getByLabel('Story identifier').fill('ADR-34')
+  await moderatorPage.getByLabel('Brief description').fill('Advance to the next story')
+  await moderatorPage.getByRole('button', { name: 'Save story' }).click()
+  await moderatorPage.getByRole('button', { name: 'Start round' }).click()
+  await moderatorPage.getByRole('button', { name: 'Submit moderator vote 13' }).click()
+  await participantPage.getByRole('button', { name: 'Submit vote 8' }).click()
+  await moderatorPage.getByRole('button', { name: 'Reveal results' }).click()
+  await moderatorPage.getByRole('button', { name: 'Record final estimate 8' }).click()
+
+  await expect(estimatedStoriesList).toContainText('ADR-21')
+  await expect(estimatedStoriesList).toContainText('ADR-34')
+  await expect(estimatedStoriesList).toContainText('Advance to the next story')
+  await expect(estimatedStoriesList).toContainText('Fibonacci')
+  await expect(estimatedStoriesList).toContainText('8')
+  await expect(participantPage.getByText('ADR-34')).toBeVisible()
+  await expect(participantPage.getByRole('heading', { name: 'Estimated stories' })).toHaveCount(0)
+  await expect(participantPage.getByRole('list', { name: 'Estimated stories list' })).toHaveCount(0)
+
+  await moderatorContext.close()
+  await participantContext.close()
+})

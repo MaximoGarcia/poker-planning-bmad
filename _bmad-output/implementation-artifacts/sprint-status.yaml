@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-19T17:11:20.0614856-03:00
-last_updated: 2026-07-08T14:43:00.0000000-03:00
+last_updated: 2026-07-08T16:47:00.0000000-03:00
 project: adr-buddy
 project_key: NOKEY
 tracking_system: file-system
@@ -60,5 +60,5 @@ development_status:
   3-2-users-read-grouped-vote-results: done
   3-3-moderator-records-final-estimate: done
   3-4-moderator-resets-or-advances-the-round: done
-  3-5-moderator-views-live-estimated-stories: ready-for-dev
+  3-5-moderator-views-live-estimated-stories: done
   epic-3-retrospective: optional

@@ -109,6 +109,8 @@ describe('ModeratorSessionView', () => {
     expect(screen.getByRole('button', { name: 'Copy room code' })).toBeInTheDocument()
     expect(screen.getByText('No active story yet')).toBeInTheDocument()
     expect(screen.getByText('No participants have joined yet.')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Estimated stories' })).toBeInTheDocument()
+    expect(screen.getByText('No estimates recorded yet.')).toBeInTheDocument()
     expect(screen.queryByText(/moderator-token/i)).not.toBeInTheDocument()
   })
 
@@ -1032,6 +1034,11 @@ describe('ModeratorSessionView', () => {
       'aria-pressed',
       'true',
     )
+    const estimatedStoriesList = screen.getByRole('list', { name: 'Estimated stories list' })
+    expect(within(estimatedStoriesList).getByText('ADR-21')).toBeInTheDocument()
+    expect(within(estimatedStoriesList).getByText('Estimate socket moderation flow')).toBeInTheDocument()
+    expect(within(estimatedStoriesList).getByText('Fibonacci')).toBeInTheDocument()
+    expect(within(estimatedStoriesList).getByText('8')).toBeInTheDocument()
   })
 
   it('disables final estimate controls while the command is pending', async () => {
@@ -1173,7 +1180,48 @@ describe('ModeratorSessionView', () => {
     })
     expect(await screen.findByText('No active story yet')).toBeInTheDocument()
     expect(screen.getByText('Deck: Fibonacci')).toBeInTheDocument()
+    expect(screen.getByRole('list', { name: 'Estimated stories list' })).toBeInTheDocument()
+    expect(screen.getByText('ADR-21')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Advance to next story' })).not.toBeInTheDocument()
+  })
+
+  it('renders multiple estimated stories for the moderator from snapshot state', () => {
+    window.sessionStorage.setItem(
+      moderatorTokenStorageKey('ABCD12'),
+      'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    )
+    socketState.latestSnapshot = {
+      ...snapshot,
+      story: {
+        id: 'ADR-55',
+        title: 'Current story still in progress',
+        locked: false,
+      },
+      estimatedStories: [
+        {
+          storyId: 'ADR-21',
+          title: 'Estimate socket moderation flow',
+          deck: PLANNING_DECKS.fibonacci,
+          finalEstimate: '8',
+        },
+        {
+          storyId: 'ADR-34',
+          title: 'Advance to the next story',
+          deck: PLANNING_DECKS.tshirt,
+          finalEstimate: 'L',
+        },
+      ],
+    }
+
+    renderModeratorRoute({ snapshot })
+
+    const list = screen.getByRole('list', { name: 'Estimated stories list' })
+    const items = within(list).getAllByRole('listitem')
+
+    expect(items).toHaveLength(2)
+    expect(within(items[0]).getByText('ADR-21')).toBeInTheDocument()
+    expect(within(items[1]).getByText('ADR-34')).toBeInTheDocument()
+    expect(within(items[1]).getByText('T-shirt')).toBeInTheDocument()
   })
 
   it('keeps advance disabled until the current story has a recorded final estimate', async () => {
