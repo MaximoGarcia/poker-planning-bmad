@@ -1776,6 +1776,50 @@ describe('advanceStory', () => {
     })
     expect(store.get('ABCD12')).toEqual(before)
   })
+
+  it('requires a fresh estimate after reset even when estimate history for the story exists', () => {
+    const { store } = createEstimatedRevealedSession()
+
+    resetRound(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      },
+      { store },
+    )
+    startRound(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      },
+      { store },
+    )
+    revealRound(
+      {
+        roomCode: 'ABCD12',
+        moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+      },
+      { store },
+    )
+    const before = store.get('ABCD12')
+
+    expect(
+      advanceStory(
+        {
+          roomCode: 'ABCD12',
+          moderatorToken: 'moderator-token-abcdefghijklmnopqrstuvwxyz',
+        },
+        { store },
+      ),
+    ).toEqual({
+      ok: false,
+      error: {
+        code: ERROR_CODES.finalEstimateRequired,
+        message: 'Record a final estimate before advancing to the next story.',
+      },
+    })
+    expect(store.get('ABCD12')).toEqual(before)
+  })
 })
 
 function createActiveVotingSession({

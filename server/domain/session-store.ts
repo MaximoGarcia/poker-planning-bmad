@@ -11,6 +11,7 @@ export interface SessionState {
   snapshot: SessionSnapshot
   votes: Map<string, string>
   estimatedStories: EstimatedStorySnapshot[]
+  currentStoryHasFinalEstimate: boolean
 }
 
 export interface SessionStore {

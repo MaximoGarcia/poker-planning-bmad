@@ -147,6 +147,9 @@ function StoryDeckEditor({
   const currentEstimatedStory = sessionSnapshot.estimatedStories?.find(
     (estimatedStory) => estimatedStory.storyId === sessionSnapshot.story?.id,
   )
+  const currentRoundHasFinalEstimate = Boolean(
+    sessionSnapshot.currentStoryHasFinalEstimate && currentEstimatedStory,
+  )
 
   async function handleResetRound() {
     if (!moderatorToken || !canResetRound(sessionSnapshot, moderatorToken)) {
@@ -497,7 +500,8 @@ function StoryDeckEditor({
           <ul aria-label="Final estimate options" className="vote-card-grid" role="group">
             {sessionSnapshot.deck.values.map((value) => {
               const isPending = pendingEstimateValue === value
-              const isRecorded = currentEstimatedStory?.finalEstimate === value
+              const isRecorded =
+                currentRoundHasFinalEstimate && currentEstimatedStory?.finalEstimate === value
 
               return (
                 <li key={value}>
@@ -525,8 +529,8 @@ function StoryDeckEditor({
               )
             })}
           </ul>
-          {currentEstimatedStory ? (
-            <p className="vote-status">Recorded estimate: {currentEstimatedStory.finalEstimate}</p>
+          {currentRoundHasFinalEstimate ? (
+            <p className="vote-status">Recorded estimate: {currentEstimatedStory?.finalEstimate}</p>
           ) : null}
           {estimateError ? (
             <p className="form-error" role="alert">
@@ -573,7 +577,7 @@ function canAdvanceStory(snapshot: SessionSnapshot, moderatorToken: string | nul
     moderatorToken &&
       snapshot.round.revealed &&
       snapshot.story &&
-      snapshot.estimatedStories?.some((estimatedStory) => estimatedStory.storyId === snapshot.story?.id),
+      snapshot.currentStoryHasFinalEstimate,
   )
 }
 

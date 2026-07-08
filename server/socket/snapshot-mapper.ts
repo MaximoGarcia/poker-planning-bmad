@@ -62,6 +62,7 @@ export function toPreRevealSessionSnapshot(
       },
       finalEstimate: estimatedStory.finalEstimate,
     }))
+    snapshot.currentStoryHasFinalEstimate = session.currentStoryHasFinalEstimate
   }
 
   return snapshot

@@ -97,6 +97,7 @@ export function updateStory(
 
   store.set({
     ...session,
+    currentStoryHasFinalEstimate: false,
     snapshot,
   })
 
@@ -139,6 +140,7 @@ export function selectDeck(
 
   store.set({
     ...session,
+    currentStoryHasFinalEstimate: false,
     snapshot,
   })
 
@@ -187,6 +189,7 @@ export function startRound(
 
   store.set({
     ...session,
+    currentStoryHasFinalEstimate: false,
     votes: new Map(),
     snapshot,
   })
@@ -301,6 +304,7 @@ export function resetRound(
 
   store.set({
     ...session,
+    currentStoryHasFinalEstimate: false,
     votes: new Map(),
     snapshot,
   })
@@ -331,7 +335,7 @@ export function advanceStory(
     return storyRequiredResult()
   }
 
-  if (!session.estimatedStories.some((estimatedStory) => estimatedStory.storyId === currentStory.id)) {
+  if (!session.currentStoryHasFinalEstimate) {
     return finalEstimateRequiredResult()
   }
 
@@ -349,6 +353,7 @@ export function advanceStory(
 
   store.set({
     ...session,
+    currentStoryHasFinalEstimate: false,
     votes: new Map(),
     snapshot,
   })
@@ -473,6 +478,7 @@ export function recordEstimate(
 
   store.set({
     ...session,
+    currentStoryHasFinalEstimate: true,
     estimatedStories,
     snapshot,
   })
@@ -573,6 +579,7 @@ export function createSession(
     snapshot,
     votes: new Map(),
     estimatedStories: [],
+    currentStoryHasFinalEstimate: false,
   })
 
   return {

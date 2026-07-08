@@ -47,5 +47,6 @@ export interface SessionSnapshot {
   round: RoundSnapshot
   results: RevealedResultsSnapshot | null
   estimatedStories?: EstimatedStorySnapshot[]
+  currentStoryHasFinalEstimate?: boolean
   updatedAt: string
 }

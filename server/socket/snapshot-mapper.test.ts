@@ -50,6 +50,7 @@ describe('toPreRevealSessionSnapshot', () => {
       },
       results: null,
       estimatedStories: [],
+      currentStoryHasFinalEstimate: false,
       updatedAt: '2026-07-03T13:00:00.000Z',
     })
     expect(snapshot).not.toHaveProperty('votes')
@@ -244,15 +245,20 @@ describe('toPreRevealSessionSnapshot', () => {
       toPreRevealSessionSnapshot(session, {
         role: 'moderator',
         participantId: 'moderator-1',
-      }).estimatedStories,
-    ).toEqual([
-      {
-        storyId: 'ADR-21',
-        title: 'Estimate socket moderation flow',
-        deck: PLANNING_DECKS.fibonacci,
-        finalEstimate: '8',
-      },
-    ])
+      }),
+    ).toEqual(
+      expect.objectContaining({
+        estimatedStories: [
+          {
+            storyId: 'ADR-21',
+            title: 'Estimate socket moderation flow',
+            deck: PLANNING_DECKS.fibonacci,
+            finalEstimate: '8',
+          },
+        ],
+        currentStoryHasFinalEstimate: false,
+      }),
+    )
     expect(
       toPreRevealSessionSnapshot(session, {
         role: 'participant',
@@ -277,6 +283,7 @@ function createSessionState(): SessionState {
       ['participant-3', '5'],
     ]),
     estimatedStories: [],
+    currentStoryHasFinalEstimate: false,
     snapshot: {
       roomCode: 'ABCD12',
       deck: PLANNING_DECKS.fibonacci,

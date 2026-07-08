@@ -69,6 +69,7 @@ export const SessionSnapshotSchema = z
     round: RoundSnapshotSchema,
     results: RevealedResultsSnapshotSchema.nullable().default(null),
     estimatedStories: z.array(EstimatedStorySnapshotSchema).optional(),
+    currentStoryHasFinalEstimate: z.boolean().optional(),
     updatedAt: z.string().datetime(),
   })
   .strict()

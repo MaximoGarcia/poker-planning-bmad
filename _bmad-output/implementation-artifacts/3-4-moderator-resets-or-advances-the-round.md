@@ -5,7 +5,7 @@ created_at: 2026-07-07T17:49:29.4782533-03:00
 
 # Story 3.4: Moderator Resets Or Advances The Round
 
-Status: review
+Status: done
 
 Completion Note: Ultimate context engine analysis completed - comprehensive developer guide created.
 
@@ -83,6 +83,10 @@ so that I can keep the estimation session moving through multiple Stories.
   - [x] `cmd.exe /c npm run build`
   - [x] `cmd.exe /c npm run lint`
   - [x] `cmd.exe /c npm run test:e2e`
+
+### Review Findings
+
+- [x] [Review][Patch] Re-voted stories can be advanced using a stale prior estimate [server/domain/session-commands.ts:334]
 
 ## Dev Notes
 

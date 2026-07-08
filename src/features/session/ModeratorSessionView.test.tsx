@@ -1001,6 +1001,7 @@ describe('ModeratorSessionView', () => {
     }
     const acknowledgedSnapshot = {
       ...revealedSnapshot,
+      currentStoryHasFinalEstimate: true,
       estimatedStories: [
         {
           storyId: 'ADR-21',
@@ -1137,6 +1138,7 @@ describe('ModeratorSessionView', () => {
           },
         ],
       },
+      currentStoryHasFinalEstimate: true,
       estimatedStories: [
         {
           storyId: 'ADR-21',
@@ -1197,6 +1199,43 @@ describe('ModeratorSessionView', () => {
       estimatedStories: [],
     }
     renderModeratorRoute({ snapshot })
+    expect(screen.getByRole('button', { name: 'Advance to next story' })).toBeDisabled()
+  })
+
+  it('does not treat a historical estimate as a fresh estimate after reset', () => {
+    window.sessionStorage.setItem(
+      moderatorTokenStorageKey('ABCD12'),
+      'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    )
+    socketState.latestSnapshot = {
+      ...snapshot,
+      story: {
+        id: 'ADR-21',
+        title: 'Estimate socket moderation flow',
+        locked: true,
+      },
+      round: {
+        active: true,
+        revealed: true,
+        voteCount: 1,
+      },
+      results: {
+        votes: [],
+      },
+      currentStoryHasFinalEstimate: false,
+      estimatedStories: [
+        {
+          storyId: 'ADR-21',
+          title: 'Estimate socket moderation flow',
+          deck: PLANNING_DECKS.fibonacci,
+          finalEstimate: '8',
+        },
+      ],
+    }
+
+    renderModeratorRoute({ snapshot })
+
+    expect(screen.queryByText('Recorded estimate: 8')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Advance to next story' })).toBeDisabled()
   })
 })

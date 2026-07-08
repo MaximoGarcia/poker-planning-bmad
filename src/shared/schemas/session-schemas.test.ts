@@ -65,6 +65,7 @@ describe('session schemas', () => {
   it('validates optional moderator-only estimated stories', () => {
     const moderatorSnapshot = {
       ...snapshot,
+      currentStoryHasFinalEstimate: true,
       estimatedStories: [
         {
           storyId: 'ADR-21',
