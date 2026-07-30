@@ -263,6 +263,7 @@ The Session shows a live list of Estimated Stories during the active meeting. Re
 - **NFR-4 Responsive web:** The app must support common desktop and mobile browser widths because Participants may join from laptops or phones.
 - **NFR-5 Privacy by behavior:** Hidden Votes must not be displayed or exposed in normal UI before reveal.
 - **NFR-6 Session-local persistence:** v1 only needs live Session state; no durable storage is required for Session history, user identity, or analytics.
+- **NFR-7 Reproducible runtime:** The application must provide a containerized runtime path using Docker and Docker Compose so contributors can start the system with a minimal command sequence and consistent dependencies.
 
 ## 6. Non-Goals
 
@@ -290,6 +291,7 @@ The Session shows a live list of Estimated Stories during the active meeting. Re
 - Let the Moderator select the Final Estimate from the active Deck only.
 - Preserve a live Estimated Stories list during the meeting.
 - Support responsive browser usage.
+- Provide Docker and Docker Compose assets for local run and verification.
 
 ### 7.2 Out Of Scope For MVP
 

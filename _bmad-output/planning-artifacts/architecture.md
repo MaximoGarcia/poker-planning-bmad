@@ -436,6 +436,9 @@ The selected architecture uses a long-running Node process that owns live in-mem
 - Use local runtime configuration that supports predictable development startup.
 - Run one app instance for MVP.
 - Use environment variables for local runtime configuration where helpful, without making deployment concerns part of current scope.
+- Add Docker and Docker Compose as a supported wrapper around the same local runtime so the app can be started consistently across environments.
+- Prefer a single compose app service for the standard startup path, with an optional development profile if a split client/server workflow becomes useful.
+- Use a container healthcheck that targets the existing `/health` endpoint.
 - Do not add Redis, managed real-time brokers, databases, deployment pipelines, or durable storage in MVP unless scope changes.
 
 **Version Notes:**
@@ -461,7 +464,8 @@ The selected architecture uses a long-running Node process that owns live in-mem
 9. Add unit tests for domain state transitions and validation.
 10. Add component and end-to-end tests for live Moderator/Participant flows.
 11. Add local build and start scripts.
-12. Add the health endpoint and local runtime documentation.
+12. Add Docker and Docker Compose assets for the local runtime path.
+13. Add the health endpoint and local runtime documentation.
 
 **Cross-Component Dependencies:**
 
@@ -471,6 +475,7 @@ The selected architecture uses a long-running Node process that owns live in-mem
 - Socket.IO event contracts require shared TypeScript types and Zod schemas.
 - React UI state must follow server snapshots to preserve server authority.
 - The local runtime must allow the React client and Socket.IO backend to work together during implementation and validation.
+- The containerized runtime must preserve the same single-instance authority model as the local Node process.
 - Future multi-instance scaling requires a new `SessionStore` adapter and likely revised rate limiting.
 
 **Sources Checked:**

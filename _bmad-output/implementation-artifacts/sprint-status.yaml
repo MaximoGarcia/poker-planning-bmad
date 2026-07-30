@@ -62,3 +62,7 @@ development_status:
   3-4-moderator-resets-or-advances-the-round: done
   3-5-moderator-views-live-estimated-stories: done
   epic-3-retrospective: optional
+  epic-4: backlog
+  4-1-containerize-application-runtime: backlog
+  4-2-compose-one-command-startup: backlog
+  4-3-document-docker-workflow-and-smoke-checks: backlog

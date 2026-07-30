@@ -711,3 +711,77 @@ So that I can refer back to recorded estimates without a separate notes workarou
 **When** the Moderator navigates the list with keyboard or assistive technology
 **Then** Story identifiers, descriptions, Decks, and Final Estimates are available as readable text
 **And** the list remains understandable without relying on color alone.
+
+## Epic 4: Containerized Runtime And Compose Orchestration
+
+The project can be started and verified consistently with Docker and Docker Compose while preserving the same local single-instance application behavior.
+
+### Story 4.1: Containerize Application Runtime
+
+As a developer,
+I want the application to build and run in a Docker container,
+So that the local runtime is reproducible across environments.
+
+**Requirements covered:** NFR7, architecture runtime assumptions
+
+**Acceptance Criteria:**
+
+**Given** the project dependencies are installed
+**When** the container image is built
+**Then** the build completes successfully for the application runtime
+**And** the image contains the compiled client and server runtime path needed for local execution.
+
+**Given** the container is started
+**When** the app boots inside the container
+**Then** the server listens on the configured application port
+**And** the `/health` endpoint responds successfully.
+
+**Given** the container runtime is documented
+**When** a contributor follows the build and run instructions
+**Then** they can start the app without manual environment reconstruction
+**And** the runtime behavior matches the single-instance local Node architecture.
+
+### Story 4.2: Compose One-Command Startup
+
+As a developer,
+I want Docker Compose to start the application with one command,
+So that setup and verification are simpler for contributors.
+
+**Requirements covered:** NFR7, architecture runtime assumptions
+
+**Acceptance Criteria:**
+
+**Given** the compose configuration is present
+**When** a contributor runs the standard compose startup command
+**Then** the required application service starts successfully
+**And** the exposed port and healthcheck are wired correctly.
+
+**Given** the compose startup sequence runs
+**When** the application is ready
+**Then** the compose setup preserves the same single-instance authority model as the non-container runtime
+**And** Socket.IO and HTTP requests work through the mapped port.
+
+**Given** the compose workflow is used for local verification
+**When** a contributor follows the documented path
+**Then** they can stop, restart, and inspect logs using compose commands
+**And** the workflow remains simple enough for routine development use.
+
+### Story 4.3: Document Docker Workflow And Smoke Checks
+
+As a developer or reviewer,
+I want clear Docker and Compose usage instructions,
+So that I can validate the app quickly in a containerized setup.
+
+**Requirements covered:** NFR7, implementation workflow support
+
+**Acceptance Criteria:**
+
+**Given** the containerized runtime exists
+**When** a contributor reads the project documentation
+**Then** they can find the build, compose startup, and smoke-check commands
+And the documentation explains the expected local runtime behavior.
+
+**Given** the Docker workflow is used for verification
+**When** smoke checks are run
+**Then** they confirm the health endpoint and core app startup path
+And the verification steps are usable without external infrastructure.
