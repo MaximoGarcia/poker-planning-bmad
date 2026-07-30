@@ -34,7 +34,7 @@ export function ModeratorSessionView() {
           </Link>
           <p className="eyebrow">Moderator room</p>
           <h1 id="missing-session-title">Session details unavailable</h1>
-          <p className="lead">Return to ADR Buddy to create a new moderator session.</p>
+          <p className="lead">Return to Poker Planning to create a new moderator session.</p>
         </section>
       </main>
     )
@@ -57,7 +57,7 @@ export function ModeratorSessionView() {
     <main className="app-shell app-shell--session" aria-labelledby="moderator-session-title">
       <section className="workspace moderator-session">
         <Link className="back-link" to="/">
-          ADR Buddy
+          Poker Planning
         </Link>
         <p className="eyebrow">Room</p>
         <h1 id="moderator-session-title">Moderator room</h1>

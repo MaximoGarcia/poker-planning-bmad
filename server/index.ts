@@ -17,5 +17,5 @@ const io = new Server(httpServer, {
 registerSessionHandlers(io)
 
 httpServer.listen(config.port, () => {
-  console.info(`ADR Buddy server listening on port ${config.port}`)
+  console.info(`Poker Planning server listening on port ${config.port}`)
 })

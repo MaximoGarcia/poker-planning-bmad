@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test'
 test('moderator creates a session and lands in the empty moderator room', async ({ page }) => {
   await page.goto('/')
 
-  await expect(page.getByRole('heading', { name: 'ADR Buddy' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Poker Planning' })).toBeVisible()
   await page.getByLabel('Moderator name').fill('Maxi')
   await page.getByRole('button', { name: 'Create session' }).click()
 

@@ -43,11 +43,11 @@ export function ParticipantSessionView() {
       <main className="app-shell app-shell--session" aria-labelledby="missing-session-title">
         <section className="workspace">
           <Link className="back-link" to="/">
-            ADR Buddy
+            Poker Planning
           </Link>
           <p className="eyebrow">Participant room</p>
           <h1 id="missing-session-title">Session details unavailable</h1>
-          <p className="lead">Return to ADR Buddy to join with a room code and display name.</p>
+          <p className="lead">Return to Poker Planning to join with a room code and display name.</p>
         </section>
       </main>
     )
@@ -57,7 +57,7 @@ export function ParticipantSessionView() {
     <main className="app-shell app-shell--session" aria-labelledby="participant-session-title">
       <section className="workspace participant-session">
         <Link className="back-link" to="/">
-          ADR Buddy
+          Poker Planning
         </Link>
         <p className="eyebrow">Room</p>
         <h1 id="participant-session-title">Participant room</h1>

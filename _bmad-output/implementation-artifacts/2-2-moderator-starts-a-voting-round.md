@@ -205,7 +205,7 @@ store.set({
 ### Git Intelligence
 
 - Recent commits:
-  - `3ab2120 Improve Poker Planning validation and workflow handling`
+  - `3ab2120 Improve ADR Buddy validation and workflow handling`
   - `55f84d5 Refocus scaffold docs on local Node runtime`
   - `5b18d42 Add participant presence to moderator session view`
   - `5e94a0e feat: implement participant session functionality and UI`

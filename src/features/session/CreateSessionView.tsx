@@ -105,7 +105,7 @@ export function CreateSessionView() {
     <main className="app-shell" aria-labelledby="app-title">
       <section className="workspace session-create">
         <p className="eyebrow">Planning Poker</p>
-        <h1 id="app-title">ADR Buddy</h1>
+        <h1 id="app-title">Poker Planning</h1>
         <div className="entry-actions">
           <form className="session-entry-form" onSubmit={handleCreateSubmit}>
             <h2>Create</h2>

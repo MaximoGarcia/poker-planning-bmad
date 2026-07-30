@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// CI-friendly smoke check for the containerized ADR Buddy app.
+// CI-friendly smoke check for the containerized Poker Planning app.
 // Builds and starts the app with `docker compose up`, verifies the health
 // endpoint and root path, then tears everything down with `docker compose down`.
 //
