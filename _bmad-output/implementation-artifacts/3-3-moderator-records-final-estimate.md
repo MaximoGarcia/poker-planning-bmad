@@ -98,8 +98,8 @@ so that the Session records the team's decision for the current Story.
 
 - Epic 3 goal: reveal vote distribution, read consensus/outliers, record a Final Estimate, reset or advance flow, and maintain a Moderator-only live list of Estimated Stories. [Source: `_bmad-output/planning-artifacts/epics.md#epic-3-reveal-results-and-capture-estimates`]
 - Story 3.3 acceptance requires Moderator-only final estimate selection from the active deck after reveal, stable rejection of custom values, pre-reveal rejection, participant rejection, upsert by story, and pending UI state. [Source: `_bmad-output/planning-artifacts/epics.md#story-33-moderator-records-final-estimate`]
-- PRD FR-14 requires final estimates to be chosen from the active deck only and added or updated in the Estimated Stories list. [Source: `_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#fr-14-record-final-estimate`]
-- PRD FR-15 says each Estimated Story includes story identifier, brief description, deck, and final estimate, is Moderator-only, and does not need to survive refresh or reopening. [Source: `_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#fr-15-show-estimated-stories-list`]
+- PRD FR-14 requires final estimates to be chosen from the active deck only and added or updated in the Estimated Stories list. [Source: `_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#fr-14-record-final-estimate`]
+- PRD FR-15 says each Estimated Story includes story identifier, brief description, deck, and final estimate, is Moderator-only, and does not need to survive refresh or reopening. [Source: `_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#fr-15-show-estimated-stories-list`]
 
 ### Previous Story Intelligence
 

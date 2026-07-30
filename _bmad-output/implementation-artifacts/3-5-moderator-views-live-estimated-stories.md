@@ -81,9 +81,9 @@ so that I can refer back to recorded estimates without a separate notes workarou
 
 - Epic 3 requires the Moderator to maintain a moderator-only live list of Estimated Stories during the session. [Source: `_bmad-output/planning-artifacts/epics.md#epic-3-reveal-results-and-capture-estimates`]
 - Story 3.5 requires the Moderator view to show identifier, description, Deck, and Final Estimate after the next moderator snapshot. [Source: `_bmad-output/planning-artifacts/epics.md#story-35-moderator-views-live-estimated-stories`]
-- PRD FR-15 defines the list contents and explicitly keeps the list moderator-only and live-session-only. [Source: `_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#fr-15-show-estimated-stories-list`]
-- PRD UJ-3 frames the business value: the Moderator should not need a separate note-taking workaround during the meeting. [Source: `_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#uj-3-the-moderator-preserves-a-live-list-of-estimates-during-the-meeting`]
-- NFR-3 and NFR-4 require readable text labels and responsiveness on common desktop/mobile widths. [Source: `_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#5-cross-cutting-non-functional-requirements`]
+- PRD FR-15 defines the list contents and explicitly keeps the list moderator-only and live-session-only. [Source: `_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#fr-15-show-estimated-stories-list`]
+- PRD UJ-3 frames the business value: the Moderator should not need a separate note-taking workaround during the meeting. [Source: `_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#uj-3-the-moderator-preserves-a-live-list-of-estimates-during-the-meeting`]
+- NFR-3 and NFR-4 require readable text labels and responsiveness on common desktop/mobile widths. [Source: `_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#5-cross-cutting-non-functional-requirements`]
 
 ### Previous Story Intelligence
 

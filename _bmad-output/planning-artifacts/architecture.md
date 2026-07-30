@@ -9,19 +9,19 @@ stepsCompleted:
   - 7
   - 8
 inputDocuments:
-  - "_bmad-output/planning-artifacts/briefs/brief-adr-buddy-2026-06-16/.decision-log.md"
-  - "_bmad-output/planning-artifacts/briefs/brief-adr-buddy-2026-06-16/addendum.md"
-  - "_bmad-output/planning-artifacts/briefs/brief-adr-buddy-2026-06-16/brief.md"
-  - "_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/.decision-log.md"
-  - "_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/addendum.md"
-  - "_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md"
-  - "_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/reconcile-brief.md"
-  - "_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/review-rubric.md"
-  - "_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/source-extract-brief.md"
+  - "_bmad-output/planning-artifacts/briefs/brief-poker-planning-bmad-2026-06-16/.decision-log.md"
+  - "_bmad-output/planning-artifacts/briefs/brief-poker-planning-bmad-2026-06-16/addendum.md"
+  - "_bmad-output/planning-artifacts/briefs/brief-poker-planning-bmad-2026-06-16/brief.md"
+  - "_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/.decision-log.md"
+  - "_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/addendum.md"
+  - "_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md"
+  - "_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/reconcile-brief.md"
+  - "_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/review-rubric.md"
+  - "_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/source-extract-brief.md"
 workflowType: 'architecture'
 lastStep: 8
 status: 'complete'
-project_name: 'adr-buddy'
+project_name: 'poker-planning-bmad'
 user_name: 'Maxi'
 date: '2026-06-17'
 completedAt: '2026-06-17'
@@ -624,7 +624,7 @@ type Ack<T> =
 ### Complete Project Directory Structure
 
 ```text
-adr-buddy/
+poker-planning-bmad/
 |-- README.md
 |-- package.json
 |-- package-lock.json

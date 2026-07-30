@@ -1,26 +1,26 @@
 ---
-title: "PRD: adr-buddy"
+title: "PRD: poker-planning-bmad"
 status: final
 created: 2026-06-16
 updated: 2026-06-16
 ---
 
-# PRD: adr-buddy
+# PRD: poker-planning-bmad
 
 ## 0. Document Purpose
 
-This PRD defines the first version of `adr-buddy`, a lightweight internal Planning Poker web application for one agile team. It is written for downstream UX, architecture, story creation, and implementation work. Requirements are grouped by feature with stable functional requirement IDs, and resolved assumptions are noted at the end.
+This PRD defines the first version of `poker-planning-bmad`, a lightweight internal Planning Poker web application for one agile team. It is written for downstream UX, architecture, story creation, and implementation work. Requirements are grouped by feature with stable functional requirement IDs, and resolved assumptions are noted at the end.
 
 Source inputs:
 
-- `_bmad-output/planning-artifacts/briefs/brief-adr-buddy-2026-06-16/brief.md`
-- `_bmad-output/planning-artifacts/briefs/brief-adr-buddy-2026-06-16/addendum.md`
-- `_bmad-output/planning-artifacts/briefs/brief-adr-buddy-2026-06-16/.decision-log.md`
-- `_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/source-extract-brief.md`
+- `_bmad-output/planning-artifacts/briefs/brief-poker-planning-bmad-2026-06-16/brief.md`
+- `_bmad-output/planning-artifacts/briefs/brief-poker-planning-bmad-2026-06-16/addendum.md`
+- `_bmad-output/planning-artifacts/briefs/brief-poker-planning-bmad-2026-06-16/.decision-log.md`
+- `_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/source-extract-brief.md`
 
 ## 1. Vision
 
-`adr-buddy` helps one internal agile team estimate user stories together without manual vote coordination, spreadsheet workarounds, or biased verbal estimation. The product creates a simple shared Planning Poker room where a Moderator presents one Story at a time, Participants privately select estimation cards, and everyone sees the group pattern only after the Moderator reveals the round.
+`poker-planning-bmad` helps one internal agile team estimate user stories together without manual vote coordination, spreadsheet workarounds, or biased verbal estimation. The product creates a simple shared Planning Poker room where a Moderator presents one Story at a time, Participants privately select estimation cards, and everyone sees the group pattern only after the Moderator reveals the round.
 
 The first version should feel faster than explaining the process. A Participant joins with a Room Code and Display Name, sees the active Story, chooses one Card, and waits for the reveal. A Moderator controls the active Story, starts and reveals rounds, can vote alongside the team, selects the Final Estimate from the active Deck, and keeps a live list of Estimated Stories for the session.
 
@@ -45,7 +45,7 @@ The product is intentionally narrow. It is not an agile lifecycle platform, back
 
 ### 2.3 Key User Journeys
 
-- **UJ-1. Sofia moderates a live estimation round during refinement.** Sofia, the team facilitator, opens `adr-buddy`, creates a Session, shares the Room Code, enters the current Story identifier and short description, selects the Fibonacci Deck, and starts the Round. Participants submit hidden Votes. Sofia also submits a Vote. When everyone has voted or the team is ready, Sofia reveals the Results, sees Cards grouped by count, discusses outliers with the team, selects the Final Estimate from the active Deck, and moves to the next Story.
+- **UJ-1. Sofia moderates a live estimation round during refinement.** Sofia, the team facilitator, opens `poker-planning-bmad`, creates a Session, shares the Room Code, enters the current Story identifier and short description, selects the Fibonacci Deck, and starts the Round. Participants submit hidden Votes. Sofia also submits a Vote. When everyone has voted or the team is ready, Sofia reveals the Results, sees Cards grouped by count, discusses outliers with the team, selects the Final Estimate from the active Deck, and moves to the next Story.
 
 - **UJ-2. Marcos joins and votes without setup overhead.** Marcos receives a Room Code during a remote refinement call. He opens the app, enters the Room Code and his Display Name, lands in the active Session, reads the current Story identifier and description, chooses one Card, and sees that his Vote was accepted while other Votes remain hidden. After the Moderator reveals Results, Marcos sees the group distribution and joins the discussion.
 

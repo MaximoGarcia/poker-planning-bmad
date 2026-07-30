@@ -66,13 +66,13 @@ So that estimation stays fair and unbiased during the voting round.
 - Baseline commit inspected for this story: `d4307df` (`feat: implement participant vote submission and change functionality`).
 - Story 2.4 currently exists as ready-for-dev documentation but is not reflected in the inspected source. If Story 2.5 is implemented before Story 2.4, do not implement Moderator voting here; make the privacy boundary compatible with future Moderator votes. If Story 2.4 is implemented first, include the Moderator vote path in the same pre-reveal privacy rules.
 - Current snapshots are status-only:
-  - [src/shared/contracts/snapshots.ts](/mnt/c/Endava/EndevLocal/Build/adr-buddy/src/shared/contracts/snapshots.ts) defines `ParticipantSnapshot` with `id`, `displayName`, `role`, `connected`, and `hasVoted`.
-  - [src/shared/contracts/snapshots.ts](/mnt/c/Endava/EndevLocal/Build/adr-buddy/src/shared/contracts/snapshots.ts) defines `RoundSnapshot` with `active`, `revealed`, and total `voteCount`.
-  - [src/shared/schemas/session-schemas.ts](/mnt/c/Endava/EndevLocal/Build/adr-buddy/src/shared/schemas/session-schemas.ts) uses strict Zod schemas matching those fields.
-- Current vote state is held server-side in `SessionState.votes: Map<string, string>` in [server/domain/session-store.ts](/mnt/c/Endava/EndevLocal/Build/adr-buddy/server/domain/session-store.ts).
-- Current `submitVote` in [server/domain/session-commands.ts](/mnt/c/Endava/EndevLocal/Build/adr-buddy/server/domain/session-commands.ts) validates the participant token, writes the selected value to `session.votes`, marks the participant `hasVoted`, updates total `voteCount`, and returns the shared snapshot.
-- Current Socket.IO handlers in [server/socket/register-session-handlers.ts](/mnt/c/Endava/EndevLocal/Build/adr-buddy/server/socket/register-session-handlers.ts) broadcast the returned snapshot to the whole room with `io.to(roomCode).emit('session:snapshot', snapshot)`.
-- Current participant UI in [src/features/session/ParticipantSessionView.tsx](/mnt/c/Endava/EndevLocal/Build/adr-buddy/src/features/session/ParticipantSessionView.tsx) keeps the locally selected value in browser component state after a successful acknowledgement. That local state is not authoritative and must not become a room-wide snapshot field.
+  - [src/shared/contracts/snapshots.ts](/mnt/c/Endava/EndevLocal/Build/poker-planning-bmad/src/shared/contracts/snapshots.ts) defines `ParticipantSnapshot` with `id`, `displayName`, `role`, `connected`, and `hasVoted`.
+  - [src/shared/contracts/snapshots.ts](/mnt/c/Endava/EndevLocal/Build/poker-planning-bmad/src/shared/contracts/snapshots.ts) defines `RoundSnapshot` with `active`, `revealed`, and total `voteCount`.
+  - [src/shared/schemas/session-schemas.ts](/mnt/c/Endava/EndevLocal/Build/poker-planning-bmad/src/shared/schemas/session-schemas.ts) uses strict Zod schemas matching those fields.
+- Current vote state is held server-side in `SessionState.votes: Map<string, string>` in [server/domain/session-store.ts](/mnt/c/Endava/EndevLocal/Build/poker-planning-bmad/server/domain/session-store.ts).
+- Current `submitVote` in [server/domain/session-commands.ts](/mnt/c/Endava/EndevLocal/Build/poker-planning-bmad/server/domain/session-commands.ts) validates the participant token, writes the selected value to `session.votes`, marks the participant `hasVoted`, updates total `voteCount`, and returns the shared snapshot.
+- Current Socket.IO handlers in [server/socket/register-session-handlers.ts](/mnt/c/Endava/EndevLocal/Build/poker-planning-bmad/server/socket/register-session-handlers.ts) broadcast the returned snapshot to the whole room with `io.to(roomCode).emit('session:snapshot', snapshot)`.
+- Current participant UI in [src/features/session/ParticipantSessionView.tsx](/mnt/c/Endava/EndevLocal/Build/poker-planning-bmad/src/features/session/ParticipantSessionView.tsx) keeps the locally selected value in browser component state after a successful acknowledgement. That local state is not authoritative and must not become a room-wide snapshot field.
 
 ### Required Privacy Boundary
 
@@ -105,7 +105,7 @@ References:
 
 ### Zod and Contract Guidance
 
-- Keep schemas strict for snapshot payloads. If a new viewer-specific payload is introduced, add an explicit schema in [src/shared/schemas/session-schemas.ts](/mnt/c/Endava/EndevLocal/Build/adr-buddy/src/shared/schemas/session-schemas.ts) and parse it at the client boundary.
+- Keep schemas strict for snapshot payloads. If a new viewer-specific payload is introduced, add an explicit schema in [src/shared/schemas/session-schemas.ts](/mnt/c/Endava/EndevLocal/Build/poker-planning-bmad/src/shared/schemas/session-schemas.ts) and parse it at the client boundary.
 - Do not loosen `SessionSnapshotSchema` to pass through unknown fields; unknown sensitive fields should fail during tests rather than silently reach the UI.
 
 Reference:
@@ -126,10 +126,10 @@ References:
 
 ### Tests To Update Or Add
 
-- Domain tests in [server/domain/session-commands.test.ts](/mnt/c/Endava/EndevLocal/Build/adr-buddy/server/domain/session-commands.test.ts):
+- Domain tests in [server/domain/session-commands.test.ts](/mnt/c/Endava/EndevLocal/Build/poker-planning-bmad/server/domain/session-commands.test.ts):
   - Verify unauthorized vote commands leave `session.votes` and `hasVoted` state unchanged.
   - If Moderator vote support exists from Story 2.4, verify Moderator token mismatch returns `UNAUTHORIZED` with no vote mutation.
-- Socket tests in [server/socket/register-session-handlers.test.ts](/mnt/c/Endava/EndevLocal/Build/adr-buddy/server/socket/register-session-handlers.test.ts):
+- Socket tests in [server/socket/register-session-handlers.test.ts](/mnt/c/Endava/EndevLocal/Build/poker-planning-bmad/server/socket/register-session-handlers.test.ts):
   - Verify every emitted `session:snapshot` is produced by the sanitized contract.
   - Verify pre-reveal broadcasts do not contain selected card fields, `votes`, grouped counts, result distributions, `estimatedStories`, or capability tokens.
   - Avoid whole-JSON assertions against card values because `deck.values` legitimately contains card values. Assert against snapshot field paths and participant/round structures instead.
@@ -138,7 +138,7 @@ References:
   - Prove participant A cannot see participant B's selected value before reveal.
   - Prove Moderator cannot see any selected value before reveal.
 - E2E tests:
-  - Add [tests/e2e/hidden-vote-privacy.spec.ts](/mnt/c/Endava/EndevLocal/Build/adr-buddy/tests/e2e/hidden-vote-privacy.spec.ts) or extend [tests/e2e/create-session.spec.ts](/mnt/c/Endava/EndevLocal/Build/adr-buddy/tests/e2e/create-session.spec.ts).
+  - Add [tests/e2e/hidden-vote-privacy.spec.ts](/mnt/c/Endava/EndevLocal/Build/poker-planning-bmad/tests/e2e/hidden-vote-privacy.spec.ts) or extend [tests/e2e/create-session.spec.ts](/mnt/c/Endava/EndevLocal/Build/poker-planning-bmad/tests/e2e/create-session.spec.ts).
   - Use separate Moderator and Participant browser contexts.
   - Submit at least two distinct votes and inspect the Moderator view plus Participant view before reveal.
   - Confirm visible UI does not expose other users' selected values before reveal.

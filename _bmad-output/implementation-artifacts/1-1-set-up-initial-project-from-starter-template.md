@@ -186,7 +186,7 @@ Later stories will fill in richer feature modules such as `CreateSessionView`, `
 - `_bmad-output/planning-artifacts/architecture.md#frontend-architecture`
 - `_bmad-output/planning-artifacts/architecture.md#runtime-assumptions`
 - `_bmad-output/planning-artifacts/architecture.md#complete-project-directory-structure`
-- `_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#cross-cutting-non-functional-requirements`
+- `_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#cross-cutting-non-functional-requirements`
 - `_bmad-output/planning-artifacts/implementation-readiness-report-2026-06-19.md#summary-and-recommendations`
 
 ## Dev Agent Record
@@ -209,7 +209,7 @@ GPT-5 Codex
 
 ### Implementation Plan
 
-- Use the Vite React TypeScript starter as the client baseline, then replace the generated demo with the ADR Buddy app shell and route placeholders required by the story.
+- Use the Vite React TypeScript starter as the client baseline, then replace the generated demo with the Poker Planning app shell and route placeholders required by the story.
 - Build a single local Node process: Express 5 for HTTP middleware, Socket.IO 4 on the same HTTP server, `/health`, static Vite asset serving, and SPA fallback.
 - Keep session behavior skeletal only; define typed contracts, schemas, event names, and module boundaries for later stories without implementing real live-session workflows.
 - Compile server and shared TypeScript into `server-dist` with NodeNext ESM so production `npm run start` can import the shared contracts from one source of truth.

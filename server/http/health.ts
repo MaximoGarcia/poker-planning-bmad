@@ -6,7 +6,7 @@ export const healthRouter = Router()
 healthRouter.get('/', (_request, response) => {
   response.status(200).json(
     createSuccessAck({
-      service: 'adr-buddy',
+      service: 'poker-planning-bmad',
       status: 'healthy',
     }),
   )

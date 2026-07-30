@@ -1,5 +1,5 @@
-const MODERATOR_TOKEN_KEY_PREFIX = 'adr-buddy:moderator-token:'
-const PARTICIPANT_TOKEN_KEY_PREFIX = 'adr-buddy:participant-token:'
+const MODERATOR_TOKEN_KEY_PREFIX = 'poker-planning-bmad:moderator-token:'
+const PARTICIPANT_TOKEN_KEY_PREFIX = 'poker-planning-bmad:participant-token:'
 
 export function moderatorTokenStorageKey(roomCode: string): string {
   return `${MODERATOR_TOKEN_KEY_PREFIX}${roomCode}`

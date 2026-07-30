@@ -56,7 +56,7 @@ so that setup and verification are simpler for contributors.
 
 - Epic 4 objective: the project must start and verify consistently with Docker and Docker Compose while preserving the same local single-instance app behavior. [Source: _bmad-output/planning-artifacts/epics.md#Epic-4-Containerized-Runtime-And-Compose-Orchestration]
 - Story 4.2 requires a one-command Compose startup path with wired port exposure, healthcheck behavior, Socket.IO/HTTP through the mapped port, and simple stop/restart/log workflows. [Source: _bmad-output/planning-artifacts/epics.md#Story-42-Compose-One-Command-Startup]
-- PRD NFR-7 requires Docker and Docker Compose assets so contributors can start the system with minimal commands and consistent dependencies. [Source: _bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#Non-Functional-Requirements]
+- PRD NFR-7 requires Docker and Docker Compose assets so contributors can start the system with minimal commands and consistent dependencies. [Source: _bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#Non-Functional-Requirements]
 
 ### Architecture Compliance
 
@@ -71,7 +71,7 @@ so that setup and verification are simpler for contributors.
 - `Dockerfile` already builds client and server artifacts, installs production dependencies in the runtime stage, exposes port `3000`, runs as `node`, defines a `/health` Docker healthcheck, and starts `server-dist/server/index.js`.
 - The image defaults `NODE_ENV=production`, `PORT=3000`, and `ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000`. Compose can repeat these values for readability, but must not conflict with them.
 - `server/config/env.ts` requires `ALLOWED_ORIGINS` in production when not provided by defaults. If port mapping changes, `ALLOWED_ORIGINS` must match the externally used origin or Socket.IO/CORS requests may fail.
-- `server/http/health.ts` responds on `/health` with a successful ACK payload containing service `adr-buddy` and status `healthy`.
+- `server/http/health.ts` responds on `/health` with a successful ACK payload containing service `poker-planning-bmad` and status `healthy`.
 - `server/index.ts` creates one HTTP server, attaches Socket.IO to it, registers session handlers once, and listens on the configured port. Compose must not add extra replicas for this in-memory architecture.
 
 ### File Structure Requirements
@@ -114,7 +114,7 @@ so that setup and verification are simpler for contributors.
 ### References
 
 - _bmad-output/planning-artifacts/epics.md (Epic 4, Story 4.2)
-- _bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md (NFR-7)
+- _bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md (NFR-7)
 - _bmad-output/planning-artifacts/architecture.md (Runtime Assumptions, Cross-Component Dependencies)
 - _bmad-output/planning-artifacts/sprint-change-proposal-2026-07-30.md (Epic 4 handoff)
 - _bmad-output/implementation-artifacts/4-1-containerize-application-runtime.md (previous story learnings)

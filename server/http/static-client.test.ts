@@ -10,7 +10,7 @@ describe('static client middleware', () => {
   let distPath: string
 
   beforeEach(() => {
-    distPath = mkdtempSync(join(tmpdir(), 'adr-buddy-dist-'))
+    distPath = mkdtempSync(join(tmpdir(), 'poker-planning-bmad-dist-'))
     mkdirSync(join(distPath, 'assets'))
     writeFileSync(join(distPath, 'index.html'), '<!doctype html><div id="root"></div>')
   })

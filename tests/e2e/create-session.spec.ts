@@ -16,7 +16,7 @@ test('moderator creates a session and lands in the empty moderator room', async 
   await expect(page.getByText(roomCode)).toBeVisible()
   await expect(page.getByText('No active story yet')).toBeVisible()
 
-  const tokenKey = `adr-buddy:moderator-token:${roomCode}`
+  const tokenKey = `poker-planning-bmad:moderator-token:${roomCode}`
   const sessionToken = await page.evaluate((key) => window.sessionStorage.getItem(key), tokenKey)
   const localToken = await page.evaluate((key) => window.localStorage.getItem(key), tokenKey)
 
@@ -67,7 +67,7 @@ test('participant joins a session with a room code and display name', async ({ b
 
   const storageState = await participantPage.evaluate((code) => {
     const sessionEntries = Object.entries(window.sessionStorage).filter(([key]) =>
-      key.startsWith(`adr-buddy:participant-token:${code}:`),
+      key.startsWith(`poker-planning-bmad:participant-token:${code}:`),
     )
 
     return {

@@ -287,7 +287,7 @@ Avoid new top-level folders and duplicate command/snapshot definitions.
 - `_bmad-output/planning-artifacts/epics.md#story-24-moderator-votes-in-the-round`
 - `_bmad-output/planning-artifacts/epics.md#story-23-participants-submit-and-change-hidden-votes`
 - `_bmad-output/planning-artifacts/epics.md#story-25-enforce-pre-reveal-vote-privacy`
-- `_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#44-hidden-voting`
+- `_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#44-hidden-voting`
 - `_bmad-output/planning-artifacts/architecture.md#api--communication-patterns`
 - `_bmad-output/planning-artifacts/architecture.md#frontend-architecture`
 - `_bmad-output/implementation-artifacts/2-3-participants-submit-and-change-hidden-votes.md`

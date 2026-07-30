@@ -1,6 +1,6 @@
 # generated: 2026-06-19T17:11:20.0614856-03:00
 # last_updated: 2026-07-07T17:49:29.4782533-03:00
-# project: adr-buddy
+# project: poker-planning-bmad
 # project_key: NOKEY
 # tracking_system: file-system
 # story_location: _bmad-output/implementation-artifacts
@@ -36,7 +36,7 @@
 
 generated: 2026-06-19T17:11:20.0614856-03:00
 last_updated: 2026-07-30T20:05:00Z
-project: adr-buddy
+project: poker-planning-bmad
 project_key: NOKEY
 tracking_system: file-system
 story_location: _bmad-output/implementation-artifacts

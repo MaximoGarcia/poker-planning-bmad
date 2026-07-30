@@ -5,24 +5,24 @@ stepsCompleted:
   - 3
   - 4
 inputDocuments:
-  - "_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md"
-  - "_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/addendum.md"
-  - "_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/.decision-log.md"
-  - "_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/source-extract-brief.md"
-  - "_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/reconcile-brief.md"
-  - "_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/review-rubric.md"
+  - "_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md"
+  - "_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/addendum.md"
+  - "_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/.decision-log.md"
+  - "_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/source-extract-brief.md"
+  - "_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/reconcile-brief.md"
+  - "_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/review-rubric.md"
   - "_bmad-output/planning-artifacts/architecture.md"
-  - "_bmad-output/planning-artifacts/briefs/brief-adr-buddy-2026-06-16/brief.md"
-  - "_bmad-output/planning-artifacts/briefs/brief-adr-buddy-2026-06-16/addendum.md"
-  - "_bmad-output/planning-artifacts/briefs/brief-adr-buddy-2026-06-16/.decision-log.md"
+  - "_bmad-output/planning-artifacts/briefs/brief-poker-planning-bmad-2026-06-16/brief.md"
+  - "_bmad-output/planning-artifacts/briefs/brief-poker-planning-bmad-2026-06-16/addendum.md"
+  - "_bmad-output/planning-artifacts/briefs/brief-poker-planning-bmad-2026-06-16/.decision-log.md"
   - "_bmad-output/planning-artifacts/implementation-readiness-report-2026-06-19.md"
 ---
 
-# adr-buddy - Epic Breakdown
+# poker-planning-bmad - Epic Breakdown
 
 ## Overview
 
-This document provides the complete epic and story breakdown for adr-buddy, decomposing the requirements from the PRD, UX Design if it exists, and Architecture requirements into implementable stories.
+This document provides the complete epic and story breakdown for poker-planning-bmad, decomposing the requirements from the PRD, UX Design if it exists, and Architecture requirements into implementable stories.
 
 ## Requirements Inventory
 

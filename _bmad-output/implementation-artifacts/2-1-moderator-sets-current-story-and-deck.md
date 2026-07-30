@@ -238,10 +238,10 @@ tests/e2e/
 ### References
 
 - `_bmad-output/planning-artifacts/epics.md#story-21-moderator-sets-current-story-and-deck`
-- `_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#fr-4-set-current-story`
-- `_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#fr-5-select-deck`
-- `_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#fr-8-restrict-round-controls-to-moderator`
-- `_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#cross-cutting-non-functional-requirements`
+- `_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#fr-4-set-current-story`
+- `_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#fr-5-select-deck`
+- `_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#fr-8-restrict-round-controls-to-moderator`
+- `_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#cross-cutting-non-functional-requirements`
 - `_bmad-output/planning-artifacts/architecture.md#authentication--security`
 - `_bmad-output/planning-artifacts/architecture.md#api--communication-patterns`
 - `_bmad-output/planning-artifacts/architecture.md#frontend-architecture`

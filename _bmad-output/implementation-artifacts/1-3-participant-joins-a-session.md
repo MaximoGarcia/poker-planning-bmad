@@ -53,7 +53,7 @@ so that I can enter the team's estimation room without account setup.
   - [x] Replace the placeholder participant route in `src/app/routes.tsx` with a real `ParticipantSessionView`.
   - [x] Add a join workflow on `/` or a dedicated join view reachable from `/`; use real form controls for Room Code and Display Name.
   - [x] Extend `useSessionSocket` with `joinSession` and use acknowledgement timeouts/failure handling so the UI cannot stay pending forever.
-  - [x] Store the returned Participant token only in `sessionStorage` with a scoped key such as `adr-buddy:participant-token:<roomCode>:<participantId>`; never use `localStorage`, route params, query strings, visible text, or snapshots.
+  - [x] Store the returned Participant token only in `sessionStorage` with a scoped key such as `poker-planning-bmad:participant-token:<roomCode>:<participantId>`; never use `localStorage`, route params, query strings, visible text, or snapshots.
   - [x] Navigate to `/session/:roomCode` only after a successful acknowledgement.
   - [x] Show readable stable-code errors for invalid Room Code, missing Display Name, inactive Session, rate limiting, and unavailable connection.
   - [x] In the Participant session view, render from returned/latest snapshot: Room Code, current Story if present, active Deck label/options, Round state, and a waiting/no-active-story state when no Story exists.
@@ -109,7 +109,7 @@ so that I can enter the team's estimation room without account setup.
 - Store capability tokens in browser `sessionStorage`, not `localStorage`. [Source: `_bmad-output/planning-artifacts/architecture.md#frontend-architecture`]
 - Public snapshots must not include capability tokens or hidden Vote values. [Source: `_bmad-output/planning-artifacts/architecture.md#api-communication-patterns`]
 - Use shared TypeScript contracts and Zod 4 schemas for command payloads, acknowledgements, errors, snapshots, Decks, Session types, and validation. [Source: `_bmad-output/planning-artifacts/architecture.md#api-communication-patterns`]
-- Do not introduce persistence. v1 Session lifecycle is live and ephemeral. [Source: `_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#cross-cutting-non-functional-requirements`]
+- Do not introduce persistence. v1 Session lifecycle is live and ephemeral. [Source: `_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#cross-cutting-non-functional-requirements`]
 
 ### Existing Files To Update Carefully
 
@@ -262,8 +262,8 @@ tests/e2e/
 ### References
 
 - `_bmad-output/planning-artifacts/epics.md#story-13-participant-joins-a-session`
-- `_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#fr-2-join-session`
-- `_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#cross-cutting-non-functional-requirements`
+- `_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#fr-2-join-session`
+- `_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#cross-cutting-non-functional-requirements`
 - `_bmad-output/planning-artifacts/architecture.md#data-architecture`
 - `_bmad-output/planning-artifacts/architecture.md#authentication-security`
 - `_bmad-output/planning-artifacts/architecture.md#api-communication-patterns`

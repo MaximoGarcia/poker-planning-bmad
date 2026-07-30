@@ -103,10 +103,10 @@ so that I can keep the estimation session moving through multiple Stories.
 
 - Epic 3 requires the Moderator to reveal, capture final estimates, reset or advance the flow, and maintain a Moderator-only live list of estimated stories. [Source: `_bmad-output/planning-artifacts/epics.md#epic-3-reveal-results-and-capture-estimates`]
 - Story 3.4 specifically requires reset to clear votes and hide results, and advance to prepare the next-story state while keeping prior estimated stories available to the Moderator. [Source: `_bmad-output/planning-artifacts/epics.md#story-34-moderator-resets-or-advances-the-round`]
-- PRD FR-7 says resetting clears votes and hides results, while advancing prepares the Session for a new Story and prior Estimated Stories remain visible in the live Session list. [Source: `_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#fr-7-reset-or-advance-round`]
-- PRD FR-8 requires participant attempts at round-control actions to be rejected. [Source: `_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#fr-8-restrict-round-controls-to-moderator`]
-- PRD FR-11 requires hidden votes to stay private again after reset until the next reveal. [Source: `_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#fr-11-preserve-vote-privacy-before-reveal`]
-- PRD FR-15 keeps estimated-story history moderator-only and live-session-only. [Source: `_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#fr-15-show-estimated-stories-list`]
+- PRD FR-7 says resetting clears votes and hides results, while advancing prepares the Session for a new Story and prior Estimated Stories remain visible in the live Session list. [Source: `_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#fr-7-reset-or-advance-round`]
+- PRD FR-8 requires participant attempts at round-control actions to be rejected. [Source: `_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#fr-8-restrict-round-controls-to-moderator`]
+- PRD FR-11 requires hidden votes to stay private again after reset until the next reveal. [Source: `_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#fr-11-preserve-vote-privacy-before-reveal`]
+- PRD FR-15 keeps estimated-story history moderator-only and live-session-only. [Source: `_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#fr-15-show-estimated-stories-list`]
 
 ### Previous Story Intelligence
 

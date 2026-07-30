@@ -70,9 +70,9 @@ so that the local runtime is reproducible across environments.
 - `npm run test -- server/containerization/dockerfile.test.ts` (failed first: Dockerfile missing)
 - `npm ci` (installed dependencies to enable test tooling)
 - `npm run test -- server/containerization/dockerfile.test.ts` (failed first: .dockerignore missing)
-- `docker build -t adr-buddy:story-4-1 .` (successful)
-- `docker run --name adr-buddy-4-1-test -d -p 3300:3000 adr-buddy:story-4-1` (initial run failed due to missing `ALLOWED_ORIGINS`)
-- `docker build -t adr-buddy:story-4-1 .` + container smoke checks for `/health`, `/`, `/rooms/demo` (successful)
+- `docker build -t poker-planning-bmad:story-4-1 .` (successful)
+- `docker run --name poker-planning-bmad-4-1-test -d -p 3300:3000 poker-planning-bmad:story-4-1` (initial run failed due to missing `ALLOWED_ORIGINS`)
+- `docker build -t poker-planning-bmad:story-4-1 .` + container smoke checks for `/health`, `/`, `/rooms/demo` (successful)
 - `npm run test` (pass: 23 files, 231 tests)
 - `npm run lint` (pass)
 

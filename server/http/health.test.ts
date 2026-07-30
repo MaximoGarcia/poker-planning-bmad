@@ -17,7 +17,7 @@ describe('health endpoint', () => {
         expect(body).toEqual({
           ok: true,
           data: {
-            service: 'adr-buddy',
+            service: 'poker-planning-bmad',
             status: 'healthy',
           },
         })

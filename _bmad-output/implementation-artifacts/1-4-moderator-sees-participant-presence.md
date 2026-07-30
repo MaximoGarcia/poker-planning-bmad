@@ -95,7 +95,7 @@ so that I can confirm the team is present before estimation begins.
 - Keep public snapshots free of capability tokens and hidden Vote values. [Source: `_bmad-output/planning-artifacts/architecture.md#api-communication-patterns`]
 - Keep Moderator-only data out of Participant snapshots; this story reads Moderator UI from the existing snapshot shape and must not create a second private data channel. [Source: `_bmad-output/planning-artifacts/architecture.md#api-communication-patterns`]
 - Preserve folder boundaries: UI in `src/features/session`, shared contracts in `src/shared`, transport handling in `server/socket`, and domain state in `server/domain`. [Source: `_bmad-output/planning-artifacts/architecture.md#project-structure-boundaries`]
-- Do not introduce persistence. v1 Session lifecycle remains live and ephemeral. [Source: `_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#cross-cutting-non-functional-requirements`]
+- Do not introduce persistence. v1 Session lifecycle remains live and ephemeral. [Source: `_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#cross-cutting-non-functional-requirements`]
 
 ### Existing Files To Update Carefully
 
@@ -200,8 +200,8 @@ tests/e2e/
 ### References
 
 - `_bmad-output/planning-artifacts/epics.md#story-14-moderator-sees-participant-presence`
-- `_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#fr-3-show-participant-presence`
-- `_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#cross-cutting-non-functional-requirements`
+- `_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#fr-3-show-participant-presence`
+- `_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#cross-cutting-non-functional-requirements`
 - `_bmad-output/planning-artifacts/architecture.md#api-communication-patterns`
 - `_bmad-output/planning-artifacts/architecture.md#frontend-architecture`
 - `_bmad-output/planning-artifacts/architecture.md#project-structure-boundaries`

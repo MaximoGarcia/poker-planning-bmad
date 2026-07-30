@@ -8,18 +8,18 @@ stepsCompleted:
   - step-06-final-assessment
 documentsIncluded:
   prd:
-    - "C:\\Endava\\EndevLocal\\Build\\adr-buddy\\_bmad-output\\planning-artifacts\\prds\\prd-adr-buddy-2026-06-16\\prd.md"
+    - "C:\\Endava\\EndevLocal\\Build\\poker-planning-bmad\\_bmad-output\\planning-artifacts\\prds\\prd-poker-planning-bmad-2026-06-16\\prd.md"
   architecture:
-    - "C:\\Endava\\EndevLocal\\Build\\adr-buddy\\_bmad-output\\planning-artifacts\\architecture.md"
+    - "C:\\Endava\\EndevLocal\\Build\\poker-planning-bmad\\_bmad-output\\planning-artifacts\\architecture.md"
   epics:
-    - "C:\\Endava\\EndevLocal\\Build\\adr-buddy\\_bmad-output\\planning-artifacts\\epics.md"
+    - "C:\\Endava\\EndevLocal\\Build\\poker-planning-bmad\\_bmad-output\\planning-artifacts\\epics.md"
   ux: []
 ---
 
 # Implementation Readiness Assessment Report
 
 **Date:** 2026-06-19
-**Project:** adr-buddy
+**Project:** poker-planning-bmad
 
 ## Step 1: Document Discovery
 
@@ -28,7 +28,7 @@ documentsIncluded:
 **Whole Documents:** None
 
 **Sharded Documents:**
-- Folder: `prds/prd-adr-buddy-2026-06-16/`
+- Folder: `prds/prd-poker-planning-bmad-2026-06-16/`
   - `prd.md` (17,984 bytes, modified 2026-06-16 19:12:54)
 
 ### Architecture Files Found
@@ -57,7 +57,7 @@ No duplicate whole/sharded document formats found.
 
 Warnings:
 - UX design document not found.
-- PRD is organized in a folder without an `index.md`; assessment will use `prds/prd-adr-buddy-2026-06-16/prd.md` as the source PRD.
+- PRD is organized in a folder without an `index.md`; assessment will use `prds/prd-poker-planning-bmad-2026-06-16/prd.md` as the source PRD.
 
 ## Step 2: PRD Analysis
 

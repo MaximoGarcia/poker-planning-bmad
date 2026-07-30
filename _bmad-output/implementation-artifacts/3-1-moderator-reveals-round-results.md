@@ -175,7 +175,7 @@ Do not clear votes during reveal. Reset behavior belongs to Story 3.4.
 - Server state is authoritative; frontend state is derived from the latest `session:snapshot`; no optimistic updates for reveal. [Source: `_bmad-output/planning-artifacts/architecture.md#frontend-architecture`]
 - Hidden vote values must not appear in public snapshots before reveal, and Moderator-only data must stay out of Participant snapshots. [Source: `_bmad-output/planning-artifacts/architecture.md#format-patterns`]
 - Result reveal and grouped results map to `src/features/results` and domain result logic, but Story 3.1 only needs the reveal transition and flat post-reveal visibility. [Source: `_bmad-output/planning-artifacts/architecture.md#requirements-to-structure-mapping`]
-- No database, Redis, durable storage, analytics, auth, export, or backlog integration should be introduced for this story. [Source: `_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#6-non-goals`]
+- No database, Redis, durable storage, analytics, auth, export, or backlog integration should be introduced for this story. [Source: `_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#6-non-goals`]
 
 ### Latest Technical Context
 

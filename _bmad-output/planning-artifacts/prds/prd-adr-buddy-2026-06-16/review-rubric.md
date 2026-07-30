@@ -1,4 +1,4 @@
-# PRD Quality Review - adr-buddy
+# PRD Quality Review - poker-planning-bmad
 
 ## Overall verdict
 

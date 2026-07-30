@@ -1,7 +1,7 @@
 # Sprint Change Proposal
 
 Date: 2026-07-30
-Project: adr-buddy
+Project: poker-planning-bmad
 Requested by: Maxi
 Workflow mode: Batch (assumed from "move on")
 

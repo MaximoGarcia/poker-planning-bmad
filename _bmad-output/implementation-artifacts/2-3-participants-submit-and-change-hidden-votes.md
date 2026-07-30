@@ -278,8 +278,8 @@ tests/e2e/
 
 - `_bmad-output/planning-artifacts/epics.md#story-23-participants-submit-and-change-hidden-votes`
 - `_bmad-output/planning-artifacts/epics.md#story-25-enforce-pre-reveal-vote-privacy`
-- `_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#fr-9-submit-vote`
-- `_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#fr-11-hidden-votes-before-reveal`
+- `_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#fr-9-submit-vote`
+- `_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#fr-11-hidden-votes-before-reveal`
 - `_bmad-output/planning-artifacts/architecture.md#authentication--security`
 - `_bmad-output/planning-artifacts/architecture.md#api--communication-patterns`
 - `_bmad-output/planning-artifacts/architecture.md#frontend-architecture`

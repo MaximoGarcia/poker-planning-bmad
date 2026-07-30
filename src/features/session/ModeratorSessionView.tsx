@@ -30,7 +30,7 @@ export function ModeratorSessionView() {
       <main className="app-shell app-shell--session" aria-labelledby="missing-session-title">
         <section className="workspace">
           <Link className="back-link" to="/">
-            ADR Buddy
+            Poker Planning
           </Link>
           <p className="eyebrow">Moderator room</p>
           <h1 id="missing-session-title">Session details unavailable</h1>
@@ -348,8 +348,8 @@ function StoryDeckEditor({
       <form aria-label="Current story form" onSubmit={handleStorySubmit}>
         <label>
           Story identifier
-            <input
-              aria-label="Story identifier"
+          <input
+            aria-label="Story identifier"
             disabled={!moderatorToken || commandPending || sessionSnapshot.round.active}
             maxLength={120}
             onChange={(event) => setStoryId(event.target.value)}
@@ -360,8 +360,8 @@ function StoryDeckEditor({
         </label>
         <label>
           Brief description
-            <input
-              aria-label="Brief description"
+          <input
+            aria-label="Brief description"
             disabled={!moderatorToken || commandPending || sessionSnapshot.round.active}
             maxLength={240}
             onChange={(event) => setStoryTitle(event.target.value)}
@@ -408,7 +408,7 @@ function StoryDeckEditor({
           ? 'Round active'
           : pendingRoundStart
             ? 'Starting round...'
-          : 'Start round'}
+            : 'Start round'}
       </button>
       {sessionSnapshot.round.active && !sessionSnapshot.round.revealed ? (
         <>
@@ -577,9 +577,9 @@ function canResetRound(snapshot: SessionSnapshot, moderatorToken: string | null)
 function canAdvanceStory(snapshot: SessionSnapshot, moderatorToken: string | null): boolean {
   return Boolean(
     moderatorToken &&
-      snapshot.round.revealed &&
-      snapshot.story &&
-      snapshot.currentStoryHasFinalEstimate,
+    snapshot.round.revealed &&
+    snapshot.story &&
+    snapshot.currentStoryHasFinalEstimate,
   )
 }
 

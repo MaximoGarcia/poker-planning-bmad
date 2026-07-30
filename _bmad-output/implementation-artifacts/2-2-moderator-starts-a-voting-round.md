@@ -205,7 +205,7 @@ store.set({
 ### Git Intelligence
 
 - Recent commits:
-  - `3ab2120 Improve ADR buddy validation and workflow handling`
+  - `3ab2120 Improve Poker Planning validation and workflow handling`
   - `55f84d5 Refocus scaffold docs on local Node runtime`
   - `5b18d42 Add participant presence to moderator session view`
   - `5e94a0e feat: implement participant session functionality and UI`
@@ -254,9 +254,9 @@ tests/e2e/
 ### References
 
 - `_bmad-output/planning-artifacts/epics.md#story-22-moderator-starts-a-voting-round`
-- `_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#fr-6-start-round`
-- `_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#fr-8-restrict-round-controls-to-moderator`
-- `_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#cross-cutting-non-functional-requirements`
+- `_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#fr-6-start-round`
+- `_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#fr-8-restrict-round-controls-to-moderator`
+- `_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#cross-cutting-non-functional-requirements`
 - `_bmad-output/planning-artifacts/architecture.md#authentication--security`
 - `_bmad-output/planning-artifacts/architecture.md#api--communication-patterns`
 - `_bmad-output/planning-artifacts/architecture.md#frontend-architecture`

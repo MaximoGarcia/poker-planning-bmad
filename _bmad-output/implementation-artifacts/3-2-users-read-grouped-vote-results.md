@@ -160,8 +160,8 @@ Do not add a charting dependency. A semantic grouped list is enough and easier t
 
 - Epic 3 goal: reveal vote distribution, read consensus/outliers, record a Final Estimate, reset or advance flow, and maintain a Moderator-only live list of Estimated Stories. [Source: `_bmad-output/planning-artifacts/epics.md#epic-3-reveal-results-and-capture-estimates`]
 - Story 3.2 acceptance requires grouped or ordered votes by count, obvious majority, visible outliers, deck support for T-shirt and Fibonacci including `Coffee`, responsive readability, and non-color-only accessibility. [Source: `_bmad-output/planning-artifacts/epics.md#story-32-users-read-grouped-vote-results`]
-- PRD FR-13 requires the Results view to group or order selected Cards by number of Votes, make common selections easiest to identify, keep outliers visible, and support both MVP decks. [Source: `_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#fr-13-group-results-by-vote-count`]
-- Success metric SM-3 says team members should identify the majority estimate and outliers without manual counting. [Source: `_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#7-success-metrics`]
+- PRD FR-13 requires the Results view to group or order selected Cards by number of Votes, make common selections easiest to identify, keep outliers visible, and support both MVP decks. [Source: `_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#fr-13-group-results-by-vote-count`]
+- Success metric SM-3 says team members should identify the majority estimate and outliers without manual counting. [Source: `_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#7-success-metrics`]
 
 ### Previous Story Intelligence
 

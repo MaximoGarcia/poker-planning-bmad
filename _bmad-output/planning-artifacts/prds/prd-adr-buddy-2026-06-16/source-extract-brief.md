@@ -2,9 +2,9 @@
 
 Source files:
 
-- `_bmad-output/planning-artifacts/briefs/brief-adr-buddy-2026-06-16/brief.md`
-- `_bmad-output/planning-artifacts/briefs/brief-adr-buddy-2026-06-16/addendum.md`
-- `_bmad-output/planning-artifacts/briefs/brief-adr-buddy-2026-06-16/.decision-log.md`
+- `_bmad-output/planning-artifacts/briefs/brief-poker-planning-bmad-2026-06-16/brief.md`
+- `_bmad-output/planning-artifacts/briefs/brief-poker-planning-bmad-2026-06-16/addendum.md`
+- `_bmad-output/planning-artifacts/briefs/brief-poker-planning-bmad-2026-06-16/.decision-log.md`
 
 ## Product Signal
 

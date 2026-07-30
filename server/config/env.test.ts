@@ -27,13 +27,13 @@ describe('loadEnv', () => {
     const config = loadEnv({
       NODE_ENV: 'production',
       PORT: '8080',
-      ALLOWED_ORIGINS: 'https://adr-buddy.example.com, https://admin.example.com',
+      ALLOWED_ORIGINS: 'https://poker-planning-bmad.example.com, https://admin.example.com',
     } as NodeJS.ProcessEnv)
 
     expect(config).toEqual({
       port: 8080,
       nodeEnv: 'production',
-      allowedOrigins: ['https://adr-buddy.example.com', 'https://admin.example.com'],
+      allowedOrigins: ['https://poker-planning-bmad.example.com', 'https://admin.example.com'],
     })
   })
 })

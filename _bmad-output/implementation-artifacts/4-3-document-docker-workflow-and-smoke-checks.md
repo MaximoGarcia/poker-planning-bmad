@@ -23,7 +23,7 @@ so that I can validate the app quickly in a containerized setup.
 ## Tasks / Subtasks
 
 - [x] Expand `README.md` with a Docker workflow verification section. (AC: 1)
-  - [x] Document the `docker build -t adr-buddy:local .` command and expected outcome.
+  - [x] Document the `docker build -t poker-planning-bmad:local .` command and expected outcome.
   - [x] Document the `docker compose up --build -d` command and how to override the published host port via `APP_PORT`.
   - [x] Document the smoke-check command(s) and the expected successful output.
   - [x] Explain expected local runtime behavior: one Node process serving HTTP, Socket.IO, and the built React client; in-memory session state; no external database, Redis, or broker.
@@ -48,7 +48,7 @@ so that I can validate the app quickly in a containerized setup.
 
 - Epic 4 objective: the project must start and verify consistently with Docker and Docker Compose while preserving the same local single-instance app behavior. [Source: _bmad-output/planning-artifacts/epics.md#Epic-4-Containerized-Runtime-And-Compose-Orchestration]
 - Story 4.3 requires clear Docker/Compose usage instructions and smoke checks that confirm the health endpoint and core app startup path without external infrastructure. [Source: _bmad-output/planning-artifacts/epics.md#Story-43-Document-Docker-Workflow-And-Smoke-Checks]
-- PRD NFR-7 requires Docker and Docker Compose assets so contributors can start the system with minimal commands and consistent dependencies. [Source: _bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#Non-Functional-Requirements]
+- PRD NFR-7 requires Docker and Docker Compose assets so contributors can start the system with minimal commands and consistent dependencies. [Source: _bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#Non-Functional-Requirements]
 - Sprint change proposal frames Story 4.3 as the developer and QA container workflow: clear commands for build, start, stop, logs; smoke verification steps; and a CI-ready compose smoke command. [Source: _bmad-output/planning-artifacts/sprint-change-proposal-2026-07-30.md]
 
 ### Architecture Compliance
@@ -63,7 +63,7 @@ so that I can validate the app quickly in a containerized setup.
 - `Dockerfile` is a multi-stage Node 20.19.0-alpine build that compiles the client and server, installs production dependencies in the runtime stage, runs as `node`, exposes `3000`, declares a Docker `HEALTHCHECK` against `/health`, and starts `server-dist/server/index.js`.
 - `.dockerignore` excludes local artifacts such as `node_modules`, `dist`, `server-dist`, coverage reports, Playwright output, `_bmad-output`, `_bmad`, VCS metadata, and local env files.
 - `compose.yaml` defines a single `app` service built from the root `Dockerfile`, maps host port `${APP_PORT:-3000}` to container port `3000`, sets `NODE_ENV=production`, `PORT=3000`, and localhost `ALLOWED_ORIGINS`, and declares a Compose healthcheck against `http://127.0.0.1:3000/health`.
-- `server/http/health.ts` responds on `/health` with a 200 JSON payload containing `service: 'adr-buddy'` and `status: 'healthy'`.
+- `server/http/health.ts` responds on `/health` with a 200 JSON payload containing `service: 'poker-planning-bmad'` and `status: 'healthy'`.
 - `server/config/env.ts` requires `ALLOWED_ORIGINS` in production when not provided by defaults. If the externally used host port changes, `ALLOWED_ORIGINS` must include that origin or Socket.IO/CORS requests may fail. The Compose service already couples `PORT=3000` with the default origins.
 - `README.md` already contains concise Docker and Compose quick-start sections added by Stories 4.1 and 4.2. Story 4.3 should extend it with smoke-check instructions and expected runtime behavior, not duplicate the existing quick-start content.
 
@@ -106,7 +106,7 @@ so that I can validate the app quickly in a containerized setup.
 ### References
 
 - _bmad-output/planning-artifacts/epics.md (Epic 4, Story 4.3)
-- _bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md (NFR-7)
+- _bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md (NFR-7)
 - _bmad-output/planning-artifacts/architecture.md (Runtime Assumptions, Cross-Component Dependencies)
 - _bmad-output/planning-artifacts/sprint-change-proposal-2026-07-30.md
 - _bmad-output/implementation-artifacts/4-1-containerize-application-runtime.md (previous story learnings)

@@ -1,6 +1,6 @@
-# ADR Buddy
+# Poker Planning
 
-ADR Buddy is a Planning Poker application scaffold built with Vite, React, TypeScript, Express, and Socket.IO.
+Poker Planning is a Planning Poker application scaffold built with Vite, React, TypeScript, Express, and Socket.IO.
 
 ## Scripts
 
@@ -31,13 +31,13 @@ bundled with recent Windows versions).
 Build the production image:
 
 ```bash
-docker build -t adr-buddy:local .
+docker build -t poker-planning-bmad:local .
 ```
 
 Run a single application instance and publish the app on port 3000:
 
 ```bash
-docker run --rm -p 3000:3000 adr-buddy:local
+docker run --rm -p 3000:3000 poker-planning-bmad:local
 ```
 
 Then verify the app is healthy:
@@ -53,7 +53,7 @@ If you override `PORT` (e.g. `-e PORT=4000 -p 4000:4000`), you must also overrid
 `ALLOWED_ORIGINS` to match, or Socket.IO/CORS requests will be rejected:
 
 ```bash
-docker run --rm -e PORT=4000 -e ALLOWED_ORIGINS=http://localhost:4000 -p 4000:4000 adr-buddy:local
+docker run --rm -e PORT=4000 -e ALLOWED_ORIGINS=http://localhost:4000 -p 4000:4000 poker-planning-bmad:local
 ```
 
 ## Docker Compose Quick Start
@@ -89,10 +89,10 @@ The fastest way to verify the containerized runtime is to build the image, start
 ### Build the production image
 
 ```bash
-docker build -t adr-buddy:local .
+docker build -t poker-planning-bmad:local .
 ```
 
-Expected outcome: Docker finishes the multi-stage build and tags the final image as `adr-buddy:local`. The image contains the compiled React client, compiled server, and production Node dependencies.
+Expected outcome: Docker finishes the multi-stage build and tags the final image as `poker-planning-bmad:local`. The image contains the compiled React client, compiled server, and production Node dependencies.
 
 ### Start the containerized app
 

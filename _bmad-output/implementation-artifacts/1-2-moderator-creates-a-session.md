@@ -49,7 +49,7 @@ so that I can invite the team into a shared estimation room quickly.
   - [x] Add `socket.io-client` as a dependency and use the existing shared event types; do not add `@types/socket.io-client`.
   - [x] Create `src/features/session/CreateSessionView.tsx` and replace the sample route links on `/`.
   - [x] Create a small `useSessionSocket` hook or session client module that owns connection state, emits `session:create`, handles acknowledgement results, and receives `session:snapshot`.
-  - [x] Store the returned Moderator token with `sessionStorage` using a scoped key such as `adr-buddy:moderator-token:<roomCode>`.
+  - [x] Store the returned Moderator token with `sessionStorage` using a scoped key such as `poker-planning-bmad:moderator-token:<roomCode>`.
   - [x] Never write the Moderator token to `localStorage`, route params, query strings, visible text, logs, or snapshots.
   - [x] Navigate to `/session/:roomCode/moderator` only after a successful acknowledgement.
 - [x] Build the Moderator session landing state. (AC: 2, 3, 5)
@@ -115,7 +115,7 @@ so that I can invite the team into a shared estimation room quickly.
 - Use capability-token authorization without accounts. Session creation returns `moderatorToken`; later Moderator-only commands must require it. [Source: `_bmad-output/planning-artifacts/architecture.md#authentication-security`]
 - Store capability tokens in browser `sessionStorage`, not `localStorage`. [Source: `_bmad-output/planning-artifacts/architecture.md#frontend-architecture`]
 - Use shared TypeScript contracts and Zod 4 schemas for command payloads, acknowledgements, errors, snapshots, Decks, Session types, and validation. [Source: `_bmad-output/planning-artifacts/architecture.md#api-communication-patterns`]
-- Do not introduce persistence. v1 Session lifecycle is live and ephemeral. [Source: `_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#cross-cutting-non-functional-requirements`]
+- Do not introduce persistence. v1 Session lifecycle is live and ephemeral. [Source: `_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#cross-cutting-non-functional-requirements`]
 
 ### Existing Files To Update Carefully
 
@@ -248,8 +248,8 @@ src/features/session/
 ## References
 
 - `_bmad-output/planning-artifacts/epics.md#story-12-moderator-creates-a-session`
-- `_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#fr-1-create-session`
-- `_bmad-output/planning-artifacts/prds/prd-adr-buddy-2026-06-16/prd.md#cross-cutting-non-functional-requirements`
+- `_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#fr-1-create-session`
+- `_bmad-output/planning-artifacts/prds/prd-poker-planning-bmad-2026-06-16/prd.md#cross-cutting-non-functional-requirements`
 - `_bmad-output/planning-artifacts/architecture.md#data-architecture`
 - `_bmad-output/planning-artifacts/architecture.md#authentication-security`
 - `_bmad-output/planning-artifacts/architecture.md#api-communication-patterns`
