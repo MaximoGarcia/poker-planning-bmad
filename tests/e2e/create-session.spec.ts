@@ -31,12 +31,13 @@ test('participant joins a session with a room code and display name', async ({ b
   const participantPage = await participantContext.newPage()
 
   await moderatorPage.goto('/')
-  await moderatorPage.getByLabel('Moderator name').fill('Maxi')
+  await moderatorPage.getByLabel('Moderator name').fill('Facilitator')
   await moderatorPage.getByRole('button', { name: 'Create session' }).click()
   await expect(moderatorPage).toHaveURL(/\/session\/[A-Z0-9]{4,12}\/moderator$/)
 
   const roomCodeMatch = moderatorPage.url().match(/\/session\/([A-Z0-9]{4,12})\/moderator$/)
   const roomCode = roomCodeMatch?.[1] ?? ''
+  const moderatorUrl = moderatorPage.url()
 
   await participantPage.goto('/')
   await participantPage.getByLabel('Room code').fill(roomCode)
@@ -45,21 +46,22 @@ test('participant joins a session with a room code and display name', async ({ b
 
   await expect(participantPage).toHaveURL(new RegExp(`/session/${roomCode}$`))
   const joinedParticipant = moderatorPage
-    .getByRole('list', { name: 'Joined participants' })
+    .getByRole('list', { name: 'Participants' })
     .getByRole('listitem')
-    .filter({ hasText: 'Maxi (2)' })
+    .filter({ hasText: 'Maxi' })
 
+  await expect(moderatorPage).toHaveURL(moderatorUrl)
   await expect(joinedParticipant).toBeVisible()
   await expect(joinedParticipant).toContainText('Not voted')
   await expect(joinedParticipant).toContainText('Joined')
   await expect(
     moderatorPage
-      .getByRole('list', { name: 'Joined participants' })
-      .getByText('Maxi', { exact: true }),
+      .getByRole('list', { name: 'Participants' })
+      .getByText('Facilitator', { exact: true }),
   ).toHaveCount(0)
   await expect(participantPage.getByRole('heading', { name: 'Participant room' })).toBeVisible()
   await expect(participantPage.getByText(roomCode)).toBeVisible()
-  await expect(participantPage.getByText('Maxi (2)')).toBeVisible()
+  await expect(participantPage.getByText('Maxi')).toBeVisible()
   await expect(participantPage.getByRole('heading', { name: 'No active story yet' })).toBeVisible()
   await expect(participantPage.getByRole('button', { name: /Copy room code/i })).toHaveCount(0)
 
@@ -170,7 +172,7 @@ test('moderator starts a voting round and participant plus moderator votes stay 
   await expect(participantPage.getByText('Submitted', { exact: true })).toBeVisible()
 
   const participantRow = moderatorPage
-    .getByRole('list', { name: 'Joined participants' })
+    .getByRole('list', { name: 'Participants' })
     .getByRole('listitem')
     .filter({ hasText: 'Ana' })
 
@@ -241,7 +243,7 @@ test('moderator reveals grouped results to voters and non-voters across live ses
   await expect(outlierPage.getByText('Vote submitted')).toBeVisible()
 
   const nonVoterRow = moderatorPage
-    .getByRole('list', { name: 'Joined participants' })
+    .getByRole('list', { name: 'Participants' })
     .getByRole('listitem')
     .filter({ hasText: 'Lee' })
   await expect(nonVoterRow).toContainText('Not voted')

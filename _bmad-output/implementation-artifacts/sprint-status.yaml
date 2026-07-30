@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-19T17:11:20.0614856-03:00
-last_updated: 2026-07-30T18:16:00Z
+last_updated: 2026-07-30T18:31:06Z
 project: adr-buddy
 project_key: NOKEY
 tracking_system: file-system

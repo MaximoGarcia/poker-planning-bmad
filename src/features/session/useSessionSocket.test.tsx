@@ -46,6 +46,12 @@ function Harness() {
   )
 }
 
+function SnapshotPrivacyHarness() {
+  const { latestSnapshot } = useSessionSocket()
+
+  return <pre data-testid="snapshot-json">{JSON.stringify(latestSnapshot)}</pre>
+}
+
 function JoinHarness() {
   const { joinSession } = useSessionSocket()
   const [ack, setAck] = useState<Ack<JoinSessionResult> | null>(null)
@@ -324,6 +330,46 @@ describe('useSessionSocket', () => {
     renderWithSocketProvider(<Harness />)
 
     expect(screen.getByTestId('snapshot-room')).toHaveTextContent('no snapshot')
+  })
+
+  it('rejects socket snapshots containing unexpected sensitive fields before exposing them to views', () => {
+    socketMock.on.mockImplementation((eventName, callback) => {
+      if (eventName === SERVER_EVENTS.sessionSnapshot) {
+        callback({
+          roomCode: 'ABCD12',
+          deck: PLANNING_DECKS.fibonacci,
+          story: null,
+          participants: [
+            {
+              id: 'participant-1',
+              displayName: 'Ana',
+              role: 'participant',
+              connected: true,
+              hasVoted: false,
+              participantToken: 'participant-token-should-stay-hidden',
+              selectedCard: '13',
+              socketId: 'socket-hidden-id',
+            },
+          ],
+          round: {
+            active: false,
+            revealed: false,
+            voteCount: 0,
+          },
+          updatedAt: '2026-07-02T12:00:00.000Z',
+          moderatorToken: 'moderator-token-should-stay-hidden',
+          selectedCard: '13',
+        })
+      }
+      return socketMock
+    })
+
+    renderWithSocketProvider(<SnapshotPrivacyHarness />)
+
+    expect(screen.getByTestId('snapshot-json')).toHaveTextContent('null')
+    expect(screen.getByTestId('snapshot-json')).not.toHaveTextContent('token-should-stay-hidden')
+    expect(screen.getByTestId('snapshot-json')).not.toHaveTextContent('socket-hidden-id')
+    expect(screen.getByTestId('snapshot-json')).not.toHaveTextContent('selectedCard')
   })
 
   it('uses an acknowledgement timeout for join-session commands', async () => {

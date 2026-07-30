@@ -126,7 +126,17 @@ describe('ModeratorSessionView', () => {
     const snapshotWithParticipants = {
       ...snapshot,
       participants: [
-        snapshot.participants[0],
+        {
+          ...snapshot.participants[0],
+          displayName: 'Moderator Maxi',
+        },
+        {
+          id: 'participant-1',
+          displayName: 'Maxi',
+          role: 'participant' as const,
+          connected: true,
+          hasVoted: false,
+        },
         {
           id: 'participant-2',
           displayName: 'Maxi (2)',
@@ -146,7 +156,8 @@ describe('ModeratorSessionView', () => {
 
     renderModeratorRoute({ snapshot: snapshotWithParticipants })
 
-    const list = screen.getByRole('list', { name: 'Joined participants' })
+    const list = screen.getByRole('list', { name: 'Participants' })
+    expect(within(list).getByText('Maxi', { exact: true })).toBeInTheDocument()
     const joinedParticipant = within(list).getByText('Maxi (2)').closest('li')
     const awayParticipant = within(list)
       .getByText('A very long participant display name that should wrap cleanly')
@@ -158,7 +169,7 @@ describe('ModeratorSessionView', () => {
     expect(within(joinedParticipant as HTMLElement).getByText('Not voted')).toBeInTheDocument()
     expect(within(awayParticipant as HTMLElement).getByText('Away')).toBeInTheDocument()
     expect(within(awayParticipant as HTMLElement).getByText('Voted')).toBeInTheDocument()
-    expect(within(list).queryByText('Maxi', { exact: true })).not.toBeInTheDocument()
+    expect(within(list).queryByText('Moderator Maxi', { exact: true })).not.toBeInTheDocument()
   })
 
   it('updates the presence list when a newer live snapshot arrives', () => {
@@ -222,7 +233,7 @@ describe('ModeratorSessionView', () => {
     expect(screen.queryByText('socket-hidden-id')).not.toBeInTheDocument()
   })
 
-  it('prefers a newer latest snapshot over the route-state snapshot for the same room', () => {
+  it('prefers the newer latest snapshot over an older route-state snapshot for the same room', () => {
     window.sessionStorage.setItem(
       moderatorTokenStorageKey('ABCD12'),
       'moderator-token-abcdefghijklmnopqrstuvwxyz',
@@ -245,6 +256,7 @@ describe('ModeratorSessionView', () => {
     renderModeratorRoute({
       snapshot: {
         ...snapshot,
+        updatedAt: '2026-06-28T16:00:00.000Z',
         participants: [
           snapshot.participants[0],
           {
@@ -879,7 +891,7 @@ describe('ModeratorSessionView', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Only the moderator can reveal results.')
     const row = screen
-      .getByRole('list', { name: 'Joined participants' })
+      .getByRole('list', { name: 'Participants' })
       .querySelector('li') as HTMLElement
     expect(row).toHaveTextContent('Ana')
     expect(row).toHaveTextContent('Not voted')
