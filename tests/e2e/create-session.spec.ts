@@ -52,6 +52,11 @@ test('participant joins a session with a room code and display name', async ({ b
   await expect(joinedParticipant).toBeVisible()
   await expect(joinedParticipant).toContainText('Not voted')
   await expect(joinedParticipant).toContainText('Joined')
+  await expect(
+    moderatorPage
+      .getByRole('list', { name: 'Joined participants' })
+      .getByText('Maxi', { exact: true }),
+  ).toHaveCount(0)
   await expect(participantPage.getByRole('heading', { name: 'Participant room' })).toBeVisible()
   await expect(participantPage.getByText(roomCode)).toBeVisible()
   await expect(participantPage.getByText('Maxi (2)')).toBeVisible()

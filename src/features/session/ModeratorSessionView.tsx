@@ -83,7 +83,7 @@ export function ModeratorSessionView() {
           {participants.length === 0 ? (
             <p className="presence-empty">No participants have joined yet.</p>
           ) : (
-            <ul className="presence-list" aria-label="Joined participants">
+            <ul className="presence-list" aria-label="Joined participants" aria-live="polite">
               {participants.map((participant) => (
                 <li className="presence-list-item" key={participant.id}>
                   <span className="presence-name">{participant.displayName}</span>

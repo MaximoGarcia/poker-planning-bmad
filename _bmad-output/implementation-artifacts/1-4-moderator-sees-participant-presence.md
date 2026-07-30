@@ -58,6 +58,9 @@ so that I can confirm the team is present before estimation begins.
 
 - [x] [Review][Patch] Component presence test does not assert statuses within each participant row [`src/features/session/ModeratorSessionView.test.tsx`:109]
 - [x] [Review][Patch] E2E presence status assertions are not scoped to the joined participant row [`tests/e2e/create-session.spec.ts`:47]
+- [x] [Review][Patch] Announce live presence changes to assistive technologies — the dynamically updated participant list has no `aria-live` or equivalent announcement mechanism, so screen-reader users are not notified when someone joins or their presence status changes. [`src/features/session/ModeratorSessionView.tsx`:86]
+- [x] [Review][Patch] Add component coverage for live snapshot updates — the presence tests render only static mocked snapshots and do not verify the component reflects a changed `latestSnapshot` after initial render. [`src/features/session/ModeratorSessionView.test.tsx`:117-155]
+- [x] [Review][Patch] Assert the moderator is excluded from the participant list — both presence tests include a moderator fixture but do not assert the moderator name is absent from the rendered participant list, leaving the participant-only contract under-protected. [`src/features/session/ModeratorSessionView.test.tsx`:~75; tests/e2e/create-session.spec.ts:47-53]
 
 ## Dev Notes
 

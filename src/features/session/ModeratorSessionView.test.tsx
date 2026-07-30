@@ -57,8 +57,8 @@ const snapshot = {
   updatedAt: '2026-06-28T16:00:00.000Z',
 }
 
-function renderModeratorRoute(state?: unknown) {
-  return render(
+function moderatorRouteElement(state?: unknown) {
+  return (
     <MemoryRouter
       initialEntries={[
         {
@@ -70,8 +70,12 @@ function renderModeratorRoute(state?: unknown) {
       <Routes>
         <Route path="/session/:roomCode/moderator" element={<ModeratorSessionView />} />
       </Routes>
-    </MemoryRouter>,
+    </MemoryRouter>
   )
+}
+
+function renderModeratorRoute(state?: unknown) {
+  return render(moderatorRouteElement(state))
 }
 
 describe('ModeratorSessionView', () => {
@@ -155,6 +159,35 @@ describe('ModeratorSessionView', () => {
     expect(within(awayParticipant as HTMLElement).getByText('Away')).toBeInTheDocument()
     expect(within(awayParticipant as HTMLElement).getByText('Voted')).toBeInTheDocument()
     expect(within(list).queryByText('Maxi', { exact: true })).not.toBeInTheDocument()
+  })
+
+  it('updates the presence list when a newer live snapshot arrives', () => {
+    window.sessionStorage.setItem(
+      moderatorTokenStorageKey('ABCD12'),
+      'moderator-token-abcdefghijklmnopqrstuvwxyz',
+    )
+    const rendered = renderModeratorRoute({ snapshot })
+
+    expect(screen.getByText('No participants have joined yet.')).toBeInTheDocument()
+
+    socketState.latestSnapshot = {
+      ...snapshot,
+      participants: [
+        snapshot.participants[0],
+        {
+          id: 'participant-live',
+          displayName: 'Live Joiner',
+          role: 'participant' as const,
+          connected: true,
+          hasVoted: false,
+        },
+      ],
+      updatedAt: '2026-06-28T16:05:00.000Z',
+    }
+    rendered.rerender(moderatorRouteElement({ snapshot }))
+
+    expect(screen.getByText('Live Joiner')).toBeInTheDocument()
+    expect(screen.queryByText('No participants have joined yet.')).not.toBeInTheDocument()
   })
 
   it('does not render tokens or internal identity metadata', () => {
