@@ -5,7 +5,7 @@ created_at: 2026-07-30T19:46:00Z
 
 # Story 4.3: Document Docker Workflow And Smoke Checks
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -22,25 +22,25 @@ so that I can validate the app quickly in a containerized setup.
 
 ## Tasks / Subtasks
 
-- [ ] Expand `README.md` with a Docker workflow verification section. (AC: 1)
-  - [ ] Document the `docker build -t adr-buddy:local .` command and expected outcome.
-  - [ ] Document the `docker compose up --build -d` command and how to override the published host port via `APP_PORT`.
-  - [ ] Document the smoke-check command(s) and the expected successful output.
-  - [ ] Explain expected local runtime behavior: one Node process serving HTTP, Socket.IO, and the built React client; in-memory session state; no external database, Redis, or broker.
-- [ ] Add a CI-friendly smoke-check script that exercises the containerized app. (AC: 2)
-  - [ ] Create `scripts/docker-smoke.mjs` that runs `docker compose up --build -d --wait`, verifies `/health` returns a healthy response, verifies `/` returns the React app, then runs `docker compose down`.
-  - [ ] Support `APP_PORT` environment override so the checks do not hardcode host port `3000`.
-  - [ ] Exit with a non-zero code on any failure and always tear down Compose resources.
-  - [ ] Keep the script self-contained so it does not require external infrastructure.
-- [ ] Wire the smoke check into the npm script surface. (AC: 2)
-  - [ ] Add `smoke:docker` to `package.json` scripts that invokes `node scripts/docker-smoke.mjs`.
-  - [ ] Keep the script optional so CI environments without Docker can still run the static test suite.
-- [ ] Add automated guardrails for the smoke-check artifact. (AC: 1, 2)
-  - [ ] Add a static Vitest test under `server/containerization/` that asserts `scripts/docker-smoke.mjs` references `/health`, `docker compose up`, and `docker compose down`, and supports the `APP_PORT` override.
-  - [ ] Keep the guardrail test runnable without a Docker daemon.
-- [ ] Validate the smoke-check path end-to-end when Docker is available. (AC: 2)
-  - [ ] Run `npm run smoke:docker` and confirm success.
-  - [ ] Run `npm run test`, `npm run lint`, and the containerization guardrail tests.
+- [x] Expand `README.md` with a Docker workflow verification section. (AC: 1)
+  - [x] Document the `docker build -t adr-buddy:local .` command and expected outcome.
+  - [x] Document the `docker compose up --build -d` command and how to override the published host port via `APP_PORT`.
+  - [x] Document the smoke-check command(s) and the expected successful output.
+  - [x] Explain expected local runtime behavior: one Node process serving HTTP, Socket.IO, and the built React client; in-memory session state; no external database, Redis, or broker.
+- [x] Add a CI-friendly smoke-check script that exercises the containerized app. (AC: 2)
+  - [x] Create `scripts/docker-smoke.mjs` that runs `docker compose up --build -d --wait`, verifies `/health` returns a healthy response, verifies `/` returns the React app, then runs `docker compose down`.
+  - [x] Support `APP_PORT` environment override so the checks do not hardcode host port `3000`.
+  - [x] Exit with a non-zero code on any failure and always tear down Compose resources.
+  - [x] Keep the script self-contained so it does not require external infrastructure.
+- [x] Wire the smoke check into the npm script surface. (AC: 2)
+  - [x] Add `smoke:docker` to `package.json` scripts that invokes `node scripts/docker-smoke.mjs`.
+  - [x] Keep the script optional so CI environments without Docker can still run the static test suite.
+- [x] Add automated guardrails for the smoke-check artifact. (AC: 1, 2)
+  - [x] Add a static Vitest test under `server/containerization/` that asserts `scripts/docker-smoke.mjs` references `/health`, `docker compose up`, and `docker compose down`, and supports the `APP_PORT` override.
+  - [x] Keep the guardrail test runnable without a Docker daemon.
+- [x] Validate the smoke-check path end-to-end when Docker is available. (AC: 2)
+  - [x] Run `npm run smoke:docker` and confirm success.
+  - [x] Run `npm run test`, `npm run lint`, and the containerization guardrail tests.
 
 ## Dev Notes
 
@@ -139,16 +139,28 @@ Cascade
 
 ### Debug Log References
 
-<!-- To be filled by the dev agent during implementation. -->
+- Smoke-script health check initially expected a flat `{status: 'healthy'}` body, but the server returns `{ok: true, data: {status: 'healthy'}}`. Updated the check to match the actual response shape.
+- First smoke run on the default host port `3000` failed because the port was already allocated; reran with `APP_PORT=3001` to validate the environment override path.
+- `AbortSignal.timeout(2000)` was too aggressive during container startup; increased per-request timeout to 5000ms and added health-poll error logging.
+- Lint emitted an unused `eslint-disable-next-line no-console` warning because `.mjs` files are not in the project's lint target; removed the unnecessary directive.
 
 ### Completion Notes List
 
-<!-- To be filled by the dev agent during implementation. -->
+- Added `scripts/docker-smoke.mjs`: self-contained Node script that runs `docker compose up --build -d --wait`, polls `/health`, verifies the root path returns HTML, and always tears down with `docker compose down`.
+- Added `server/containerization/docker-smoke.test.ts`: static guardrail tests asserting the smoke script references `/health`, `docker compose up`, `docker compose down`, and `APP_PORT`.
+- Updated `package.json` with the `smoke:docker` npm script so the smoke check is discoverable but optional for CI nodes without Docker.
+- Expanded `README.md` with a Docker Workflow Verification section covering image build, Compose startup, `APP_PORT` override, `npm run smoke:docker`, expected output, and expected single-instance runtime behavior.
+- Validation run: `npm run test -- server/containerization` (14 tests passed), `npm run test` (243 tests passed), `npm run lint` (clean), and `APP_PORT=3001 npm run smoke:docker` (successful end-to-end container smoke).
 
 ### File List
 
-<!-- To be filled by the dev agent during implementation. -->
+- `scripts/docker-smoke.mjs`
+- `server/containerization/docker-smoke.test.ts`
+- `package.json`
+- `README.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
 
 ## Change Log
 
 - 2026-07-30: Created Story 4.3 context for documenting the Docker workflow and adding containerized smoke checks.
+- 2026-07-30: Implemented Docker workflow documentation, smoke-check script, npm wiring, static guardrail tests, and end-to-end validation.
