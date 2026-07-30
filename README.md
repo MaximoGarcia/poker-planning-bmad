@@ -55,3 +55,29 @@ If you override `PORT` (e.g. `-e PORT=4000 -p 4000:4000`), you must also overrid
 ```bash
 docker run --rm -e PORT=4000 -e ALLOWED_ORIGINS=http://localhost:4000 -p 4000:4000 adr-buddy:local
 ```
+
+## Docker Compose Quick Start
+
+Start the single application service with one command:
+
+```bash
+docker compose up --build -d
+```
+
+The `-d` flag runs the service in the background so the terminal stays free for
+the commands below. If host port `3000` is already in use, stop the conflicting
+process or override the published port:
+
+```bash
+APP_PORT=3001 docker compose up --build -d
+```
+
+The Compose service uses the same Dockerfile and compiled single-instance Node server that serves HTTP, Socket.IO, and the built client on `http://localhost:3000`.
+
+Use routine Compose commands to inspect and control the local runtime:
+
+```bash
+docker compose logs app
+docker compose restart app
+docker compose down
+```
