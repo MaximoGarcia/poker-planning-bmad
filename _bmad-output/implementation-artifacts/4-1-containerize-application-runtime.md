@@ -5,7 +5,7 @@ created_at: 2026-07-30T00:00:00Z
 
 # Story 4.1: Containerize Application Runtime
 
-Status: review
+Status: done
 
 ## Story
 
@@ -34,6 +34,15 @@ so that the local runtime is reproducible across environments.
 - [x] Document container build and run commands in README. (AC: 3)
   - [x] Add a concise quick-start section for Docker runtime.
   - [x] Keep documentation aligned with current local single-instance architecture.
+
+### Review Findings
+
+- [x] [Review][Patch] PORT/ALLOWED_ORIGINS override coupling is undocumented [README.md:25-45]
+- [x] [Review][Patch] Dockerfile runs as root [Dockerfile:11-25]
+- [x] [Review][Patch] Base image not pinned to a specific patch version [Dockerfile:1]
+- [x] [Review][Patch] No Docker HEALTHCHECK for /health [Dockerfile:1-25]
+- [x] [Review][Patch] Docker Quick Start uses bash with no Windows/PowerShell callout, inconsistent with existing PowerShell-based Local Production Smoke section [README.md:25-45]
+- [x] [Review][Defer] No automated docker build/run test validates AC1/AC2; dockerfile.test.ts only asserts static string content [server/containerization/dockerfile.test.ts:1-47] — deferred, requires CI infra beyond this story's scope (candidate for Story 4.3)
 
 ## Dev Notes
 
